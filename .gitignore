@@ -1,0 +1,68 @@
+﻿# =========================
+# Eclipse / IDE metadata
+# =========================
+.metadata/
+.settings/
+.classpath
+.project
+
+# =========================
+# VS Code settings
+# =========================
+.vscode/
+
+# =========================
+# Installer artifacts (VERY IMPORTANT)
+# =========================
+installer/
+
+# =========================
+# Build outputs
+# =========================
+target/
+
+# =========================
+# OS / temporary files
+# =========================
+*.log
+*.lock
+*.tmp
+
+# =========================
+# Binaries (never commit)
+# =========================
+*.exe
+*.jar
+*.msi
+
+# =========================
+# Runtime / output
+# =========================
+logs/
+output/
+
+# =========================
+# Maven generated artifacts
+# =========================
+dependency-reduced-pom.xml
+
+# =========================
+# Build logs / temp output
+# =========================
+build_err.txt
+build_err_utf8.txt
+build_output.txt
+compile_error.txt
+
+# =========================
+# Grafana / Prometheus runtime resources
+# =========================
+resources/
+
+# =========================
+# Runtime / temp files
+# =========================
+last_checked_timestamp.txt
+disabled_snapshot.txt
+temp-*.yaml
+addon-installers/output/
