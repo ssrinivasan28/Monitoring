@@ -24,6 +24,7 @@ public class IbmiJobService {
         this.ibmiPassword = ibmiPassword;
     }
 
+    @SuppressWarnings("deprecation")
     public JobInfo getJobInfo(String jobName, String jobUser, String expectedSubsystem) throws Exception {
         AS400 system = null;
         try {

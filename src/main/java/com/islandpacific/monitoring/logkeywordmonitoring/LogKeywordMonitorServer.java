@@ -33,7 +33,7 @@ public class LogKeywordMonitorServer {
 
     public void stop() {
         if (server != null) {
-            server.stop();
+            server.close();
             logger.info("Metrics server stopped");
         }
     }

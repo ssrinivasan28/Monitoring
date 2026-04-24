@@ -25,6 +25,7 @@ public class IbmiSystemMonitorMetricsService {
         }
     }
 
+    @SuppressWarnings("deprecation")
     public IbmiSystemMonitorInfo getSystemUtilization(String ibmiHost, String ibmiUser, String ibmiPassword) throws Exception {
         double cpuUtil = 0.0, aspUtil = 0.0, sharedPoolUtil = 0.0;
         long totalJobs = 0, activeJobs = 0;

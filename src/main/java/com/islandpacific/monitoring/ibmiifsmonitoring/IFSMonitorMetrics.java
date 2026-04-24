@@ -9,11 +9,6 @@ import java.util.logging.Logger; // Added import for Logger
 
 public class IFSMonitorMetrics {
 
-    private final Logger logger;
-    private final ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> totalFileCounts;
-    private final ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> newFileCounts;
-    private volatile long lastScanTimestamp; // Use volatile for thread-safe visibility
-
     // Gauge for application uptime, calculated from process start time
     private static final Gauge UPTIME_SECONDS = Gauge.build()
             .name("ifs_monitor_uptime_seconds")
@@ -50,15 +45,10 @@ public class IFSMonitorMetrics {
     public IFSMonitorMetrics(Logger logger,
                                   ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> totalFileCounts,
                                   ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> newFileCounts) {
-        this.logger = logger;
-        this.totalFileCounts = totalFileCounts;
-        this.newFileCounts = newFileCounts;
-        this.lastScanTimestamp = 0; // Initialize
     }
 
     public void setLastScanTimestamp(long timestamp) {
-        this.lastScanTimestamp = timestamp;
-        LAST_SCAN_TIMESTAMP_SECONDS.set(timestamp); // Update Prometheus gauge
+        LAST_SCAN_TIMESTAMP_SECONDS.set(timestamp);
     }
 
     /**

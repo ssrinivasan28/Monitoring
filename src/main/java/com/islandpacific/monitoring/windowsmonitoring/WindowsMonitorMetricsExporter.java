@@ -80,7 +80,7 @@ public class WindowsMonitorMetricsExporter {
 
     public void stop() {
         if (server != null) {
-            server.stop();
+            server.close();
         }
     }
 

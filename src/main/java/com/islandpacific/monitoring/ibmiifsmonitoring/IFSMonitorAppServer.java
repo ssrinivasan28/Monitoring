@@ -13,7 +13,6 @@ import java.util.logging.Logger;
 
 public class IFSMonitorAppServer { // Renamed from MetricsServer to match error
 
-    private static final Logger logger = Logger.getLogger(IFSMonitorAppServer.class.getName()); // Updated logger name
     private static final String METRICS_PATH = "/metrics";
     private HttpServer server;
     private final Logger parentLogger; // To log messages to the main application logger

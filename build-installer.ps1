@@ -191,12 +191,16 @@ function Copy-MonitoringJars {
             "^IBMSubSystemMonitor" { "IBMSubSystemMonitoring" }
             "^IBMMatrixMonitor" { "IBMSystemMatrix" }
             "^IBMQSYSOPRMonitor" { "QSYSOPRMonitoring" }
-            "^IBMProfieDisable" { "IBMUserProfileChecker" }
+            "^IBMUserProfileChecker" { "IBMUserProfileChecker" }
             "^IBMNetworkEnabler" { "NetWorkEnabler" }
             "^ServerUpTimeMonitor" { "ServerUpTimeMonitor" }
             "^WinFSErrorMonitor" { "WinFSErrorMonitor" }
             "^WinFSCardinalityMonitor" { "WinFSCardinalityMonitor" }
             "^WinMonitor" { "WinMonitor" }
+            "^LogKeywordMonitor" { "LogKeywordMonitor" }
+            "^IBMFileMemberMonitor" { "IBMFileMemberMonitor" }
+            "^IBMJobDurationMonitor" { "IBMJobDurationMonitor" }
+            "^WinServiceMonitor" { "WinServiceMonitor" }
             default { $null }
         }
         
@@ -371,9 +375,29 @@ function Start-Build {
             Write-Warning "Skipping binary validation"
         }
         
-        # Step 5: Compile installer
+        # Step 5: Compile installers
         Invoke-InnoSetupCompile -InnoSetupPath $innoSetupPath
-        
+
+        # Compile standalone ServiceScheduler installer if it exists
+        $ssIss = Join-Path $ProjectRoot "ServiceScheduler.iss"
+        if (Test-Path $ssIss) {
+            Write-Step "Compiling ServiceScheduler standalone installer..."
+            # Ensure the latest JAR is in installer resources
+            $ssJarSrc = Join-Path $MonitorsDir "ServiceScheduler.jar"
+            $ssJarDst = Join-Path $ResourcesDir "monitoring-services\ServiceScheduler\ServiceScheduler.jar"
+            if (Test-Path $ssJarSrc) {
+                Copy-Item $ssJarSrc -Destination $ssJarDst -Force
+                Write-Info "  Copied ServiceScheduler.jar to installer resources"
+            }
+            $ssOutput = & $innoSetupPath $ssIss 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "ServiceScheduler.iss compilation failed (non-fatal)"
+                $ssOutput | ForEach-Object { Write-Info $_ }
+            } else {
+                Write-Success "ServiceSchedulerSetup.exe compiled"
+            }
+        }
+
         # Step 6: Verify output
         $exePath = Test-OutputExecutable
         

@@ -55,7 +55,7 @@ public class JobMetricsExporter {
 
     public void stopMetricsServer() {
         if (httpServer != null) {
-            httpServer.stop();
+            httpServer.close();
             logger.info("Prometheus metrics server for Jobs stopped.");
         }
     }

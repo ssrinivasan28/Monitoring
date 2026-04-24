@@ -21,7 +21,6 @@ public class LogKeywordMonitorService {
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, Long>> newMatchCounts;
     private final ConcurrentHashMap<String, Long> linesScanned;
     private final ConcurrentHashMap<String, Long> readErrors;
-    private final LogKeywordMonitorMetrics metrics;
 
     // Track last read position for each log file (by absolute path)
     private final Map<String, Long> filePositions;
@@ -45,7 +44,6 @@ public class LogKeywordMonitorService {
         this.newMatchCounts = newMatchCounts;
         this.linesScanned = linesScanned;
         this.readErrors = readErrors;
-        this.metrics = metrics;
         this.filePositions = new HashMap<>();
         this.alertedKeywords = new HashMap<>();
     }

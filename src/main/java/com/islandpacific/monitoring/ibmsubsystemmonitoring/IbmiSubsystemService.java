@@ -1,8 +1,5 @@
 package com.islandpacific.monitoring.ibmsubsystemmonitoring;
 
-import com.ibm.as400.access.AS400;
-import com.ibm.as400.access.AS400Exception;
-import com.ibm.as400.access.AS400SecurityException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement; // Use PreparedStatement for safety

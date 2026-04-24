@@ -1,7 +1,6 @@
 package com.islandpacific.monitoring.filesystemerrormonitoring;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;

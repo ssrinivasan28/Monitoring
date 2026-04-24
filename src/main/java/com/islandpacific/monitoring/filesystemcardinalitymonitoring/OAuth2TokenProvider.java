@@ -8,7 +8,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -19,7 +18,6 @@ public class OAuth2TokenProvider {
     
     private static final Logger logger = Logger.getLogger(OAuth2TokenProvider.class.getName());
     
-    private final String tenantId;
     private final String clientId;
     private final String clientSecret;
     private final String scope;
@@ -29,7 +27,6 @@ public class OAuth2TokenProvider {
     private long tokenExpiryTime;
     
     public OAuth2TokenProvider(String tenantId, String clientId, String clientSecret, String scope, String tokenUrl) {
-        this.tenantId = tenantId;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.scope = scope;

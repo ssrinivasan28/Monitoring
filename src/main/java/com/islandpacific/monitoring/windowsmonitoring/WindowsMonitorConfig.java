@@ -26,6 +26,7 @@ public class WindowsMonitorConfig {
     }
 
     // Email Config
+    private String authMethod;
     private String emailHost;
     private String emailPort;
     private String emailFrom;
@@ -36,6 +37,11 @@ public class WindowsMonitorConfig {
     private boolean emailAuthEnabled;
     private boolean emailStartTlsEnabled;
     private String emailImportance;
+    private String oauth2TenantId;
+    private String oauth2ClientId;
+    private String oauth2ClientSecret;
+    private String oauth2TokenUrl;
+    private String graphMailUrl;
 
     public static WindowsMonitorConfig fromProperties(Properties appProps, Properties emailProps) {
         WindowsMonitorConfig config = new WindowsMonitorConfig();
@@ -59,6 +65,7 @@ public class WindowsMonitorConfig {
         config.servicesToMonitor = servicesList.isEmpty() ? new ArrayList<>() : Arrays.asList(servicesList.split(","));
 
         // Email properties
+        config.authMethod = emailProps.getProperty("mail.auth.method", "SMTP").toUpperCase();
         config.emailHost = emailProps.getProperty("mail.smtp.host");
         config.emailPort = emailProps.getProperty("mail.smtp.port", "25");
         config.emailFrom = emailProps.getProperty("mail.from");
@@ -70,6 +77,11 @@ public class WindowsMonitorConfig {
         config.emailStartTlsEnabled = Boolean
                 .parseBoolean(emailProps.getProperty("mail.smtp.starttls.enable", "false"));
         config.emailImportance = emailProps.getProperty("mail.importance", "Normal");
+        config.oauth2TenantId = emailProps.getProperty("mail.oauth2.tenant.id", "");
+        config.oauth2ClientId = emailProps.getProperty("mail.oauth2.client.id", "");
+        config.oauth2ClientSecret = emailProps.getProperty("mail.oauth2.client.secret", "");
+        config.oauth2TokenUrl = emailProps.getProperty("mail.oauth2.token.url", "");
+        config.graphMailUrl = emailProps.getProperty("mail.oauth2.graph.mail.url", "");
 
         // Parse per-host credentials
         for (String host : config.hosts) {
@@ -123,6 +135,13 @@ public class WindowsMonitorConfig {
     public List<String> getServicesToMonitor() {
         return servicesToMonitor;
     }
+
+    public String getAuthMethod() { return authMethod; }
+    public String getOauth2TenantId() { return oauth2TenantId; }
+    public String getOauth2ClientId() { return oauth2ClientId; }
+    public String getOauth2ClientSecret() { return oauth2ClientSecret; }
+    public String getOauth2TokenUrl() { return oauth2TokenUrl; }
+    public String getGraphMailUrl() { return graphMailUrl; }
 
     public String getEmailHost() {
         return emailHost;

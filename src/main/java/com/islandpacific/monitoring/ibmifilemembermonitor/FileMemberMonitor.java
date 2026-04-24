@@ -2,10 +2,7 @@ package com.islandpacific.monitoring.ibmifilemembermonitor;
 
 import io.prometheus.client.Gauge;
 import javax.mail.MessagingException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +19,6 @@ public class FileMemberMonitor {
     private final IbmiFileMemberService ibmiFileMemberService;
     private final EmailService emailService;
     private final FileMemberMonitorConfig config;
-    private final String clientName;
 
     private final ScheduledExecutorService scheduler;
     private final Map<String, Long> lastKnownRecordCounts; // Key: library/file/member
@@ -45,7 +41,6 @@ public class FileMemberMonitor {
         this.ibmiFileMemberService = ibmiFileMemberService;
         this.emailService = emailService;
         this.config = config;
-        this.clientName = clientName;
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
         this.lastKnownRecordCounts = new HashMap<>();
         this.isBreached = new HashMap<>();

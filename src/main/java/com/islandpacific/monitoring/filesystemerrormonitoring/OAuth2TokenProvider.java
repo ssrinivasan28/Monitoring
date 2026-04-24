@@ -13,7 +13,6 @@ public class OAuth2TokenProvider {
     
     private static final Logger LOGGER = Logger.getLogger(OAuth2TokenProvider.class.getName());
     
-    private final String tenantId;
     private final String clientId;
     private final String clientSecret;
     private final String scope;
@@ -32,7 +31,6 @@ public class OAuth2TokenProvider {
      * @param tokenUrl Custom token URL (optional, will use default Azure AD URL if empty)
      */
     public OAuth2TokenProvider(String tenantId, String clientId, String clientSecret, String scope, String tokenUrl) {
-        this.tenantId = tenantId;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.scope = scope;

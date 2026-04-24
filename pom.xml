@@ -56,10 +56,43 @@
       <artifactId>oshi-core</artifactId>
       <version>6.4.10</version>
     </dependency>
+
+    <!-- Selenium + WebDriverManager for ServiceScheduler screenshot capture -->
+    <dependency>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-java</artifactId>
+      <version>4.21.0</version>
+    </dependency>
+    <dependency>
+      <groupId>io.github.bonigarcia</groupId>
+      <artifactId>webdrivermanager</artifactId>
+      <version>5.8.0</version>
+    </dependency>
   </dependencies>
 
   <build>
     <plugins>
+      <!-- Pre-copy JAR so ProGuard can read it without needing to rename (Windows renameTo workaround) -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>3.1.0</version>
+        <executions>
+          <execution>
+            <id>copy-for-proguard</id>
+            <phase>package</phase>
+            <goals><goal>run</goal></goals>
+            <configuration>
+              <target>
+                <mkdir dir="${project.build.directory}/monitors"/>
+                <copy file="${project.build.directory}/${project.build.finalName}.jar"
+                      tofile="${project.build.directory}/${project.build.finalName}_proguard_base.jar"/>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <!-- ProGuard plugin to obfuscate the core application code -->
       <plugin>
         <groupId>com.github.wvengen</groupId>
@@ -74,7 +107,7 @@
         <configuration>
           <proguardVersion>7.3.2</proguardVersion>
           <obfuscate>true</obfuscate>
-          <injar>${project.build.finalName}.jar</injar>
+          <injar>${project.build.finalName}_proguard_base.jar</injar>
           <outjar>${project.build.finalName}.jar</outjar>
           <outputDirectory>${project.build.directory}</outputDirectory>
           <options>
@@ -117,7 +150,7 @@
             <phase>package</phase>
             <goals><goal>shade</goal></goals>
             <configuration>
-              <finalName>IBMIFSErrorMonitor</finalName>
+              <outputFile>${project.build.directory}/monitors/IBMIFSErrorMonitor.jar</outputFile>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.islandpacific.monitoring.ibmierrormonitoring.MainIFSErrorMonitor</mainClass>
@@ -141,7 +174,7 @@
             <phase>package</phase>
             <goals><goal>shade</goal></goals>
             <configuration>
-              <finalName>IBMRealTimeIFSMonitor</finalName>
+              <outputFile>${project.build.directory}/monitors/IBMRealTimeIFSMonitor.jar</outputFile>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.islandpacific.monitoring.ibmiifsmonitoring.MainIFSMonitor</mainClass>
@@ -165,7 +198,7 @@
             <phase>package</phase>
             <goals><goal>shade</goal></goals>
             <configuration>
-              <finalName>IBMJobQueCountMonitor</finalName>
+              <outputFile>${project.build.directory}/monitors/IBMJobQueCountMonitor.jar</outputFile>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.islandpacific.monitoring.ibmjobquecountmonitoring.MainJobQueCountMonitor</mainClass>
@@ -189,7 +222,7 @@
             <phase>package</phase>
             <goals><goal>shade</goal></goals>
             <configuration>
-              <finalName>IBMJobQueStatusMonitor</finalName>
+              <outputFile>${project.build.directory}/monitors/IBMJobQueStatusMonitor.jar</outputFile>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.islandpacific.monitoring.ibmjobquestatusmonitoring.MainJobQueStatusMonitor</mainClass>
@@ -213,7 +246,7 @@
             <phase>package</phase>
             <goals><goal>shade</goal></goals>
             <configuration>
-              <finalName>IBMNetworkEnabler</finalName>
+              <outputFile>${project.build.directory}/monitors/IBMNetworkEnabler.jar</outputFile>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.islandpacific.monitoring.ibmnetworkenabler.MainNetworkEnabler</mainClass>
@@ -237,7 +270,7 @@
             <phase>package</phase>
             <goals><goal>shade</goal></goals>
             <configuration>
-              <finalName>IBMSubSystemMonitor</finalName>
+              <outputFile>${project.build.directory}/monitors/IBMSubSystemMonitor.jar</outputFile>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.islandpacific.monitoring.ibmsubsystemmonitoring.MainSubsystemMonitor</mainClass>
@@ -261,7 +294,7 @@
             <phase>package</phase>
             <goals><goal>shade</goal></goals>
             <configuration>
-              <finalName>IBMMatrixMonitor</finalName>
+              <outputFile>${project.build.directory}/monitors/IBMMatrixMonitor.jar</outputFile>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.islandpacific.monitoring.ibmssystemmatrix.MainIbmiSystemMonitorApp</mainClass>
@@ -285,7 +318,7 @@
             <phase>package</phase>
             <goals><goal>shade</goal></goals>
             <configuration>
-              <finalName>IBMQSYSOPRMonitor</finalName>
+              <outputFile>${project.build.directory}/monitors/IBMQSYSOPRMonitor.jar</outputFile>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.islandpacific.monitoring.ibmqsysoprmonitoring.MainQSYSOPRMonitorApp</mainClass>
@@ -309,7 +342,7 @@
             <phase>package</phase>
             <goals><goal>shade</goal></goals>
             <configuration>
-              <finalName>ServerUpTimeMonitor</finalName>
+              <outputFile>${project.build.directory}/monitors/ServerUpTimeMonitor.jar</outputFile>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.islandpacific.monitoring.serveruptime.MainServerUpTimeMonitorApp</mainClass>
@@ -333,7 +366,7 @@
             <phase>package</phase>
             <goals><goal>shade</goal></goals>
             <configuration>
-              <finalName>IBMFileMemberMonitor</finalName>
+              <outputFile>${project.build.directory}/monitors/IBMFileMemberMonitor.jar</outputFile>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.islandpacific.monitoring.ibmifilemembermonitor.MainFileMemberMonitoringApp</mainClass>
@@ -358,7 +391,7 @@
             <phase>package</phase>
             <goals><goal>shade</goal></goals>
             <configuration>
-              <finalName>IBMProfieDisable</finalName>
+              <outputFile>${project.build.directory}/monitors/IBMUserProfileChecker.jar</outputFile>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.islandpacific.monitoring.userprofilechecker.MainUserProfileChecker</mainClass>
@@ -383,7 +416,7 @@
             <phase>package</phase>
             <goals><goal>shade</goal></goals>
             <configuration>
-              <finalName>WinFSErrorMonitor</finalName>
+              <outputFile>${project.build.directory}/monitors/WinFSErrorMonitor.jar</outputFile>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.islandpacific.monitoring.filesystemerrormonitoring.MainFileSystemErrorMonitor</mainClass>
@@ -408,7 +441,7 @@
             <phase>package</phase>
             <goals><goal>shade</goal></goals>
             <configuration>
-              <finalName>WinFSCardinalityMonitor</finalName>
+              <outputFile>${project.build.directory}/monitors/WinFSCardinalityMonitor.jar</outputFile>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.islandpacific.monitoring.filesystemcardinalitymonitoring.MainFileSystemCardinalityMonitor</mainClass>
@@ -433,7 +466,7 @@
             <phase>package</phase>
             <goals><goal>shade</goal></goals>
             <configuration>
-              <finalName>LogKeywordMonitor</finalName>
+              <outputFile>${project.build.directory}/monitors/LogKeywordMonitor.jar</outputFile>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.islandpacific.monitoring.logkeywordmonitoring.MainLogKeywordMonitor</mainClass>
@@ -459,10 +492,61 @@
             <phase>package</phase>
             <goals><goal>shade</goal></goals>
             <configuration>
-              <finalName>WinMonitor</finalName>
+              <outputFile>${project.build.directory}/monitors/WinMonitor.jar</outputFile>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.islandpacific.monitoring.windowsmonitoring.MainWindowsMonitor</mainClass>
+                </transformer>
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+
+          <!-- Service Scheduler -->
+          <execution>
+            <id>shade-service-scheduler</id>
+            <phase>package</phase>
+            <goals><goal>shade</goal></goals>
+            <configuration>
+              <outputFile>${project.build.directory}/monitors/ServiceScheduler.jar</outputFile>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.islandpacific.monitoring.servicescheduler.MainServiceScheduler</mainClass>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+
+          <!-- Windows Service Status Monitor -->
+          <execution>
+            <id>shade-win-service-monitor</id>
+            <phase>package</phase>
+            <goals><goal>shade</goal></goals>
+            <configuration>
+              <outputFile>${project.build.directory}/monitors/WinServiceMonitor.jar</outputFile>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.islandpacific.monitoring.winservicemonitor.MainWinServiceMonitor</mainClass>
                 </transformer>
               </transformers>
               <filters>

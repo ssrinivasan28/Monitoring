@@ -28,7 +28,6 @@ public class FileSystemCardinalityService {
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> newFileCounts;
 
     private static final Pattern FILE_EXTENSION_PATTERN = Pattern.compile("\\.([a-zA-Z0-9]{1,5})(?:\\s.*)?$");
-    private static final String LAST_RUN_LOG = "logs/fs_cardinality_last_run_timestamp.txt";
 
     public FileSystemCardinalityService(Logger mainLogger, EmailService emailService,
             ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> totalFileCounts,

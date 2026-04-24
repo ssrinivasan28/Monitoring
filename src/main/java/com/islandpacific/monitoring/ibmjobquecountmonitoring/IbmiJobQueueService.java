@@ -1,7 +1,6 @@
 package com.islandpacific.monitoring.ibmjobquecountmonitoring;
 
 import com.ibm.as400.access.AS400;
-import com.ibm.as400.access.AS400Exception;
 import com.ibm.as400.access.AS400SecurityException;
 import com.ibm.as400.access.JobQueue;
 import com.ibm.as400.access.QSYSObjectPathName;
@@ -24,6 +23,7 @@ public class IbmiJobQueueService {
     }
 
 
+    @SuppressWarnings("deprecation")
     public int getNumberOfWaitingJobs(String queueName, String queueLibrary) throws Exception {
         AS400 as400 = null;
         try {

@@ -25,7 +25,7 @@ public class FileMemberMetricsExporter {
     // This method is now responsible only for stopping the server
     public void stopMetricsServer() {
         if (httpServer != null) {
-            httpServer.stop();
+            httpServer.close();
             logger.info("Prometheus metrics server stopped.");
         }
     }

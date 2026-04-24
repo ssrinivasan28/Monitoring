@@ -2,8 +2,6 @@ package com.islandpacific.monitoring.serveruptime; // New package for this app
 
 import io.prometheus.client.Gauge;
 import io.prometheus.client.exporter.HTTPServer;
-import io.prometheus.client.hotspot.DefaultExports; // Optional: for default JVM metrics
-
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -16,17 +14,11 @@ import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+
 
 public class MainServerUpTimeMonitorApp {
 
@@ -50,6 +42,7 @@ public class MainServerUpTimeMonitorApp {
     private static Map<String, Boolean> currentServerStatus = new HashMap<>();
 
     private static EmailService emailService; // Instance of the EmailService
+    private static HTTPServer prometheusServer;
 
     public static void main(String[] args) {
         try {
@@ -73,9 +66,7 @@ public class MainServerUpTimeMonitorApp {
             // Add a shutdown hook for graceful termination
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 logger.info("Shutting down Server Downtime Monitor App gracefully...");
-                // No explicit scheduler shutdown is needed here if it's a daemon thread pool,
-                // but good practice to close resources if they existed.
-                // For a ScheduledExecutorService, it implicitly shuts down with the JVM unless configured otherwise.
+                if (prometheusServer != null) prometheusServer.close();
                 // Ensure all log handlers are flushed/closed
                 for (Handler handler : logger.getHandlers()) {
                     if (handler instanceof FileHandler) {
@@ -232,7 +223,7 @@ public class MainServerUpTimeMonitorApp {
     }
 
     private static void startPrometheusExporter() throws IOException {
-        new HTTPServer(exporterPort);
+        prometheusServer = new HTTPServer(exporterPort);
     }
 
     private static void schedulePingMonitoring() {

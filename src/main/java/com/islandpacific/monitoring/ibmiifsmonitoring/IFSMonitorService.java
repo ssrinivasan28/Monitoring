@@ -15,16 +15,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class IFSMonitorService {
@@ -36,7 +33,6 @@ public class IFSMonitorService {
     private final ConcurrentHashMap<String, IFSMonitorConfig.SmbCredentials> globalSmbCredentials;
 
     private static final Pattern FILE_EXTENSION_PATTERN = Pattern.compile("\\.([a-zA-Z0-9]{1,5})(?:\\s.*)?$");
-    private static final String LAST_RUN_LOG = "logs/last_run_timestamp.txt";
 
     /**
      * Constructs an IFSMonitorService.

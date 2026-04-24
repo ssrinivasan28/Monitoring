@@ -6,15 +6,10 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -164,31 +159,6 @@ public class IFSMonitorConfig {
         } catch (IOException e) {
             logger.severe(String.format("Failed to load properties due to I/O error: %s", e.getMessage()));
             throw new IllegalArgumentException("Error reading properties files: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Loads previously processed file paths for a given monitoring configuration from its dedicated state file.
-     * This file contains one absolute file path per line.
-     *
-     * @param config The MonitoringConfig for which to load processed file paths.
-     */
-    private void loadProcessedFilesForLocation(MonitoringConfig config) {
-        Path stateFilePath = Paths.get(config.getProcessedFilesStateFilePath());
-
-        if (Files.exists(stateFilePath) && Files.isRegularFile(stateFilePath)) {
-            try {
-                List<String> lines = Files.readAllLines(stateFilePath, StandardCharsets.UTF_8);
-                config.getProcessedFilePaths().addAll(lines);
-                config.getLocationLogger().info(String.format("Loaded %d previously processed files for location '%s' from state file: %s",
-                                                config.getProcessedFilePaths().size(), config.getName(), stateFilePath.getFileName()));
-            } catch (IOException e) {
-                config.getLocationLogger().log(Level.WARNING, String.format("Error reading processed files state file '%s' for location '%s': %s",
-                                                    stateFilePath.getFileName(), config.getName(), e.getMessage()), e);
-            }
-        } else {
-            config.getLocationLogger().info(String.format("No existing processed files state file found for location '%s' at '%s'. Starting with an empty processed file list for this location (a new file will be created if new files are detected).",
-                                            config.getName(), stateFilePath.getFileName()));
         }
     }
 

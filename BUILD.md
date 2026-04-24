@@ -69,7 +69,7 @@ mvn clean package
 - IBMSubSystemMonitor.jar
 - IBMMatrixMonitor.jar
 - IBMQSYSOPRMonitor.jar
-- IBMProfieDisable.jar (UserProfileChecker)
+- IBMUserProfileChecker.jar
 - IBMNetworkEnabler.jar
 - ServerUpTimeMonitor.jar
 - WinFSErrorMonitor.jar

@@ -13,7 +13,6 @@ import java.util.logging.Logger;
  */
 public class LogKeywordMonitorMetrics extends Collector {
 
-    private final Logger logger;
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, Long>> totalMatchCounts;
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, Long>> newMatchCounts;
     private final ConcurrentHashMap<String, Long> linesScanned;
@@ -25,7 +24,6 @@ public class LogKeywordMonitorMetrics extends Collector {
             ConcurrentHashMap<String, ConcurrentHashMap<String, Long>> newMatchCounts,
             ConcurrentHashMap<String, Long> linesScanned,
             ConcurrentHashMap<String, Long> readErrors) {
-        this.logger = logger;
         this.totalMatchCounts = totalMatchCounts;
         this.newMatchCounts = newMatchCounts;
         this.linesScanned = linesScanned;

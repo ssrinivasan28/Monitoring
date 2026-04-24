@@ -27,6 +27,7 @@ public class MainNetworkEnabler {
 
     private static final String PROPERTIES_FILE_NAME = "networkenable.properties"; // Centralized properties file name
 
+    @SuppressWarnings("deprecation")
     public static void main(String[] args) {
         // Ensure the custom LogManager is initialized
         // The static block in LogManager will handle its setup.

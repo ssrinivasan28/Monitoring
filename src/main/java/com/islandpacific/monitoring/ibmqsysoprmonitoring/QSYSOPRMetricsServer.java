@@ -33,7 +33,7 @@ public class QSYSOPRMetricsServer {
 
     public void stopServer() {
         if (server != null) {
-            server.stop();
+            server.close();
         }
     }
 }

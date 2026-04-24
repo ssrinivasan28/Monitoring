@@ -8,22 +8,15 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
 
 public class MainJobQueCountMonitor {
 
@@ -32,9 +25,6 @@ public class MainJobQueCountMonitor {
     // File paths for configuration properties
     private static String emailPropertiesFilePath = "email.properties";
     private static String jobQueueMonitorPropertiesFilePath = "jobqueuemonitor.properties";
-
-    private static final int DEFAULT_METRICS_PORT = 8081;
-    private static final int DEFAULT_MONITOR_INTERVAL_MS = 60000; // 1 minute
 
     // Properties objects for different config files
     private static Properties emailAndGeneralProps = new Properties(); // For email settings

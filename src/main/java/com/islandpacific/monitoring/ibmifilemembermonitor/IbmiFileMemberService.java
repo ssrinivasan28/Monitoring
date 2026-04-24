@@ -17,15 +17,9 @@ public class IbmiFileMemberService {
 
     private static final Logger logger = Logger.getLogger(IbmiFileMemberService.class.getName());
 
-    private final String host;
-    private final String user;
-    private final String password;
     private final String connectionUrl;
 
     public IbmiFileMemberService(String host, String user, String password) {
-        this.host = host;
-        this.user = user;
-        this.password = password;
         // The connection URL for IBM i using JTOpen JDBC driver
         this.connectionUrl = "jdbc:as400://" + host + ";user=" + user + ";password=" + password;
 

@@ -11,11 +11,6 @@ import java.util.logging.Logger;
  */
 public class FileSystemCardinalityMetrics {
 
-    private final Logger logger;
-    private final ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> totalFileCounts;
-    private final ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> newFileCounts;
-    private volatile long lastScanTimestamp;
-
     // Gauge for application uptime
     private static final Gauge UPTIME_SECONDS = Gauge.build()
             .name("fs_cardinality_monitor_uptime_seconds")
@@ -52,14 +47,9 @@ public class FileSystemCardinalityMetrics {
     public FileSystemCardinalityMetrics(Logger logger,
                                   ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> totalFileCounts,
                                   ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> newFileCounts) {
-        this.logger = logger;
-        this.totalFileCounts = totalFileCounts;
-        this.newFileCounts = newFileCounts;
-        this.lastScanTimestamp = 0;
     }
 
     public void setLastScanTimestamp(long timestamp) {
-        this.lastScanTimestamp = timestamp;
         LAST_SCAN_TIMESTAMP_SECONDS.set(timestamp);
     }
 

@@ -15,7 +15,6 @@ import java.util.logging.Logger;
  */
 public class FileSystemCardinalityAppServer {
 
-    private static final Logger logger = Logger.getLogger(FileSystemCardinalityAppServer.class.getName());
     private static final String METRICS_PATH = "/metrics";
     private HttpServer server;
     private final Logger parentLogger;

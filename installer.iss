@@ -109,6 +109,9 @@ Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "I
 Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_WinFSErrorMonitor.exe"; Flags: ignoreversion
 Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_WinFSCardinalityMonitor.exe"; Flags: ignoreversion
 Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_WinMonitor.exe"; Flags: ignoreversion
+Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_LogKeywordMonitor.exe"; Flags: ignoreversion
+Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_IBMFileMemberMonitor.exe"; Flags: ignoreversion
+Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_IBMJobDurationMonitor.exe"; Flags: ignoreversion
 
 ; Monitoring Services - JAR files only (always updated during upgrade)
 ; Properties files and logs are handled separately to preserve user data
@@ -125,22 +128,28 @@ Source: "installer\resources\monitoring-services\QSYSOPRMonitoring\*.jar"; DestD
 Source: "installer\resources\monitoring-services\WinFSErrorMonitor\*.jar"; DestDir: "{app}\monitoring-services\WinFSErrorMonitor"; Flags: ignoreversion; Check: IsWinFSErrorMonitorSelected
 Source: "installer\resources\monitoring-services\WinFSCardinalityMonitor\*.jar"; DestDir: "{app}\monitoring-services\WinFSCardinalityMonitor"; Flags: ignoreversion; Check: IsWinFSCardinalityMonitorSelected
 Source: "installer\resources\monitoring-services\WinMonitor\*.jar"; DestDir: "{app}\monitoring-services\WinMonitor"; Flags: ignoreversion; Check: IsWinMonitorSelected
+Source: "installer\resources\monitoring-services\LogKeywordMonitor\*.jar"; DestDir: "{app}\monitoring-services\LogKeywordMonitor"; Flags: ignoreversion; Check: IsLogKeywordMonitorSelected
+Source: "installer\resources\monitoring-services\IBMFileMemberMonitor\*.jar"; DestDir: "{app}\monitoring-services\IBMFileMemberMonitor"; Flags: ignoreversion; Check: IsFileMemberMonitorSelected
+Source: "installer\resources\monitoring-services\IBMJobDurationMonitor\*.jar"; DestDir: "{app}\monitoring-services\IBMJobDurationMonitor"; Flags: ignoreversion skipifsourcedoesntexist; Check: IsJobDurationMonitorSelected
 
 ; Properties files - only copy if they don't exist (preserve user customizations on upgrade)
 ; email.properties is excluded because it is dynamically generated
-Source: "installer\resources\monitoring-services\IBMIFSErrorMonitor\*.properties"; DestDir: "{app}\monitoring-services\IBMIFSErrorMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist; Check: IsIFSErrorMonitorSelected
-Source: "installer\resources\monitoring-services\IBMRealTimeIFSMonitor\*.properties"; DestDir: "{app}\monitoring-services\IBMRealTimeIFSMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist; Check: IsRealTimeIFSMonitorSelected
-Source: "installer\resources\monitoring-services\IBMJobQueCountMonitor\*.properties"; DestDir: "{app}\monitoring-services\IBMJobQueCountMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist; Check: IsJobQueCountMonitorSelected
-Source: "installer\resources\monitoring-services\IBMJobQueStatusMonitor\*.properties"; DestDir: "{app}\monitoring-services\IBMJobQueStatusMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist; Check: IsJobQueStatusMonitorSelected
-Source: "installer\resources\monitoring-services\ServerUpTimeMonitor\*.properties"; DestDir: "{app}\monitoring-services\ServerUpTimeMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist; Check: IsServerUpTimeMonitorSelected
-Source: "installer\resources\monitoring-services\IBMSubSystemMonitoring\*.properties"; DestDir: "{app}\monitoring-services\IBMSubSystemMonitoring"; Excludes: "email.properties"; Flags: onlyifdoesntexist; Check: IsSubSystemMonitorSelected
-Source: "installer\resources\monitoring-services\IBMSystemMatrix\*.properties"; DestDir: "{app}\monitoring-services\IBMSystemMatrix"; Excludes: "email.properties"; Flags: onlyifdoesntexist; Check: IsSystemMatrixSelected
-Source: "installer\resources\monitoring-services\IBMUserProfileChecker\*.properties"; DestDir: "{app}\monitoring-services\IBMUserProfileChecker"; Excludes: "email.properties"; Flags: onlyifdoesntexist; Check: IsUserProfileCheckerSelected
-Source: "installer\resources\monitoring-services\NetWorkEnabler\*.properties"; DestDir: "{app}\monitoring-services\NetWorkEnabler"; Excludes: "email.properties"; Flags: onlyifdoesntexist; Check: IsNetWorkEnablerSelected
-Source: "installer\resources\monitoring-services\QSYSOPRMonitoring\*.properties"; DestDir: "{app}\monitoring-services\QSYSOPRMonitoring"; Excludes: "email.properties"; Flags: onlyifdoesntexist; Check: IsQSYSOPRMonitorSelected
-Source: "installer\resources\monitoring-services\WinFSErrorMonitor\*.properties"; DestDir: "{app}\monitoring-services\WinFSErrorMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist; Check: IsWinFSErrorMonitorSelected
-Source: "installer\resources\monitoring-services\WinFSCardinalityMonitor\*.properties"; DestDir: "{app}\monitoring-services\WinFSCardinalityMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist; Check: IsWinFSCardinalityMonitorSelected
-Source: "installer\resources\monitoring-services\WinMonitor\*.properties"; DestDir: "{app}\monitoring-services\WinMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist; Check: IsWinMonitorSelected
+Source: "installer\resources\monitoring-services\IBMIFSErrorMonitor\*.properties"; DestDir: "{app}\monitoring-services\IBMIFSErrorMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsIFSErrorMonitorSelected
+Source: "installer\resources\monitoring-services\IBMRealTimeIFSMonitor\*.properties"; DestDir: "{app}\monitoring-services\IBMRealTimeIFSMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsRealTimeIFSMonitorSelected
+Source: "installer\resources\monitoring-services\IBMJobQueCountMonitor\*.properties"; DestDir: "{app}\monitoring-services\IBMJobQueCountMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsJobQueCountMonitorSelected
+Source: "installer\resources\monitoring-services\IBMJobQueStatusMonitor\*.properties"; DestDir: "{app}\monitoring-services\IBMJobQueStatusMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsJobQueStatusMonitorSelected
+Source: "installer\resources\monitoring-services\ServerUpTimeMonitor\*.properties"; DestDir: "{app}\monitoring-services\ServerUpTimeMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsServerUpTimeMonitorSelected
+Source: "installer\resources\monitoring-services\IBMSubSystemMonitoring\*.properties"; DestDir: "{app}\monitoring-services\IBMSubSystemMonitoring"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsSubSystemMonitorSelected
+Source: "installer\resources\monitoring-services\IBMSystemMatrix\*.properties"; DestDir: "{app}\monitoring-services\IBMSystemMatrix"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsSystemMatrixSelected
+Source: "installer\resources\monitoring-services\IBMUserProfileChecker\*.properties"; DestDir: "{app}\monitoring-services\IBMUserProfileChecker"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsUserProfileCheckerSelected
+Source: "installer\resources\monitoring-services\NetWorkEnabler\*.properties"; DestDir: "{app}\monitoring-services\NetWorkEnabler"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsNetWorkEnablerSelected
+Source: "installer\resources\monitoring-services\QSYSOPRMonitoring\*.properties"; DestDir: "{app}\monitoring-services\QSYSOPRMonitoring"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsQSYSOPRMonitorSelected
+Source: "installer\resources\monitoring-services\WinFSErrorMonitor\*.properties"; DestDir: "{app}\monitoring-services\WinFSErrorMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsWinFSErrorMonitorSelected
+Source: "installer\resources\monitoring-services\WinFSCardinalityMonitor\*.properties"; DestDir: "{app}\monitoring-services\WinFSCardinalityMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsWinFSCardinalityMonitorSelected
+Source: "installer\resources\monitoring-services\WinMonitor\*.properties"; DestDir: "{app}\monitoring-services\WinMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsWinMonitorSelected
+Source: "installer\resources\monitoring-services\LogKeywordMonitor\*.properties"; DestDir: "{app}\monitoring-services\LogKeywordMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsLogKeywordMonitorSelected
+Source: "installer\resources\monitoring-services\IBMFileMemberMonitor\*.properties"; DestDir: "{app}\monitoring-services\IBMFileMemberMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsFileMemberMonitorSelected
+Source: "installer\resources\monitoring-services\IBMJobDurationMonitor\*.properties"; DestDir: "{app}\monitoring-services\IBMJobDurationMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsJobDurationMonitorSelected
 
 [Registry]
 ; Core settings
@@ -198,6 +207,9 @@ Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstalledQSYS
 Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstalledWinFSErrorMonitor"; ValueData: "{code:GetInstalledWinFSErrorMonitor}"; Flags: uninsdeletevalue
 Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstalledWinFSCardinalityMonitor"; ValueData: "{code:GetInstalledWinFSCardinalityMonitor}"; Flags: uninsdeletevalue
 Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstalledWinMonitor"; ValueData: "{code:GetInstalledWinMonitor}"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstalledLogKeywordMonitor"; ValueData: "{code:GetInstalledLogKeywordMonitor}"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstalledFileMemberMonitor"; ValueData: "{code:GetInstalledFileMemberMonitor}"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstalledJobDurationMonitor"; ValueData: "{code:GetInstalledJobDurationMonitor}"; Flags: uninsdeletevalue
 Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "SubSystemMonitorPort"; ValueData: "{code:GetSubSystemMonitorPort}"; Flags: uninsdeletevalue
 Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "SystemMatrixPort"; ValueData: "{code:GetSystemMatrixPort}"; Flags: uninsdeletevalue
 Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "UserProfileCheckerPort"; ValueData: "{code:GetUserProfileCheckerPort}"; Flags: uninsdeletevalue
@@ -206,9 +218,11 @@ Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "QSYSOPRMonito
 Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "WinFSErrorMonitorPort"; ValueData: "{code:GetWinFSErrorMonitorPort}"; Flags: uninsdeletevalue
 Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "WinFSCardinalityMonitorPort"; ValueData: "{code:GetWinFSCardinalityMonitorPort}"; Flags: uninsdeletevalue
 Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "WinMonitorPort"; ValueData: "{code:GetWinMonitorPort}"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "LogKeywordMonitorPort"; ValueData: "{code:GetLogKeywordMonitorPort}"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "FileMemberMonitorPort"; ValueData: "{code:GetFileMemberMonitorPort}"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "JobDurationMonitorPort"; ValueData: "{code:GetJobDurationMonitorPort}"; Flags: uninsdeletevalue
 Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "WinClientName"; ValueData: "{code:GetWinClientName}"; Flags: uninsdeletevalue
 ; Loki/Promtail settings
-Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstallRole"; ValueData: "{code:GetInstallRole}"; Flags: uninsdeletevalue
 Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "LokiPort"; ValueData: "{code:GetLokiPort}"; Flags: uninsdeletevalue
 Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "LokiDataDir"; ValueData: "{code:GetLokiDataDir}"; Flags: uninsdeletevalue
 Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "LokiHost"; ValueData: "{code:GetLokiHost}"; Flags: uninsdeletevalue
@@ -250,6 +264,9 @@ Type: files; Name: "{app}\services\IPMonitoring_QSYSOPRMonitoring_*.exe"
 Type: files; Name: "{app}\services\IPMonitoring_WinFSErrorMonitor_*.exe"
 Type: files; Name: "{app}\services\IPMonitoring_WinFSCardinalityMonitor_*.exe"
 Type: files; Name: "{app}\services\IPMonitoring_WinMonitor_*.exe"
+Type: files; Name: "{app}\services\IPMonitoring_LogKeywordMonitor_*.exe"
+Type: files; Name: "{app}\services\IPMonitoring_IBMFileMemberMonitor_*.exe"
+Type: files; Name: "{app}\services\IPMonitoring_IBMJobDurationMonitor_*.exe"
 ; Remove generated email.properties files from each monitor folder
 Type: files; Name: "{app}\monitoring-services\*\email.properties"
 ; Remove services folder if empty after file deletion
@@ -268,6 +285,9 @@ Type: dirifempty; Name: "{app}\monitoring-services\QSYSOPRMonitoring"
 Type: dirifempty; Name: "{app}\monitoring-services\WinFSErrorMonitor"
 Type: dirifempty; Name: "{app}\monitoring-services\WinFSCardinalityMonitor"
 Type: dirifempty; Name: "{app}\monitoring-services\WinMonitor"
+Type: dirifempty; Name: "{app}\monitoring-services\LogKeywordMonitor"
+Type: dirifempty; Name: "{app}\monitoring-services\IBMFileMemberMonitor"
+Type: dirifempty; Name: "{app}\monitoring-services\IBMJobDurationMonitor"
 Type: dirifempty; Name: "{app}\monitoring-services"
 ; Remove prometheus and grafana config folders
 Type: dirifempty; Name: "{app}\prometheus"
@@ -314,7 +334,10 @@ var
   ChkNetWorkEnabler, ChkQSYSOPRMonitor: TNewCheckBox;
   ChkWinFSErrorMonitor, ChkWinFSCardinalityMonitor: TNewCheckBox;
   ChkWinMonitor: TNewCheckBox;
-  
+  ChkLogKeywordMonitor: TNewCheckBox;
+  ChkFileMemberMonitor: TNewCheckBox;
+  ChkJobDurationMonitor: TNewCheckBox;
+
   // Windows monitors client name
   WinClientNameEdit: TNewEdit;
   LblWinClientName: TNewStaticText;
@@ -327,7 +350,10 @@ var
   NetWorkEnablerPortEdit, QSYSOPRMonitorPortEdit: TNewEdit;
   WinFSErrorMonitorPortEdit, WinFSCardinalityMonitorPortEdit: TNewEdit;
   WinMonitorPortEdit: TNewEdit;
-  
+  LogKeywordMonitorPortEdit: TNewEdit;
+  FileMemberMonitorPortEdit: TNewEdit;
+  JobDurationMonitorPortEdit: TNewEdit;
+
   // Service ports custom page controls - Labels (for dynamic visibility)
   LblIFSErrorMonitorPort, LblRealTimeIFSMonitorPort: TNewStaticText;
   LblJobQueCountMonitorPort, LblJobQueStatusMonitorPort: TNewStaticText;
@@ -336,7 +362,10 @@ var
   LblNetWorkEnablerPort, LblQSYSOPRMonitorPort: TNewStaticText;
   LblWinFSErrorMonitorPort, LblWinFSCardinalityMonitorPort: TNewStaticText;
   LblWinMonitorPort: TNewStaticText;
-  
+  LblLogKeywordMonitorPort: TNewStaticText;
+  LblFileMemberMonitorPort: TNewStaticText;
+  LblJobDurationMonitorPort: TNewStaticText;
+
   // Email configuration pages - split into multiple clean pages
   EmailAuthMethodPage: TInputOptionWizardPage;
   SmtpConfigPage: TWizardPage;
@@ -583,6 +612,15 @@ begin
 
   // Return empty - client must provide a valid name
   Result := '';
+end;
+
+// Port validation helper: returns True if s is a number in range 1024..65535
+function IsValidPort(const s: string): Boolean;
+var
+  p: Integer;
+begin
+  p := StrToIntDef(Trim(s), -1);
+  Result := (p >= 1024) and (p <= 65535);
 end;
 
 // Registry helper function
@@ -894,44 +932,85 @@ begin
   if ChkWinMonitor.Checked then Result := 'true' else Result := 'false';
 end;
 
+function GetInstalledLogKeywordMonitor(Param: string): string;
+begin
+  if ChkLogKeywordMonitor.Checked then Result := 'true' else Result := 'false';
+end;
+
+function GetInstalledFileMemberMonitor(Param: string): string;
+begin
+  if ChkFileMemberMonitor.Checked then Result := 'true' else Result := 'false';
+end;
+
+function GetInstalledJobDurationMonitor(Param: string): string;
+begin
+  if ChkJobDurationMonitor.Checked then Result := 'true' else Result := 'false';
+end;
+
 function GetSubSystemMonitorPort(Param: string): string;
 begin
   Result := SubSystemMonitorPortEdit.Text;
+  if Result = '' then Result := '3015';
 end;
 
 function GetSystemMatrixPort(Param: string): string;
 begin
   Result := SystemMatrixPortEdit.Text;
+  if Result = '' then Result := '3016';
 end;
 
 function GetUserProfileCheckerPort(Param: string): string;
 begin
   Result := UserProfileCheckerPortEdit.Text;
+  if Result = '' then Result := '3017';
 end;
 
 function GetNetWorkEnablerPort(Param: string): string;
 begin
   Result := NetWorkEnablerPortEdit.Text;
+  if Result = '' then Result := '3018';
 end;
 
 function GetQSYSOPRMonitorPort(Param: string): string;
 begin
   Result := QSYSOPRMonitorPortEdit.Text;
+  if Result = '' then Result := '3019';
 end;
 
 function GetWinFSErrorMonitorPort(Param: string): string;
 begin
   Result := WinFSErrorMonitorPortEdit.Text;
+  if Result = '' then Result := '3020';
 end;
 
 function GetWinFSCardinalityMonitorPort(Param: string): string;
 begin
   Result := WinFSCardinalityMonitorPortEdit.Text;
+  if Result = '' then Result := '3021';
 end;
 
 function GetWinMonitorPort(Param: string): string;
 begin
   Result := WinMonitorPortEdit.Text;
+  if Result = '' then Result := '3022';
+end;
+
+function GetLogKeywordMonitorPort(Param: string): string;
+begin
+  Result := LogKeywordMonitorPortEdit.Text;
+  if Result = '' then Result := '3023';
+end;
+
+function GetFileMemberMonitorPort(Param: string): string;
+begin
+  Result := FileMemberMonitorPortEdit.Text;
+  if Result = '' then Result := '3024';
+end;
+
+function GetJobDurationMonitorPort(Param: string): string;
+begin
+  Result := JobDurationMonitorPortEdit.Text;
+  if Result = '' then Result := '3025';
 end;
 
 function GetWinClientName(Param: string): string;
@@ -1121,6 +1200,21 @@ begin
   Result := ChkWinMonitor.Checked;
 end;
 
+function IsLogKeywordMonitorSelected: Boolean;
+begin
+  Result := ChkLogKeywordMonitor.Checked;
+end;
+
+function IsFileMemberMonitorSelected: Boolean;
+begin
+  Result := ChkFileMemberMonitor.Checked;
+end;
+
+function IsJobDurationMonitorSelected: Boolean;
+begin
+  Result := ChkJobDurationMonitor.Checked;
+end;
+
 // ===== UI HELPER FUNCTIONS FOR CONSISTENT STYLING =====
 
 function CreateSectionHeader(Page: TWizardPage; Caption: string; var TopPos: Integer): TNewStaticText;
@@ -1206,7 +1300,10 @@ begin
                          WasServiceInstalled('InstalledQSYSOPRMonitor', 'IPMonitoring_QSYSOPRMonitoring') or
                          WasServiceInstalled('InstalledWinFSErrorMonitor', 'IPMonitoring_WinFSErrorMonitor') or
                          WasServiceInstalled('InstalledWinFSCardinalityMonitor', 'IPMonitoring_WinFSCardinalityMonitor') or
-                         WasServiceInstalled('InstalledWinMonitor', 'IPMonitoring_WinMonitor');
+                         WasServiceInstalled('InstalledWinMonitor', 'IPMonitoring_WinMonitor') or
+                         WasServiceInstalled('InstalledLogKeywordMonitor', 'IPMonitoring_LogKeywordMonitor') or
+                         WasServiceInstalled('InstalledFileMemberMonitor', 'IPMonitoring_IBMFileMemberMonitor') or
+                         WasServiceInstalled('InstalledJobDurationMonitor', 'IPMonitoring_IBMJobDurationMonitor');
 
   TopPos := 8;
   
@@ -1357,19 +1454,7 @@ begin
   ChkJobQueStatusMonitor.Checked := WasServiceInstalled('InstalledJobQueStatusMonitor', 'IPMonitoring_IBMJobQueStatusMonitor');
   
   TopPos := TopPos + 28;
-  
-  // Server UpTime Monitor
-  ChkServerUpTimeMonitor := TNewCheckBox.Create(Page);
-  ChkServerUpTimeMonitor.Parent := Page.Surface;
-  ChkServerUpTimeMonitor.Caption := 'Server UpTime Monitor - Tracks system availability';
-  ChkServerUpTimeMonitor.Left := 20;
-  ChkServerUpTimeMonitor.Top := TopPos;
-  ChkServerUpTimeMonitor.Width := Page.SurfaceWidth - 30;
-  ChkServerUpTimeMonitor.Height := 21;
-  ChkServerUpTimeMonitor.Checked := WasServiceInstalled('InstalledServerUpTimeMonitor', 'IPMonitoring_ServerUpTimeMonitor');
-  
-  TopPos := TopPos + 28;
-  
+
   // IBM SubSystem Monitoring
   ChkSubSystemMonitor := TNewCheckBox.Create(Page);
   ChkSubSystemMonitor.Parent := Page.Surface;
@@ -1427,6 +1512,30 @@ begin
   ChkQSYSOPRMonitor.Width := Page.SurfaceWidth - 30;
   ChkQSYSOPRMonitor.Height := 21;
   ChkQSYSOPRMonitor.Checked := WasServiceInstalled('InstalledQSYSOPRMonitor', 'IPMonitoring_QSYSOPRMonitoring');
+
+  TopPos := TopPos + 28;
+
+  // IBM File Member Monitor
+  ChkFileMemberMonitor := TNewCheckBox.Create(Page);
+  ChkFileMemberMonitor.Parent := Page.Surface;
+  ChkFileMemberMonitor.Caption := 'IBM File Member Monitor - Monitors IBM i file member counts';
+  ChkFileMemberMonitor.Left := 20;
+  ChkFileMemberMonitor.Top := TopPos;
+  ChkFileMemberMonitor.Width := Page.SurfaceWidth - 30;
+  ChkFileMemberMonitor.Height := 21;
+  ChkFileMemberMonitor.Checked := WasServiceInstalled('InstalledFileMemberMonitor', 'IPMonitoring_IBMFileMemberMonitor');
+
+  TopPos := TopPos + 28;
+
+  // IBM Job Duration Monitor
+  ChkJobDurationMonitor := TNewCheckBox.Create(Page);
+  ChkJobDurationMonitor.Parent := Page.Surface;
+  ChkJobDurationMonitor.Caption := 'IBM Job Duration Monitor - Monitors IBM i job run durations';
+  ChkJobDurationMonitor.Left := 20;
+  ChkJobDurationMonitor.Top := TopPos;
+  ChkJobDurationMonitor.Width := Page.SurfaceWidth - 30;
+  ChkJobDurationMonitor.Height := 21;
+  ChkJobDurationMonitor.Checked := WasServiceInstalled('InstalledJobDurationMonitor', 'IPMonitoring_IBMJobDurationMonitor');
 end;
 
 // ===== WINDOWS MONITORS PAGE CONTROLS =====
@@ -1441,7 +1550,19 @@ begin
   EditWidth := ScaleX(200);
 
   TopPos := ScaleY(8);
-  
+
+  // Server UpTime Monitor (moved here - does not require IBM i connection)
+  ChkServerUpTimeMonitor := TNewCheckBox.Create(Page);
+  ChkServerUpTimeMonitor.Parent := Page.Surface;
+  ChkServerUpTimeMonitor.Caption := 'Server UpTime Monitor - Tracks system availability';
+  ChkServerUpTimeMonitor.Left := LeftMargin;
+  ChkServerUpTimeMonitor.Top := TopPos;
+  ChkServerUpTimeMonitor.Width := CheckWidth;
+  ChkServerUpTimeMonitor.Height := ScaleY(21);
+  ChkServerUpTimeMonitor.Checked := WasServiceInstalled('InstalledServerUpTimeMonitor', 'IPMonitoring_ServerUpTimeMonitor');
+
+  TopPos := TopPos + ScaleY(28);
+
   // Windows FS Error Monitor
   ChkWinFSErrorMonitor := TNewCheckBox.Create(Page);
   ChkWinFSErrorMonitor.Parent := Page.Surface;
@@ -1475,9 +1596,21 @@ begin
   ChkWinMonitor.Width := CheckWidth;
   ChkWinMonitor.Height := ScaleY(21);
   ChkWinMonitor.Checked := WasServiceInstalled('InstalledWinMonitor', 'IPMonitoring_WinMonitor');
-  
+
+  TopPos := TopPos + ScaleY(28);
+
+  // Log Keyword Monitor
+  ChkLogKeywordMonitor := TNewCheckBox.Create(Page);
+  ChkLogKeywordMonitor.Parent := Page.Surface;
+  ChkLogKeywordMonitor.Caption := 'Log Keyword Monitor - Scans log files for keyword patterns';
+  ChkLogKeywordMonitor.Left := LeftMargin;
+  ChkLogKeywordMonitor.Top := TopPos;
+  ChkLogKeywordMonitor.Width := CheckWidth;
+  ChkLogKeywordMonitor.Height := ScaleY(21);
+  ChkLogKeywordMonitor.Checked := WasServiceInstalled('InstalledLogKeywordMonitor', 'IPMonitoring_LogKeywordMonitor');
+
   TopPos := TopPos + ScaleY(40);
-  
+
   // Windows Client Name (identifies which server/client is being monitored)
   LblWinClientName := TNewStaticText.Create(Page);
   LblWinClientName.Parent := Page.Surface;
@@ -1874,6 +2007,87 @@ begin
   WinMonitorPortEdit.Width := EditWidth;
   WinMonitorPortEdit.Height := 23;
   WinMonitorPortEdit.Text := DefaultPort;
+
+  TopPos := TopPos + 32;
+
+  // Log Keyword Monitor Port
+  LblLogKeywordMonitorPort := TNewStaticText.Create(Page);
+  LblLogKeywordMonitorPort.Parent := Page.Surface;
+  LblLogKeywordMonitorPort.Caption := 'Log Keyword Monitor Port:';
+  LblLogKeywordMonitorPort.Left := 0;
+  LblLogKeywordMonitorPort.Top := TopPos + 3;
+  LblLogKeywordMonitorPort.Width := LabelWidth;
+
+  DefaultPort := GetClientRegistryValue('LogKeywordMonitorPort', '');
+  if DefaultPort = '' then
+  begin
+    if (ClientInstanceId <> '') and CheckClientExists(ClientInstanceId) then
+      DefaultPort := '3023'
+    else
+      DefaultPort := GetOffsetPort(3023);
+  end;
+
+  LogKeywordMonitorPortEdit := TNewEdit.Create(Page);
+  LogKeywordMonitorPortEdit.Parent := Page.Surface;
+  LogKeywordMonitorPortEdit.Left := EditLeft;
+  LogKeywordMonitorPortEdit.Top := TopPos;
+  LogKeywordMonitorPortEdit.Width := EditWidth;
+  LogKeywordMonitorPortEdit.Height := 23;
+  LogKeywordMonitorPortEdit.Text := DefaultPort;
+
+  TopPos := TopPos + 32;
+
+  // IBM File Member Monitor Port
+  LblFileMemberMonitorPort := TNewStaticText.Create(Page);
+  LblFileMemberMonitorPort.Parent := Page.Surface;
+  LblFileMemberMonitorPort.Caption := 'IBM File Member Monitor Port:';
+  LblFileMemberMonitorPort.Left := 0;
+  LblFileMemberMonitorPort.Top := TopPos + 3;
+  LblFileMemberMonitorPort.Width := LabelWidth;
+
+  DefaultPort := GetClientRegistryValue('FileMemberMonitorPort', '');
+  if DefaultPort = '' then
+  begin
+    if (ClientInstanceId <> '') and CheckClientExists(ClientInstanceId) then
+      DefaultPort := '3024'
+    else
+      DefaultPort := GetOffsetPort(3024);
+  end;
+
+  FileMemberMonitorPortEdit := TNewEdit.Create(Page);
+  FileMemberMonitorPortEdit.Parent := Page.Surface;
+  FileMemberMonitorPortEdit.Left := EditLeft;
+  FileMemberMonitorPortEdit.Top := TopPos;
+  FileMemberMonitorPortEdit.Width := EditWidth;
+  FileMemberMonitorPortEdit.Height := 23;
+  FileMemberMonitorPortEdit.Text := DefaultPort;
+
+  TopPos := TopPos + 32;
+
+  // IBM Job Duration Monitor Port
+  LblJobDurationMonitorPort := TNewStaticText.Create(Page);
+  LblJobDurationMonitorPort.Parent := Page.Surface;
+  LblJobDurationMonitorPort.Caption := 'IBM Job Duration Monitor Port:';
+  LblJobDurationMonitorPort.Left := 0;
+  LblJobDurationMonitorPort.Top := TopPos + 3;
+  LblJobDurationMonitorPort.Width := LabelWidth;
+
+  DefaultPort := GetClientRegistryValue('JobDurationMonitorPort', '');
+  if DefaultPort = '' then
+  begin
+    if (ClientInstanceId <> '') and CheckClientExists(ClientInstanceId) then
+      DefaultPort := '3025'
+    else
+      DefaultPort := GetOffsetPort(3025);
+  end;
+
+  JobDurationMonitorPortEdit := TNewEdit.Create(Page);
+  JobDurationMonitorPortEdit.Parent := Page.Surface;
+  JobDurationMonitorPortEdit.Left := EditLeft;
+  JobDurationMonitorPortEdit.Top := TopPos;
+  JobDurationMonitorPortEdit.Width := EditWidth;
+  JobDurationMonitorPortEdit.Height := 23;
+  JobDurationMonitorPortEdit.Text := DefaultPort;
 end;
 
 // ===== LOG AGENT (PROMTAIL) CONFIGURATION CONTROLS =====
@@ -2155,6 +2369,10 @@ begin
 end;
 
 function InitializeSetup(): Boolean;
+var
+  TempFile, JavaOut, VerTok: string;
+  JavaOutAnsi: AnsiString;
+  ResultCode, P, MajVer: Integer;
 begin
   // NOTE: ClientInstanceId is now initialized directly in GetClientInstanceId
   // which is called from [Setup] section before this function runs.
@@ -2165,6 +2383,49 @@ begin
     MsgBox('64-bit Windows required.', mbCriticalError, MB_OK);
     Result := False;
     Exit;
+  end;
+
+  // Check Java 17+
+  TempFile := ExpandConstant('{tmp}\javacheck.txt');
+  if Exec(ExpandConstant('{cmd}'), '/C java -version > "' + TempFile + '" 2>&1',
+      '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and
+     LoadStringFromFile(TempFile, JavaOutAnsi) then
+  begin
+    DeleteFile(TempFile);
+    JavaOut := String(JavaOutAnsi);
+    P := Pos('"', JavaOut);
+    if P > 0 then
+    begin
+      JavaOut := Copy(JavaOut, P + 1, Length(JavaOut));
+      P := Pos('"', JavaOut);
+      if P > 0 then VerTok := Copy(JavaOut, 1, P - 1);
+    end;
+    if Pos('1.', VerTok) = 1 then
+      MajVer := 8  // old-style 1.x = Java 8 or earlier
+    else
+    begin
+      P := Pos('.', VerTok);
+      if P > 0 then MajVer := StrToIntDef(Copy(VerTok, 1, P - 1), 0)
+      else MajVer := StrToIntDef(VerTok, 0);
+    end;
+    if MajVer < 17 then
+    begin
+      MsgBox('Java 17 or later is required. Found: Java ' + IntToStr(MajVer) + #13#10 +
+             'Please install JDK 17+ and try again.', mbCriticalError, MB_OK);
+      Result := False;
+      Exit;
+    end;
+  end
+  else
+  begin
+    DeleteFile(TempFile);
+    if MsgBox('Java was not found in PATH. The monitoring services require Java 17+.' + #13#10#13#10 +
+              'Continue installation? (You must install Java 17+ before starting the services.)',
+              mbConfirmation, MB_YESNO) = IDNO then
+    begin
+      Result := False;
+      Exit;
+    end;
   end;
   // Detect if this is an upgrade (previous installation exists)
   IsUpgrade := CheckIsUpgrade;
@@ -2252,7 +2513,10 @@ begin
     Exec('sc.exe', 'stop IPMonitoring_NetWorkEnabler' + ClientSuffix, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
     Exec('sc.exe', 'stop IPMonitoring_QSYSOPRMonitoring' + ClientSuffix, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
     Exec('sc.exe', 'stop IPMonitoring_WinMonitor' + ClientSuffix, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-    
+    Exec('sc.exe', 'stop IPMonitoring_LogKeywordMonitor' + ClientSuffix, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Exec('sc.exe', 'stop IPMonitoring_IBMFileMemberMonitor' + ClientSuffix, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Exec('sc.exe', 'stop IPMonitoring_IBMJobDurationMonitor' + ClientSuffix, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+
     // Also try legacy non-suffixed names for backward compatibility with older installs
     if IsUpgrade then
     begin
@@ -2271,6 +2535,9 @@ begin
       Exec('sc.exe', 'stop IPMonitoring_NetWorkEnabler', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
       Exec('sc.exe', 'stop IPMonitoring_QSYSOPRMonitoring', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
       Exec('sc.exe', 'stop IPMonitoring_WinMonitor', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+      Exec('sc.exe', 'stop IPMonitoring_LogKeywordMonitor', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+      Exec('sc.exe', 'stop IPMonitoring_IBMFileMemberMonitor', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+      Exec('sc.exe', 'stop IPMonitoring_IBMJobDurationMonitor', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
     end;
   end
   else if IsWinAgentRole then
@@ -2314,6 +2581,9 @@ begin
   WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\NetWorkEnabler\NetWorkEnabler.jar'), 15, 1000);
   WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\QSYSOPRMonitoring\QSYSOPRMonitoring.jar'), 15, 1000);
   WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\WinMonitor\WinMonitor.jar'), 15, 1000);
+  WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\LogKeywordMonitor\LogKeywordMonitor.jar'), 15, 1000);
+  WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\IBMFileMemberMonitor\IBMFileMemberMonitor.jar'), 15, 1000);
+  WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\IBMJobDurationMonitor\IBMJobDurationMonitor.jar'), 15, 1000);
 
   // Per-file retry/backoff for service executables
   WaitForFileUnlock(ExpandConstant('{app}\services\IPMonitoring_IBMIFSErrorMonitor.exe'), 8, 500);
@@ -2327,6 +2597,9 @@ begin
   WaitForFileUnlock(ExpandConstant('{app}\services\IPMonitoring_NetWorkEnabler.exe'), 8, 500);
   WaitForFileUnlock(ExpandConstant('{app}\services\IPMonitoring_QSYSOPRMonitoring.exe'), 8, 500);
   WaitForFileUnlock(ExpandConstant('{app}\services\IPMonitoring_WinMonitor.exe'), 8, 500);
+  WaitForFileUnlock(ExpandConstant('{app}\services\IPMonitoring_LogKeywordMonitor.exe'), 8, 500);
+  WaitForFileUnlock(ExpandConstant('{app}\services\IPMonitoring_IBMFileMemberMonitor.exe'), 8, 500);
+  WaitForFileUnlock(ExpandConstant('{app}\services\IPMonitoring_IBMJobDurationMonitor.exe'), 8, 500);
 end;
 
 function IsPortInUse(Port: string): Boolean;
@@ -2406,6 +2679,9 @@ begin
   WinFSErrorMonitorPortEdit.Text := GetClientRegistryValue('WinFSErrorMonitorPort', WinFSErrorMonitorPortEdit.Text);
   WinFSCardinalityMonitorPortEdit.Text := GetClientRegistryValue('WinFSCardinalityMonitorPort', WinFSCardinalityMonitorPortEdit.Text);
   WinMonitorPortEdit.Text := GetClientRegistryValue('WinMonitorPort', WinMonitorPortEdit.Text);
+  LogKeywordMonitorPortEdit.Text := GetClientRegistryValue('LogKeywordMonitorPort', LogKeywordMonitorPortEdit.Text);
+  FileMemberMonitorPortEdit.Text := GetClientRegistryValue('FileMemberMonitorPort', FileMemberMonitorPortEdit.Text);
+  JobDurationMonitorPortEdit.Text := GetClientRegistryValue('JobDurationMonitorPort', JobDurationMonitorPortEdit.Text);
 
   // IBM i connection
   IBMiConfigPage.Values[0] := GetClientRegistryValue('IBMiServer', IBMiConfigPage.Values[0]);
@@ -2466,6 +2742,9 @@ begin
   ChkWinFSErrorMonitor.Checked := WasServiceInstalled('InstalledWinFSErrorMonitor', 'IPMonitoring_WinFSErrorMonitor');
   ChkWinFSCardinalityMonitor.Checked := WasServiceInstalled('InstalledWinFSCardinalityMonitor', 'IPMonitoring_WinFSCardinalityMonitor');
   ChkWinMonitor.Checked := WasServiceInstalled('InstalledWinMonitor', 'IPMonitoring_WinMonitor');
+  ChkLogKeywordMonitor.Checked := WasServiceInstalled('InstalledLogKeywordMonitor', 'IPMonitoring_LogKeywordMonitor');
+  ChkFileMemberMonitor.Checked := WasServiceInstalled('InstalledFileMemberMonitor', 'IPMonitoring_IBMFileMemberMonitor');
+  ChkJobDurationMonitor.Checked := WasServiceInstalled('InstalledJobDurationMonitor', 'IPMonitoring_IBMJobDurationMonitor');
 end;
 
 procedure UpdatePrometheusYaml(Port: string); forward;
@@ -2586,7 +2865,7 @@ begin
 
   // ===== WINDOWS MONITORS PAGE =====
   WindowsMonitorsPage := CreateCustomPage(IBMiMonitorsPage.ID,
-    'Windows File System Monitors', 'Select Windows monitoring services to install:'#13#10 +
+    'Windows & General Monitors', 'Select Windows and general monitoring services to install:'#13#10 +
     '(Each monitor is independent per client. Metrics are scraped by the shared central Prometheus)');
   CreateWindowsMonitorsControls(WindowsMonitorsPage);
 
@@ -2783,7 +3062,11 @@ begin
             ChkNetWorkEnabler.Checked or
             ChkQSYSOPRMonitor.Checked or
             ChkWinFSErrorMonitor.Checked or
-            ChkWinFSCardinalityMonitor.Checked;
+            ChkWinFSCardinalityMonitor.Checked or
+            ChkWinMonitor.Checked or
+            ChkLogKeywordMonitor.Checked or
+            ChkFileMemberMonitor.Checked or
+            ChkJobDurationMonitor.Checked;
 end;
 
 function NeedsIBMiConfig: Boolean;
@@ -2797,7 +3080,9 @@ begin
             ChkSubSystemMonitor.Checked or
             ChkSystemMatrix.Checked or
             ChkUserProfileChecker.Checked or
-            ChkQSYSOPRMonitor.Checked;
+            ChkQSYSOPRMonitor.Checked or
+            ChkFileMemberMonitor.Checked or
+            ChkJobDurationMonitor.Checked;
 end;
 
 function NeedsEmailConfig: Boolean;
@@ -2814,7 +3099,11 @@ begin
             ChkNetWorkEnabler.Checked or
             ChkQSYSOPRMonitor.Checked or
             ChkWinFSErrorMonitor.Checked or
-            ChkWinFSCardinalityMonitor.Checked;
+            ChkWinFSCardinalityMonitor.Checked or
+            ChkWinMonitor.Checked or
+            ChkLogKeywordMonitor.Checked or
+            ChkFileMemberMonitor.Checked or
+            ChkJobDurationMonitor.Checked;
 end;
 
 function IsSmtpAuthSelected: Boolean;
@@ -2991,13 +3280,36 @@ begin
     else
       S := S + Space + '• Windows FS Cardinality Monitor (Port ' + WinFSCardinalityMonitorPortEdit.Text + ') - Install' + NewLine;
   end;
-  
-  if not (ChkIFSErrorMonitor.Checked or ChkRealTimeIFSMonitor.Checked or 
-          ChkJobQueCountMonitor.Checked or ChkJobQueStatusMonitor.Checked or 
+  if ChkLogKeywordMonitor.Checked then
+  begin
+    if WasServiceInstalled('InstalledLogKeywordMonitor', 'IPMonitoring_LogKeywordMonitor') then
+      S := S + Space + '• Log Keyword Monitor (Port ' + LogKeywordMonitorPortEdit.Text + ') - Upgrade' + NewLine
+    else
+      S := S + Space + '• Log Keyword Monitor (Port ' + LogKeywordMonitorPortEdit.Text + ') - Install' + NewLine;
+  end;
+  if ChkFileMemberMonitor.Checked then
+  begin
+    if WasServiceInstalled('InstalledFileMemberMonitor', 'IPMonitoring_IBMFileMemberMonitor') then
+      S := S + Space + '• IBM File Member Monitor (Port ' + FileMemberMonitorPortEdit.Text + ') - Upgrade' + NewLine
+    else
+      S := S + Space + '• IBM File Member Monitor (Port ' + FileMemberMonitorPortEdit.Text + ') - Install' + NewLine;
+  end;
+  if ChkJobDurationMonitor.Checked then
+  begin
+    if WasServiceInstalled('InstalledJobDurationMonitor', 'IPMonitoring_IBMJobDurationMonitor') then
+      S := S + Space + '• IBM Job Duration Monitor (Port ' + JobDurationMonitorPortEdit.Text + ') - Upgrade' + NewLine
+    else
+      S := S + Space + '• IBM Job Duration Monitor (Port ' + JobDurationMonitorPortEdit.Text + ') - Install' + NewLine;
+  end;
+
+  if not (ChkIFSErrorMonitor.Checked or ChkRealTimeIFSMonitor.Checked or
+          ChkJobQueCountMonitor.Checked or ChkJobQueStatusMonitor.Checked or
           ChkServerUpTimeMonitor.Checked or ChkSubSystemMonitor.Checked or
           ChkSystemMatrix.Checked or ChkUserProfileChecker.Checked or
           ChkNetWorkEnabler.Checked or ChkQSYSOPRMonitor.Checked or
-          ChkWinFSErrorMonitor.Checked or ChkWinFSCardinalityMonitor.Checked) then
+          ChkWinFSErrorMonitor.Checked or ChkWinFSCardinalityMonitor.Checked or
+          ChkWinMonitor.Checked or ChkLogKeywordMonitor.Checked or
+          ChkFileMemberMonitor.Checked or ChkJobDurationMonitor.Checked) then
     S := S + Space + '(None selected)' + NewLine;
   S := S + NewLine;
   
@@ -3032,9 +3344,9 @@ begin
   if (InstallModePage <> nil) and (PageID = InstallModePage.ID) then
     Result := IsFirstInstallation or IsLogAgentRole or IsWinAgentRole;
   
-  // Skip client instance page for Log Agent and WinAgent installs
+  // Skip client instance page for Log Agent only (WinAgent needs it for multi-client support)
   if PageID = ClientInstancePage.ID then
-    Result := IsLogAgentRole or IsWinAgentRole;
+    Result := IsLogAgentRole;
   
   // Skip Loki config page if not Monitoring Server role OR if Loki not selected
   if PageID = LokiConfigPage.ID then
@@ -3055,7 +3367,7 @@ begin
   
   // Windows Monitors Page: Only for Windows File Agent role
   if PageID = WindowsMonitorsPage.ID then
-    Result := not IsWinAgentRole;  // Hide for Monitoring/LogAgent roles
+    Result := not IsWinAgentRole;  // Show only for WinAgent role
   
   // Skip config page if neither Prometheus nor Grafana selected OR if using existing installation OR if Log Agent/WinAgent role
   if PageID = ConfigPage.ID then
@@ -3278,12 +3590,71 @@ begin
     LblWinFSCardinalityMonitorPort.Top := TopPos + 3;
     WinFSCardinalityMonitorPortEdit.Visible := True;
     WinFSCardinalityMonitorPortEdit.Top := TopPos;
-    // TopPos := TopPos + RowHeight; // Last item, no need to increment
+    TopPos := TopPos + RowHeight;
   end
   else
   begin
     LblWinFSCardinalityMonitorPort.Visible := False;
     WinFSCardinalityMonitorPortEdit.Visible := False;
+  end;
+
+  // 13. Windows System Monitor
+  if ChkWinMonitor.Checked then
+  begin
+    LblWinMonitorPort.Visible := True;
+    LblWinMonitorPort.Top := TopPos + 3;
+    WinMonitorPortEdit.Visible := True;
+    WinMonitorPortEdit.Top := TopPos;
+    TopPos := TopPos + RowHeight;
+  end
+  else
+  begin
+    LblWinMonitorPort.Visible := False;
+    WinMonitorPortEdit.Visible := False;
+  end;
+
+  // 14. Log Keyword Monitor
+  if ChkLogKeywordMonitor.Checked then
+  begin
+    LblLogKeywordMonitorPort.Visible := True;
+    LblLogKeywordMonitorPort.Top := TopPos + 3;
+    LogKeywordMonitorPortEdit.Visible := True;
+    LogKeywordMonitorPortEdit.Top := TopPos;
+    TopPos := TopPos + RowHeight;
+  end
+  else
+  begin
+    LblLogKeywordMonitorPort.Visible := False;
+    LogKeywordMonitorPortEdit.Visible := False;
+  end;
+
+  // 15. IBM File Member Monitor
+  if ChkFileMemberMonitor.Checked then
+  begin
+    LblFileMemberMonitorPort.Visible := True;
+    LblFileMemberMonitorPort.Top := TopPos + 3;
+    FileMemberMonitorPortEdit.Visible := True;
+    FileMemberMonitorPortEdit.Top := TopPos;
+    TopPos := TopPos + RowHeight;
+  end
+  else
+  begin
+    LblFileMemberMonitorPort.Visible := False;
+    FileMemberMonitorPortEdit.Visible := False;
+  end;
+
+  // 16. IBM Job Duration Monitor
+  if ChkJobDurationMonitor.Checked then
+  begin
+    LblJobDurationMonitorPort.Visible := True;
+    LblJobDurationMonitorPort.Top := TopPos + 3;
+    JobDurationMonitorPortEdit.Visible := True;
+    JobDurationMonitorPortEdit.Top := TopPos;
+  end
+  else
+  begin
+    LblJobDurationMonitorPort.Visible := False;
+    JobDurationMonitorPortEdit.Visible := False;
   end;
 end;
 
@@ -3382,8 +3753,8 @@ begin
   GrafPort := ConfigPage.Values[1];
   
   // Build array of selected monitor ports
-  SetArrayLength(Ports, 12);
-  SetArrayLength(PortNames, 12);
+  SetArrayLength(Ports, 16);
+  SetArrayLength(PortNames, 16);
   
   if ChkIFSErrorMonitor.Checked then begin
     Ports[Count] := IFSErrorMonitorPortEdit.Text;
@@ -3445,7 +3816,27 @@ begin
     PortNames[Count] := 'Windows FS Cardinality Monitor';
     Count := Count + 1;
   end;
-  
+  if ChkWinMonitor.Checked then begin
+    Ports[Count] := WinMonitorPortEdit.Text;
+    PortNames[Count] := 'Windows System Monitor';
+    Count := Count + 1;
+  end;
+  if ChkLogKeywordMonitor.Checked then begin
+    Ports[Count] := LogKeywordMonitorPortEdit.Text;
+    PortNames[Count] := 'Log Keyword Monitor';
+    Count := Count + 1;
+  end;
+  if ChkFileMemberMonitor.Checked then begin
+    Ports[Count] := FileMemberMonitorPortEdit.Text;
+    PortNames[Count] := 'IBM File Member Monitor';
+    Count := Count + 1;
+  end;
+  if ChkJobDurationMonitor.Checked then begin
+    Ports[Count] := JobDurationMonitorPortEdit.Text;
+    PortNames[Count] := 'IBM Job Duration Monitor';
+    Count := Count + 1;
+  end;
+
   // Check monitor ports against Prometheus/Grafana/Loki
   for i := 0 to Count - 1 do
   begin
@@ -3530,8 +3921,11 @@ begin
     // For WinAgent role, auto-select WinFS monitors and deselect everything else
     if IsWinAgentRole then
     begin
-      // Use computer name or 'WinAgent' as default for WinAgent installations
+      // Pre-fill Client Instance page with 'WinAgent' as default (user can customize for multi-agent installs)
       ClientInstanceId := 'WinAgent';
+      ClientInstancePage.Values[0] := 'WinAgent';
+      ClientInstancePage.Edits[0].Enabled := True;
+      ClientInstancePage.Edits[0].Color := clWindow;
       
       // Deselect core components (not needed for agent mode)
       ChkPrometheus.Checked := False;
@@ -3550,7 +3944,9 @@ begin
       ChkUserProfileChecker.Checked := False;
       ChkNetWorkEnabler.Checked := False;
       ChkQSYSOPRMonitor.Checked := False;
-      
+      ChkFileMemberMonitor.Checked := False;
+      ChkJobDurationMonitor.Checked := False;
+
       // Auto-select Windows FS monitors
       ChkWinFSErrorMonitor.Checked := True;
       ChkWinFSCardinalityMonitor.Checked := True;
@@ -3640,6 +4036,10 @@ begin
     ChkQSYSOPRMonitor.Checked := False;
     ChkWinFSErrorMonitor.Checked := False;
     ChkWinFSCardinalityMonitor.Checked := False;
+    ChkWinMonitor.Checked := False;
+    ChkLogKeywordMonitor.Checked := False;
+    ChkFileMemberMonitor.Checked := False;
+    ChkJobDurationMonitor.Checked := False;
   end;
   
   // Validate Client Instance Page
@@ -3719,7 +4119,6 @@ begin
                               ChkRealTimeIFSMonitor.Checked or
                               ChkJobQueCountMonitor.Checked or
                               ChkJobQueStatusMonitor.Checked or
-                              ChkServerUpTimeMonitor.Checked or
                               ChkSubSystemMonitor.Checked or
                               ChkSystemMatrix.Checked or
                               ChkUserProfileChecker.Checked or
@@ -3744,89 +4143,119 @@ begin
     end;
   end;
   
-  // Skip port validation on upgrade - ports are already in use by our services
+  // Validate Prometheus/Grafana ports
   if CurPageID = ConfigPage.ID then
   begin
-    // Check Prometheus port if checks are enabled (new install or port changed)
-    if ChkPrometheus.Checked and ((not IsUpgrade) or (ConfigPage.Values[0] <> OldPrometheusPort)) and IsPortInUse(ConfigPage.Values[0]) then
+    if ChkPrometheus.Checked then
     begin
-      MsgBox('Prometheus port ' + ConfigPage.Values[0] + ' is already in use.', mbError, MB_OK);
-      Result := False;
-    end
-    // Check Grafana port if checks are enabled (new install or port changed)
-    else if ChkGrafana.Checked and ((not IsUpgrade) or (ConfigPage.Values[1] <> GetClientRegistryValue('GrafanaPort', '3000'))) and IsPortInUse(ConfigPage.Values[1]) then
+      if not IsValidPort(ConfigPage.Values[0]) then
+      begin
+        MsgBox('Prometheus port must be a number between 1024 and 65535.', mbError, MB_OK);
+        Result := False;
+        Exit;
+      end
+      else if (not IsUpgrade) or (ConfigPage.Values[0] <> OldPrometheusPort) then
+      begin
+        if IsPortInUse(ConfigPage.Values[0]) then
+        begin
+          MsgBox('Prometheus port ' + ConfigPage.Values[0] + ' is already in use.', mbError, MB_OK);
+          Result := False;
+          Exit;
+        end;
+      end;
+    end;
+    if Result and ChkGrafana.Checked then
     begin
-      MsgBox('Grafana port ' + ConfigPage.Values[1] + ' is already in use.', mbError, MB_OK);
-      Result := False;
+      if not IsValidPort(ConfigPage.Values[1]) then
+      begin
+        MsgBox('Grafana port must be a number between 1024 and 65535.', mbError, MB_OK);
+        Result := False;
+        Exit;
+      end
+      else if (not IsUpgrade) or (ConfigPage.Values[1] <> GetClientRegistryValue('GrafanaPort', '3000')) then
+      begin
+        if IsPortInUse(ConfigPage.Values[1]) then
+        begin
+          MsgBox('Grafana port ' + ConfigPage.Values[1] + ' is already in use.', mbError, MB_OK);
+          Result := False;
+          Exit;
+        end;
+      end;
     end;
   end;
   
-  // Validate monitor service ports (only for selected monitors, skip on upgrade)
+  // Validate monitor service ports (only for selected monitors)
   if CurPageID = ServicePortsPage.ID then
   begin
-    // Validate monitor service ports (check if new install OR if port changed)
+    // Step 1: validate format/range for every selected port before any in-use checks
+    if ChkIFSErrorMonitor.Checked and not IsValidPort(IFSErrorMonitorPortEdit.Text) then
+    begin MsgBox('IFS Error Monitor port must be a number between 1024 and 65535.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkRealTimeIFSMonitor.Checked and not IsValidPort(RealTimeIFSMonitorPortEdit.Text) then
+    begin MsgBox('Real-Time IFS Monitor port must be a number between 1024 and 65535.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkJobQueCountMonitor.Checked and not IsValidPort(JobQueCountMonitorPortEdit.Text) then
+    begin MsgBox('Job Queue Count Monitor port must be a number between 1024 and 65535.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkJobQueStatusMonitor.Checked and not IsValidPort(JobQueStatusMonitorPortEdit.Text) then
+    begin MsgBox('Job Queue Status Monitor port must be a number between 1024 and 65535.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkServerUpTimeMonitor.Checked and not IsValidPort(ServerUpTimeMonitorPortEdit.Text) then
+    begin MsgBox('Server UpTime Monitor port must be a number between 1024 and 65535.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkSubSystemMonitor.Checked and not IsValidPort(SubSystemMonitorPortEdit.Text) then
+    begin MsgBox('SubSystem Monitor port must be a number between 1024 and 65535.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkSystemMatrix.Checked and not IsValidPort(SystemMatrixPortEdit.Text) then
+    begin MsgBox('System Matrix port must be a number between 1024 and 65535.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkUserProfileChecker.Checked and not IsValidPort(UserProfileCheckerPortEdit.Text) then
+    begin MsgBox('User Profile Checker port must be a number between 1024 and 65535.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkNetWorkEnabler.Checked and not IsValidPort(NetWorkEnablerPortEdit.Text) then
+    begin MsgBox('Network Enabler port must be a number between 1024 and 65535.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkQSYSOPRMonitor.Checked and not IsValidPort(QSYSOPRMonitorPortEdit.Text) then
+    begin MsgBox('QSYSOPR Monitor port must be a number between 1024 and 65535.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkWinFSErrorMonitor.Checked and not IsValidPort(WinFSErrorMonitorPortEdit.Text) then
+    begin MsgBox('Windows FS Error Monitor port must be a number between 1024 and 65535.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkWinFSCardinalityMonitor.Checked and not IsValidPort(WinFSCardinalityMonitorPortEdit.Text) then
+    begin MsgBox('Windows FS Cardinality Monitor port must be a number between 1024 and 65535.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkWinMonitor.Checked and not IsValidPort(WinMonitorPortEdit.Text) then
+    begin MsgBox('Windows System Monitor port must be a number between 1024 and 65535.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkLogKeywordMonitor.Checked and not IsValidPort(LogKeywordMonitorPortEdit.Text) then
+    begin MsgBox('Log Keyword Monitor port must be a number between 1024 and 65535.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkFileMemberMonitor.Checked and not IsValidPort(FileMemberMonitorPortEdit.Text) then
+    begin MsgBox('IBM File Member Monitor port must be a number between 1024 and 65535.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkJobDurationMonitor.Checked and not IsValidPort(JobDurationMonitorPortEdit.Text) then
+    begin MsgBox('IBM Job Duration Monitor port must be a number between 1024 and 65535.', mbError, MB_OK); Result := False; Exit; end;
+
+    // Step 2: check for in-use conflicts (only on new install or changed port)
     if ChkIFSErrorMonitor.Checked and ((not IsUpgrade) or (IFSErrorMonitorPortEdit.Text <> GetClientRegistryValue('IFSErrorMonitorPort', '3010'))) and IsPortInUse(IFSErrorMonitorPortEdit.Text) then
-    begin
-      MsgBox('IFS Error Monitor port ' + IFSErrorMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK);
-      Result := False;
-    end
-    else if ChkRealTimeIFSMonitor.Checked and ((not IsUpgrade) or (RealTimeIFSMonitorPortEdit.Text <> GetClientRegistryValue('RealTimeIFSMonitorPort', '3011'))) and IsPortInUse(RealTimeIFSMonitorPortEdit.Text) then
-    begin
-      MsgBox('Real-Time IFS Monitor port ' + RealTimeIFSMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK);
-      Result := False;
-    end
-    else if ChkJobQueCountMonitor.Checked and ((not IsUpgrade) or (JobQueCountMonitorPortEdit.Text <> GetClientRegistryValue('JobQueCountMonitorPort', '3012'))) and IsPortInUse(JobQueCountMonitorPortEdit.Text) then
-    begin
-      MsgBox('Job Queue Count Monitor port ' + JobQueCountMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK);
-      Result := False;
-    end
-    else if ChkJobQueStatusMonitor.Checked and ((not IsUpgrade) or (JobQueStatusMonitorPortEdit.Text <> GetClientRegistryValue('JobQueStatusMonitorPort', '3013'))) and IsPortInUse(JobQueStatusMonitorPortEdit.Text) then
-    begin
-      MsgBox('Job Queue Status Monitor port ' + JobQueStatusMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK);
-      Result := False;
-    end
-    else if ChkServerUpTimeMonitor.Checked and ((not IsUpgrade) or (ServerUpTimeMonitorPortEdit.Text <> GetClientRegistryValue('ServerUpTimeMonitorPort', '3014'))) and IsPortInUse(ServerUpTimeMonitorPortEdit.Text) then
-    begin
-      MsgBox('Server UpTime Monitor port ' + ServerUpTimeMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK);
-      Result := False;
-    end
-    else if ChkSubSystemMonitor.Checked and ((not IsUpgrade) or (SubSystemMonitorPortEdit.Text <> GetClientRegistryValue('SubSystemMonitorPort', '3015'))) and IsPortInUse(SubSystemMonitorPortEdit.Text) then
-    begin
-      MsgBox('SubSystem Monitor port ' + SubSystemMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK);
-      Result := False;
-    end
-    else if ChkSystemMatrix.Checked and ((not IsUpgrade) or (SystemMatrixPortEdit.Text <> GetClientRegistryValue('SystemMatrixPort', '3016'))) and IsPortInUse(SystemMatrixPortEdit.Text) then
-    begin
-      MsgBox('System Matrix port ' + SystemMatrixPortEdit.Text + ' is already in use.', mbError, MB_OK);
-      Result := False;
-    end
-    else if ChkUserProfileChecker.Checked and ((not IsUpgrade) or (UserProfileCheckerPortEdit.Text <> GetClientRegistryValue('UserProfileCheckerPort', '3017'))) and IsPortInUse(UserProfileCheckerPortEdit.Text) then
-    begin
-      MsgBox('User Profile Checker port ' + UserProfileCheckerPortEdit.Text + ' is already in use.', mbError, MB_OK);
-      Result := False;
-    end
-    else if ChkNetWorkEnabler.Checked and ((not IsUpgrade) or (NetWorkEnablerPortEdit.Text <> GetClientRegistryValue('NetWorkEnablerPort', '3018'))) and IsPortInUse(NetWorkEnablerPortEdit.Text) then
-    begin
-      MsgBox('Network Enabler port ' + NetWorkEnablerPortEdit.Text + ' is already in use.', mbError, MB_OK);
-      Result := False;
-    end
-    else if ChkQSYSOPRMonitor.Checked and ((not IsUpgrade) or (QSYSOPRMonitorPortEdit.Text <> GetClientRegistryValue('QSYSOPRMonitorPort', '3019'))) and IsPortInUse(QSYSOPRMonitorPortEdit.Text) then
-    begin
-      MsgBox('QSYSOPR Monitor port ' + QSYSOPRMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK);
-      Result := False;
-    end
-    else if ChkWinFSErrorMonitor.Checked and ((not IsUpgrade) or (WinFSErrorMonitorPortEdit.Text <> GetClientRegistryValue('WinFSErrorMonitorPort', '3020'))) and IsPortInUse(WinFSErrorMonitorPortEdit.Text) then
-    begin
-      MsgBox('Windows FS Error Monitor port ' + WinFSErrorMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK);
-      Result := False;
-    end
-    else if ChkWinFSCardinalityMonitor.Checked and ((not IsUpgrade) or (WinFSCardinalityMonitorPortEdit.Text <> GetClientRegistryValue('WinFSCardinalityMonitorPort', '3021'))) and IsPortInUse(WinFSCardinalityMonitorPortEdit.Text) then
-    begin
-      MsgBox('Windows FS Cardinality Monitor port ' + WinFSCardinalityMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK);
-      Result := False;
-    end;
-    
-    // Check for duplicate ports between selected monitors and core services
+    begin MsgBox('IFS Error Monitor port ' + IFSErrorMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkRealTimeIFSMonitor.Checked and ((not IsUpgrade) or (RealTimeIFSMonitorPortEdit.Text <> GetClientRegistryValue('RealTimeIFSMonitorPort', '3011'))) and IsPortInUse(RealTimeIFSMonitorPortEdit.Text) then
+    begin MsgBox('Real-Time IFS Monitor port ' + RealTimeIFSMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkJobQueCountMonitor.Checked and ((not IsUpgrade) or (JobQueCountMonitorPortEdit.Text <> GetClientRegistryValue('JobQueCountMonitorPort', '3012'))) and IsPortInUse(JobQueCountMonitorPortEdit.Text) then
+    begin MsgBox('Job Queue Count Monitor port ' + JobQueCountMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkJobQueStatusMonitor.Checked and ((not IsUpgrade) or (JobQueStatusMonitorPortEdit.Text <> GetClientRegistryValue('JobQueStatusMonitorPort', '3013'))) and IsPortInUse(JobQueStatusMonitorPortEdit.Text) then
+    begin MsgBox('Job Queue Status Monitor port ' + JobQueStatusMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkServerUpTimeMonitor.Checked and ((not IsUpgrade) or (ServerUpTimeMonitorPortEdit.Text <> GetClientRegistryValue('ServerUpTimeMonitorPort', '3014'))) and IsPortInUse(ServerUpTimeMonitorPortEdit.Text) then
+    begin MsgBox('Server UpTime Monitor port ' + ServerUpTimeMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkSubSystemMonitor.Checked and ((not IsUpgrade) or (SubSystemMonitorPortEdit.Text <> GetClientRegistryValue('SubSystemMonitorPort', '3015'))) and IsPortInUse(SubSystemMonitorPortEdit.Text) then
+    begin MsgBox('SubSystem Monitor port ' + SubSystemMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkSystemMatrix.Checked and ((not IsUpgrade) or (SystemMatrixPortEdit.Text <> GetClientRegistryValue('SystemMatrixPort', '3016'))) and IsPortInUse(SystemMatrixPortEdit.Text) then
+    begin MsgBox('System Matrix port ' + SystemMatrixPortEdit.Text + ' is already in use.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkUserProfileChecker.Checked and ((not IsUpgrade) or (UserProfileCheckerPortEdit.Text <> GetClientRegistryValue('UserProfileCheckerPort', '3017'))) and IsPortInUse(UserProfileCheckerPortEdit.Text) then
+    begin MsgBox('User Profile Checker port ' + UserProfileCheckerPortEdit.Text + ' is already in use.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkNetWorkEnabler.Checked and ((not IsUpgrade) or (NetWorkEnablerPortEdit.Text <> GetClientRegistryValue('NetWorkEnablerPort', '3018'))) and IsPortInUse(NetWorkEnablerPortEdit.Text) then
+    begin MsgBox('Network Enabler port ' + NetWorkEnablerPortEdit.Text + ' is already in use.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkQSYSOPRMonitor.Checked and ((not IsUpgrade) or (QSYSOPRMonitorPortEdit.Text <> GetClientRegistryValue('QSYSOPRMonitorPort', '3019'))) and IsPortInUse(QSYSOPRMonitorPortEdit.Text) then
+    begin MsgBox('QSYSOPR Monitor port ' + QSYSOPRMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkWinFSErrorMonitor.Checked and ((not IsUpgrade) or (WinFSErrorMonitorPortEdit.Text <> GetClientRegistryValue('WinFSErrorMonitorPort', '3020'))) and IsPortInUse(WinFSErrorMonitorPortEdit.Text) then
+    begin MsgBox('Windows FS Error Monitor port ' + WinFSErrorMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkWinFSCardinalityMonitor.Checked and ((not IsUpgrade) or (WinFSCardinalityMonitorPortEdit.Text <> GetClientRegistryValue('WinFSCardinalityMonitorPort', '3021'))) and IsPortInUse(WinFSCardinalityMonitorPortEdit.Text) then
+    begin MsgBox('Windows FS Cardinality Monitor port ' + WinFSCardinalityMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkWinMonitor.Checked and ((not IsUpgrade) or (WinMonitorPortEdit.Text <> GetClientRegistryValue('WinMonitorPort', '3022'))) and IsPortInUse(WinMonitorPortEdit.Text) then
+    begin MsgBox('Windows System Monitor port ' + WinMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkLogKeywordMonitor.Checked and ((not IsUpgrade) or (LogKeywordMonitorPortEdit.Text <> GetClientRegistryValue('LogKeywordMonitorPort', '3023'))) and IsPortInUse(LogKeywordMonitorPortEdit.Text) then
+    begin MsgBox('Log Keyword Monitor port ' + LogKeywordMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkFileMemberMonitor.Checked and ((not IsUpgrade) or (FileMemberMonitorPortEdit.Text <> GetClientRegistryValue('FileMemberMonitorPort', '3024'))) and IsPortInUse(FileMemberMonitorPortEdit.Text) then
+    begin MsgBox('IBM File Member Monitor port ' + FileMemberMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK); Result := False; Exit; end;
+    if ChkJobDurationMonitor.Checked and ((not IsUpgrade) or (JobDurationMonitorPortEdit.Text <> GetClientRegistryValue('JobDurationMonitorPort', '3025'))) and IsPortInUse(JobDurationMonitorPortEdit.Text) then
+    begin MsgBox('IBM Job Duration Monitor port ' + JobDurationMonitorPortEdit.Text + ' is already in use.', mbError, MB_OK); Result := False; Exit; end;
+
+    // Step 3: check for duplicate ports between monitors and core services
     if Result then
       Result := ValidateNoDuplicatePorts;
   end;
@@ -5064,22 +5493,47 @@ begin
       UpdateWinClientName(D + '\monitoring-services\WinFSCardinalityMonitor\fscardinalitymonitor.properties', GetWinClientName(''));
     end;
     
+    // ===== Install Log Keyword Monitor if selected =====
+    if ChkLogKeywordMonitor.Checked then
+      InstallJavaMonitor('LogKeywordMonitor', 'IPMonitoring_LogKeywordMonitor',
+        'IP Monitoring - Log Keyword Monitor', 'Log File Keyword Pattern Monitor',
+        'LogKeywordMonitor.jar', 'logkeywordmonitor.properties',
+        'log-keyword-monitor', GetLogKeywordMonitorPort(''), False);
+
+    // ===== Install IBM File Member Monitor if selected =====
+    if ChkFileMemberMonitor.Checked then
+      InstallJavaMonitor('IBMFileMemberMonitor', 'IPMonitoring_IBMFileMemberMonitor',
+        'IP Monitoring - IBM File Member Monitor', 'IBM i File Member Count Monitor',
+        'IBMFileMemberMonitor.jar', 'filemembermonitor.properties',
+        'ibm-file-member-monitor', GetFileMemberMonitorPort(''), True);
+
+    // ===== Install IBM Job Duration Monitor if selected and JAR is present =====
+    if ChkJobDurationMonitor.Checked then
+    begin
+      if FileExists(ExpandConstant('{app}\monitoring-services\IBMJobDurationMonitor\IBMJobDurationMonitor.jar')) then
+        InstallJavaMonitor('IBMJobDurationMonitor', 'IPMonitoring_IBMJobDurationMonitor',
+          'IP Monitoring - IBM Job Duration Monitor', 'IBM i Job Duration Monitor',
+          'IBMJobDurationMonitor.jar', 'jobdurationmonitor.properties',
+          'ibm-job-duration-monitor', GetJobDurationMonitorPort(''), True)
+      else
+        Log('IBMJobDurationMonitor.jar not found - skipping service installation');
+    end;
+
     // ===== Restart Prometheus to pick up new targets =====
     // Only restart Prometheus if it's installed and we added monitors to a Monitoring Server role
     // Use client-suffixed service name to restart the correct instance
-    if IsMonitoringServerRole and ChkPrometheus.Checked and 
-       (ChkIFSErrorMonitor.Checked or ChkRealTimeIFSMonitor.Checked or 
-        ChkJobQueCountMonitor.Checked or ChkJobQueStatusMonitor.Checked or 
+    if IsMonitoringServerRole and ChkPrometheus.Checked and
+       (ChkIFSErrorMonitor.Checked or ChkRealTimeIFSMonitor.Checked or
+        ChkJobQueCountMonitor.Checked or ChkJobQueStatusMonitor.Checked or
         ChkServerUpTimeMonitor.Checked or ChkSubSystemMonitor.Checked or
         ChkSystemMatrix.Checked or ChkUserProfileChecker.Checked or
         ChkNetWorkEnabler.Checked or ChkQSYSOPRMonitor.Checked or
-        ChkWinFSErrorMonitor.Checked or ChkWinFSCardinalityMonitor.Checked) then
+        ChkWinFSErrorMonitor.Checked or ChkWinFSCardinalityMonitor.Checked or
+        ChkWinMonitor.Checked or ChkLogKeywordMonitor.Checked or
+        ChkFileMemberMonitor.Checked or ChkJobDurationMonitor.Checked) then
     begin
-      // For multi-client installs, restart Prometheus from existing installation
-      if not IsFirstInstallation and (ExistingInstallPath <> '') then
-        RestartServiceAtPath(ExistingInstallPath + '\services\IPMonitoringPrometheus.exe')
-      else
-        RestartService('IPMonitoringPrometheus.exe');
+      // Always restart Prometheus from the current install path to avoid targeting the wrong client instance
+      RestartServiceAtPath(ExpandConstant('{app}') + '\services\IPMonitoringPrometheus.exe');
     end;
   end;
 end;
@@ -5196,7 +5650,7 @@ begin
     end;
     
     // Define all service base names (without client suffix)
-    SetArrayLength(ServiceBasenames, 12);
+    SetArrayLength(ServiceBasenames, 16);
     ServiceBasenames[0] := 'IPMonitoring_IBMIFSErrorMonitor';
     ServiceBasenames[1] := 'IPMonitoring_IBMRealTimeIFSMonitor';
     ServiceBasenames[2] := 'IPMonitoring_IBMJobQueCountMonitor';
@@ -5209,6 +5663,10 @@ begin
     ServiceBasenames[9] := 'IPMonitoring_QSYSOPRMonitoring';
     ServiceBasenames[10] := 'IPMonitoring_WinFSErrorMonitor';
     ServiceBasenames[11] := 'IPMonitoring_WinFSCardinalityMonitor';
+    ServiceBasenames[12] := 'IPMonitoring_WinMonitor';
+    ServiceBasenames[13] := 'IPMonitoring_LogKeywordMonitor';
+    ServiceBasenames[14] := 'IPMonitoring_IBMFileMemberMonitor';
+    ServiceBasenames[15] := 'IPMonitoring_IBMJobDurationMonitor';
     
     // Fix #4: Clean up Prometheus config when uninstalling a client
     // We need to resolve the path to the shared Prometheus config
@@ -5232,6 +5690,10 @@ begin
       RemovePrometheusTarget('qsysopr-monitor-' + LowerCase(SavedClientId));
       RemovePrometheusTarget('win-fs-error-monitor-' + LowerCase(SavedClientId));
       RemovePrometheusTarget('win-fs-cardinality-monitor-' + LowerCase(SavedClientId));
+      RemovePrometheusTarget('win-monitor-' + LowerCase(SavedClientId));
+      RemovePrometheusTarget('log-keyword-monitor-' + LowerCase(SavedClientId));
+      RemovePrometheusTarget('ibm-file-member-monitor-' + LowerCase(SavedClientId));
+      RemovePrometheusTarget('ibm-job-duration-monitor-' + LowerCase(SavedClientId));
     end;
     
     // Stop and uninstall client-suffixed services if we found a client ID

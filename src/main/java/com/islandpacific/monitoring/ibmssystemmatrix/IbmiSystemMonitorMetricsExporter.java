@@ -7,10 +7,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Logger;
-
 public class IbmiSystemMonitorMetricsExporter {
-    private static final Logger logger = Logger.getLogger(IbmiSystemMonitorMetricsExporter.class.getName());
     private final int port;
     private HttpServer server;
     private final ConcurrentHashMap<String, IbmiSystemMonitorInfo> metrics = new ConcurrentHashMap<>();

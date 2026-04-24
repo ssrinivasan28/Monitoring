@@ -43,10 +43,6 @@ public class IFSErrorMonitorMetrics {
         metrics.append("# TYPE error_notifier_last_scan_timestamp_seconds gauge\n");
         metrics.append("error_notifier_last_scan_timestamp_seconds ").append(lastScanTimestamp).append("\n");
 
-        
-        long totalProcessedFiles = 0;
-
-
         metrics.append("# HELP error_notifier_total_files Total number of files found for a given location and file type.\n");
         metrics.append("# TYPE error_notifier_total_files gauge\n");
         totalFileCounts.forEach((location, extCounts) -> {
