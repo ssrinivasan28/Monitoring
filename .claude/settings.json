@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l /c/RD/Monitoring/Monitoring/src/main/java/com/islandpacific/monitoring/*/*.java)",
+      "Bash(grep -l \"class.*Monitor\" /c/RD/Monitoring/Monitoring/src/main/java/com/islandpacific/monitoring/*/*.java)"
+    ]
+  }
+}

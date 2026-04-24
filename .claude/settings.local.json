@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs head *)",
+      "Bash(mvn compile *)",
+      "Bash(grep -v \"//\")",
+      "Bash(powershell -Command ' *)",
+      "Bash('t\"' + '$f.FullName')",
+      "PowerShell(Copy-Item \"c:\\\\RD\\\\Monitoring\\\\Monitoring\\\\target\\\\monitors\\\\WinServiceMonitor.jar\" \"c:\\\\RD\\\\Monitoring\\\\Monitoring\\\\installer\\\\resources\\\\monitoring-services\\\\WinServiceMonitor\\\\\")",
+      "PowerShell(& \"C:\\\\Program Files \\(x86\\)\\\\Inno Setup 6\\\\ISCC.exe\" \"c:\\\\RD\\\\Monitoring\\\\Monitoring\\\\WinServiceMonitor.iss\" 2>&1)",
+      "Bash(mvn clean *)",
+      "Bash(taskkill //F //IM java.exe)"
+    ]
+  }
+}
