@@ -27,6 +27,11 @@ public class FileSystemCardinalityService {
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> totalFileCounts;
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> newFileCounts;
 
+    // Tracks consecutive breach cycles per location to prevent email flooding
+    private final ConcurrentHashMap<String, Integer> tooFewBreachCount  = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Integer> tooManyBreachCount = new ConcurrentHashMap<>();
+    private static final int ALERT_WINDOW_SIZE = 3;
+
     private static final Pattern FILE_EXTENSION_PATTERN = Pattern.compile("\\.([a-zA-Z0-9]{1,5})(?:\\s.*)?$");
 
     public FileSystemCardinalityService(Logger mainLogger, EmailService emailService,
@@ -89,13 +94,13 @@ public class FileSystemCardinalityService {
                 return;
             }
 
-            // List files based on recursive setting
+            // List files based on recursive setting — collect full paths to support recursive tracking
             int maxDepth = config.isRecursive() ? Integer.MAX_VALUE : 1;
             try (Stream<Path> files = Files.walk(folderPath, maxDepth)) {
                 files.filter(Files::isRegularFile)
                         .filter(p -> configuredFileExtensions.isEmpty()
                                 || isFileExtensionMatch(p.getFileName().toString(), configuredFileExtensions))
-                        .map(p -> p.getFileName().toString())
+                        .map(p -> p.toAbsolutePath().toString())
                         .forEach(allMatchingFileNames::add);
             }
 
@@ -143,15 +148,15 @@ public class FileSystemCardinalityService {
         int currentNew = 0;
         List<String> detectedNewFiles = new ArrayList<>();
 
-        for (String fileName : allMatchingFileNames) {
-            String fullPathForTracking = config.getLocalPath().resolve(fileName).toAbsolutePath().toString();
-
+        // allMatchingFileNames now contains absolute paths (Bug 2 fix)
+        for (String fullPathForTracking : allMatchingFileNames) {
             if (!processedPathsForLocation.contains(fullPathForTracking)) {
+                String fileName = Paths.get(fullPathForTracking).getFileName().toString();
                 detectedNewFiles.add(fileName);
                 processedPathsForLocation.add(fullPathForTracking);
                 currentNew++;
                 currentLogger.info(String.format("New file detected (type '%s'): %s",
-                        getFileExtension(fileName), fileName));
+                        getFileExtension(fileName), fullPathForTracking));
 
                 try {
                     Files.write(Paths.get(stateFilePath),
@@ -171,32 +176,47 @@ public class FileSystemCardinalityService {
         // Update Prometheus metrics
         FileSystemCardinalityMetrics.setFileCount(locationName, currentTotal);
 
-        // Email sending logic for threshold breaches ONLY
+        // Alert windowing — only send email after ALERT_WINDOW_SIZE consecutive breach cycles
+        // to prevent flooding when threshold is persistently breached
         if (currentTotal < minFiles) {
             if (currentTotal == 0 && config.isIgnoreZeroFileAlert()) {
                 currentLogger.info(String.format(
                         "File count for '%s' is 0, but alerts are suppressed for this condition. No email sent.",
                         locationName));
+                tooFewBreachCount.put(locationName, 0);
             } else {
-                String subject = String.format(config.getAlertTooFewSubject(), monitorServerName, locationName);
-                String body = String.format(config.getAlertTooFewBodyPrefix(), monitorServerName, folderPathString,
-                        currentTotal, minFiles);
-                currentLogger.warning(
-                        String.format("Alert for '%s': File count (%d) is below minimum threshold (%d). Sending email.",
-                                locationName, currentTotal, minFiles));
-                emailService.sendEmail(locationName, folderPathString, subject, body, config.getEmailImportance());
-                FileSystemCardinalityMetrics.incrementTooFewFilesAlert(locationName);
+                int count = tooFewBreachCount.getOrDefault(locationName, 0) + 1;
+                tooFewBreachCount.put(locationName, count);
+                currentLogger.warning(String.format(
+                        "Alert for '%s': File count (%d) is below minimum (%d). Breach cycle %d/%d.",
+                        locationName, currentTotal, minFiles, count, ALERT_WINDOW_SIZE));
+                if (count == ALERT_WINDOW_SIZE) {
+                    String subject = String.format(config.getAlertTooFewSubject(), monitorServerName, locationName);
+                    String body = String.format(config.getAlertTooFewBodyPrefix(), monitorServerName, folderPathString,
+                            currentTotal, minFiles);
+                    emailService.sendEmail(locationName, folderPathString, subject, body, config.getEmailImportance());
+                    FileSystemCardinalityMetrics.incrementTooFewFilesAlert(locationName);
+                }
             }
+            tooManyBreachCount.put(locationName, 0);
         } else if (currentTotal > maxFiles) {
-            String subject = String.format(config.getAlertTooManySubject(), monitorServerName, locationName);
-            String body = String.format(config.getAlertTooManyBodyPrefix(), monitorServerName, folderPathString,
-                    currentTotal, maxFiles);
-            currentLogger.warning(
-                    String.format("Alert for '%s': File count (%d) is above maximum threshold (%d). Sending email.",
-                            locationName, currentTotal, maxFiles));
-            emailService.sendEmail(locationName, folderPathString, subject, body, config.getEmailImportance());
-            FileSystemCardinalityMetrics.incrementTooManyFilesAlert(locationName);
+            int count = tooManyBreachCount.getOrDefault(locationName, 0) + 1;
+            tooManyBreachCount.put(locationName, count);
+            currentLogger.warning(String.format(
+                    "Alert for '%s': File count (%d) is above maximum (%d). Breach cycle %d/%d.",
+                    locationName, currentTotal, maxFiles, count, ALERT_WINDOW_SIZE));
+            if (count == ALERT_WINDOW_SIZE) {
+                String subject = String.format(config.getAlertTooManySubject(), monitorServerName, locationName);
+                String body = String.format(config.getAlertTooManyBodyPrefix(), monitorServerName, folderPathString,
+                        currentTotal, maxFiles);
+                emailService.sendEmail(locationName, folderPathString, subject, body, config.getEmailImportance());
+                FileSystemCardinalityMetrics.incrementTooManyFilesAlert(locationName);
+            }
+            tooFewBreachCount.put(locationName, 0);
         } else {
+            // Within range — reset both breach counters
+            tooFewBreachCount.put(locationName, 0);
+            tooManyBreachCount.put(locationName, 0);
             currentLogger.info(String.format("File count for '%s' (%d) is within acceptable range [%d, %d]. No alert sent.",
                             locationName, currentTotal, minFiles, maxFiles));
         }

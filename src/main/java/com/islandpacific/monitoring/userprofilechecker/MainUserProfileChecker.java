@@ -116,7 +116,9 @@ public class MainUserProfileChecker {
                 
                 if (tenantId != null && clientId != null && clientSecret != null) {
                     oauth2Provider = new OAuth2TokenProvider(tenantId, clientId, clientSecret, scope, tokenUrl);
-                    fromUser = emailCfg.getProperty("mail.oauth2.from.user", emailCfg.getProperty("mail.from").replaceAll(".*<([^>]+)>.*", "$1").trim());
+                    String configuredFrom = emailCfg.getProperty("mail.from", "");
+                    fromUser = emailCfg.getProperty("mail.oauth2.from.user",
+                            configuredFrom.replaceAll(".*<([^>]+)>.*", "$1").trim());
                     String providedGraphUrl = emailCfg.getProperty("mail.oauth2.graph.mail.url", "");
                     if (providedGraphUrl != null && !providedGraphUrl.trim().isEmpty()) {
                         graphMailUrl = providedGraphUrl.trim();
@@ -140,15 +142,22 @@ public class MainUserProfileChecker {
 
     private static Map<String, String> loadSnapshot() {
         Map<String, String> snapshot = new HashMap<>();
-        File f = new File(SNAPSHOT_FILE);
+        File f = getSnapshotFile();
         if (!f.exists()) return snapshot;
 
         try (BufferedReader br = new BufferedReader(new FileReader(f))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] parts = line.split("\\|", 2);
-                if (parts.length == 2) {
-                    snapshot.put(parts[0], parts[1]);
+                if (line.startsWith("b64|")) {
+                    String[] parts = line.split("\\|", 3);
+                    if (parts.length == 3) {
+                        snapshot.put(decodeSnapshotPart(parts[1]), decodeSnapshotPart(parts[2]));
+                    }
+                } else {
+                    String[] parts = line.split("\\|", 2);
+                    if (parts.length == 2) {
+                        snapshot.put(parts[0], parts[1]);
+                    }
                 }
             }
         } catch (IOException e) {
@@ -158,13 +167,26 @@ public class MainUserProfileChecker {
     }
 
     private static void saveSnapshot(Map<String, String> snapshot) {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(SNAPSHOT_FILE))) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(getSnapshotFile()))) {
             for (Map.Entry<String, String> entry : snapshot.entrySet()) {
-                bw.write(entry.getKey() + "|" + entry.getValue());
+                bw.write("b64|" + encodeSnapshotPart(entry.getKey()) + "|" + encodeSnapshotPart(entry.getValue()));
                 bw.newLine();
             }
         } catch (IOException e) {
             logger.log(Level.WARNING, "Error saving snapshot file", e);
         }
+    }
+
+    private static String encodeSnapshotPart(String value) {
+        String safeValue = value == null ? "" : value;
+        return Base64.getEncoder().encodeToString(safeValue.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    private static String decodeSnapshotPart(String value) {
+        return new String(Base64.getDecoder().decode(value), java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    private static File getSnapshotFile() {
+        return new File(System.getProperty("userprofilechecker.snapshot.file", SNAPSHOT_FILE));
     }
 }

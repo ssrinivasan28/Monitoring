@@ -64,7 +64,10 @@ public class OAuth2TokenProvider {
 
             int responseCode = conn.getResponseCode();
             if (responseCode != HttpURLConnection.HTTP_OK) {
-                String err = new String(conn.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
+                java.io.InputStream errStream = conn.getErrorStream();
+                String err = errStream != null
+                        ? new String(errStream.readAllBytes(), StandardCharsets.UTF_8)
+                        : "(no error body)";
                 throw new IOException("OAuth2 token request failed " + responseCode + ": " + err);
             }
 

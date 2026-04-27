@@ -36,14 +36,26 @@ public class WinServiceMonitorService {
         return info;
     }
 
-    private boolean isLocalHost(String server) {
+    boolean isLocalHost(String server) {
         if ("localhost".equalsIgnoreCase(server) || "127.0.0.1".equals(server)) return true;
         try {
-            java.net.InetAddress local = java.net.InetAddress.getLocalHost();
-            return local.getHostName().equalsIgnoreCase(server) || local.getHostAddress().equals(server);
+            java.net.InetAddress target = java.net.InetAddress.getByName(server);
+            if (target.isLoopbackAddress()) return true;
+            if (target.equals(java.net.InetAddress.getLocalHost())) return true;
+            java.util.Enumeration<java.net.NetworkInterface> ifaces =
+                    java.net.NetworkInterface.getNetworkInterfaces();
+            while (ifaces != null && ifaces.hasMoreElements()) {
+                java.util.Enumeration<java.net.InetAddress> addrs =
+                        ifaces.nextElement().getInetAddresses();
+                while (addrs.hasMoreElements()) {
+                    if (addrs.nextElement().equals(target)) return true;
+                }
+            }
+            if (java.net.InetAddress.getLocalHost().getHostName().equalsIgnoreCase(server)) return true;
         } catch (Exception e) {
-            return false;
+            logger.fine("isLocalHost check failed for " + server + ": " + e.getMessage());
         }
+        return false;
     }
 
     private Map<String, String> checkLocalServices(List<String> services) {
@@ -54,7 +66,7 @@ public class WinServiceMonitorService {
         return statuses;
     }
 
-    private String queryLocalServiceStatus(String serviceName) {
+    String queryLocalServiceStatus(String serviceName) {
         try {
             ProcessBuilder pb = new ProcessBuilder("sc", "query", serviceName);
             pb.redirectErrorStream(true);
@@ -119,7 +131,7 @@ public class WinServiceMonitorService {
         }
     }
 
-    private Map<String, String> parseServicesJson(String json, List<String> services,
+    Map<String, String> parseServicesJson(String json, List<String> services,
             Map<String, String> displayNamesOut) {
         Map<String, String> statuses = new HashMap<>();
         if (json == null || json.trim().isEmpty()) {

@@ -37,24 +37,13 @@ public class MainServiceScheduler {
         ServiceSchedulerConfig config = ServiceSchedulerConfig.load(schedulerPropsPath);
         ScreenshotService screenshotService = new ScreenshotService(config.screenshotFolder);
 
-        logger.info("Service Scheduler starting — " + config.jobs.size() + " job(s) configured");
+        logger.info("Service Scheduler starting - " + config.jobs.size() + " job(s) configured");
 
-        // One thread per job — each blocks during its stop→wait→start→poll cycle
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(config.jobs.size());
 
         for (JobDefinition job : config.jobs) {
             JobRunner runner = new JobRunner(job, screenshotService, emailProps);
-
-            // Calculate initial delay until job's stop time
-            long initialDelaySeconds = secondsUntil(job.stopTime);
-            long oneDaySeconds = TimeUnit.DAYS.toSeconds(1);
-
-            logger.info("Scheduled [" + job.label + "] first run in " + initialDelaySeconds + "s at " + job.stopTime
-                    + " (" + job.scheduleType + ")");
-
-            // scheduleWithFixedDelay: waits 24h AFTER the run completes, so a long-running
-            // job (stop → sleep until start time → poll) never causes a skipped fire.
-            scheduler.scheduleWithFixedDelay(runner, initialDelaySeconds, oneDaySeconds, TimeUnit.SECONDS);
+            scheduleNextRun(scheduler, job, runner);
         }
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -78,5 +67,21 @@ public class MainServiceScheduler {
             d = d.plusDays(1);
         }
         return d.toSeconds();
+    }
+
+    private static void scheduleNextRun(ScheduledExecutorService scheduler, JobDefinition job, JobRunner runner) {
+        long delaySeconds = secondsUntil(job.stopTime);
+        logger.info("Scheduled [" + job.label + "] next run in " + delaySeconds + "s at " + job.stopTime
+                + " (" + job.scheduleType + ")");
+
+        scheduler.schedule(() -> {
+            try {
+                runner.run();
+            } finally {
+                if (!scheduler.isShutdown()) {
+                    scheduleNextRun(scheduler, job, runner);
+                }
+            }
+        }, delaySeconds, TimeUnit.SECONDS);
     }
 }

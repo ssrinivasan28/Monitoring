@@ -59,8 +59,8 @@ public class WindowsMonitorConfig {
 
         config.metricsPort = Integer.parseInt(appProps.getProperty("metrics.exporter.port", "3017"));
 
-        config.pollThreads = Integer.parseInt(appProps.getProperty("windows.poll.threads", "5"));
-        config.alertWindowSize = Integer.parseInt(appProps.getProperty("windows.alert.window.size", "3"));
+        config.pollThreads = Math.max(1, Integer.parseInt(appProps.getProperty("windows.poll.threads", "5")));
+        config.alertWindowSize = Math.max(1, Integer.parseInt(appProps.getProperty("windows.alert.window.size", "3")));
         String servicesList = appProps.getProperty("windows.services.to.monitor", "");
         config.servicesToMonitor = servicesList.isEmpty() ? new ArrayList<>() : Arrays.asList(servicesList.split(","));
 
@@ -83,12 +83,13 @@ public class WindowsMonitorConfig {
         config.oauth2TokenUrl = emailProps.getProperty("mail.oauth2.token.url", "");
         config.graphMailUrl = emailProps.getProperty("mail.oauth2.graph.mail.url", "");
 
-        // Parse per-host credentials
+        // Parse per-host credentials — trim host to match the key used in checkAllServerMetrics
         for (String host : config.hosts) {
-            String user = appProps.getProperty("windows.server." + host + ".username");
-            String pass = appProps.getProperty("windows.server." + host + ".password");
+            String trimmedHost = host.trim();
+            String user = appProps.getProperty("windows.server." + trimmedHost + ".username");
+            String pass = appProps.getProperty("windows.server." + trimmedHost + ".password");
             if (user != null && pass != null) {
-                config.hostCredentials.put(host, new Credentials(user, pass));
+                config.hostCredentials.put(trimmedHost, new Credentials(user, pass));
             }
         }
 

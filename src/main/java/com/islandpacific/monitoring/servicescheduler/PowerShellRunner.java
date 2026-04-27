@@ -1,12 +1,12 @@
 package com.islandpacific.monitoring.servicescheduler;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.ByteArrayOutputStream;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import com.islandpacific.monitoring.common.AppLogger;
 
@@ -31,44 +31,82 @@ public class PowerShellRunner {
     public static Result stopService(String server, String username, String password, String serviceName)
             throws IOException, InterruptedException {
         logger.info("Stopping service '" + serviceName + "' on " + server);
-        // Use sc.exe stop + polling loop — more reliable than Stop-Service over WinRM
-        // which can return success before the service control manager completes the stop.
-        // Poll sc.exe query instead of Get-Service — sc.exe reads directly from SCM
-        // and will show STOP_PENDING rather than prematurely returning Stopped over WinRM.
+        if (isLocalServer(server)) {
+            return runScript(buildStopScript(serviceName));
+        }
+        // WinRM: Invoke-Command with explicit credentials
         String script =
-            "sc.exe stop " + escapeSingle(serviceName) + "\n" +
-            "$deadline = (Get-Date).AddSeconds(300)\n" +
-            "do {\n" +
-            "  Start-Sleep -Seconds 5\n" +
-            "  $scOut = sc.exe query " + escapeSingle(serviceName) + "\n" +
-            "  $stopped = ($scOut | Select-String 'STATE.*STOPPED') -ne $null\n" +
-            "} while (-not $stopped -and (Get-Date) -lt $deadline)\n" +
-            "if (-not $stopped) { throw 'Service did not stop within 300 seconds' }\n" +
-            "Write-Output 'Stopped'";
-        return runRemote(server, username, password, script);
+            "$ErrorActionPreference = 'Stop'\n" +
+            "$pass = ConvertTo-SecureString '" + escapeSingle(password) + "' -AsPlainText -Force\n" +
+            "$cred = New-Object System.Management.Automation.PSCredential ('" + escapeSingle(username) + "', $pass)\n" +
+            "Invoke-Command -ComputerName " + server + " -Credential $cred -ScriptBlock {\n" +
+            "  param($svc)\n" +
+            "  sc.exe stop $svc\n" +
+            "  $deadline = (Get-Date).AddSeconds(300)\n" +
+            "  do {\n" +
+            "    Start-Sleep -Seconds 5\n" +
+            "    $scOut = sc.exe query $svc\n" +
+            "    $stopped = ($scOut | Select-String 'STATE.*STOPPED') -ne $null\n" +
+            "  } while (-not $stopped -and (Get-Date) -lt $deadline)\n" +
+            "  if (-not $stopped) { throw 'Service did not stop within 300 seconds' }\n" +
+            "  Write-Output 'Stopped'\n" +
+            "} -ArgumentList '" + escapeSingle(serviceName) + "'\n";
+        return runScript(script);
     }
 
     public static Result startService(String server, String username, String password, String serviceName)
             throws IOException, InterruptedException {
         logger.info("Starting service '" + serviceName + "' on " + server);
-        // Use sc.exe start + polling loop for consistency with stop
+        if (isLocalServer(server)) {
+            return runScript(buildStartScript(serviceName));
+        }
+        // WinRM: Invoke-Command with explicit credentials
         String script =
-            "sc.exe start " + escapeSingle(serviceName) + "\n" +
+            "$ErrorActionPreference = 'Stop'\n" +
+            "$pass = ConvertTo-SecureString '" + escapeSingle(password) + "' -AsPlainText -Force\n" +
+            "$cred = New-Object System.Management.Automation.PSCredential ('" + escapeSingle(username) + "', $pass)\n" +
+            "Invoke-Command -ComputerName " + server + " -Credential $cred -ScriptBlock {\n" +
+            "  param($svc)\n" +
+            "  sc.exe start $svc\n" +
+            "  $deadline = (Get-Date).AddSeconds(120)\n" +
+            "  do {\n" +
+            "    Start-Sleep -Seconds 5\n" +
+            "    $scOut = sc.exe query $svc\n" +
+            "    $running = ($scOut | Select-String 'STATE.*RUNNING') -ne $null\n" +
+            "  } while (-not $running -and (Get-Date) -lt $deadline)\n" +
+            "  if (-not $running) { throw 'Service did not start within 120 seconds' }\n" +
+            "  Write-Output 'Running'\n" +
+            "} -ArgumentList '" + escapeSingle(serviceName) + "'\n";
+        return runScript(script);
+    }
+
+    private static String buildStopScript(String serviceName) {
+        return "sc.exe stop '" + escapeSingle(serviceName) + "'\n" +
+            "$deadline = (Get-Date).AddSeconds(300)\n" +
+            "do {\n" +
+            "  Start-Sleep -Seconds 5\n" +
+            "  $scOut = sc.exe query '" + escapeSingle(serviceName) + "'\n" +
+            "  $stopped = ($scOut | Select-String 'STATE.*STOPPED') -ne $null\n" +
+            "} while (-not $stopped -and (Get-Date) -lt $deadline)\n" +
+            "if (-not $stopped) { throw 'Service did not stop within 300 seconds' }\n" +
+            "Write-Output 'Stopped'\n";
+    }
+
+    private static String buildStartScript(String serviceName) {
+        return "sc.exe start '" + escapeSingle(serviceName) + "'\n" +
             "$deadline = (Get-Date).AddSeconds(120)\n" +
             "do {\n" +
             "  Start-Sleep -Seconds 5\n" +
-            "  $scOut = sc.exe query " + escapeSingle(serviceName) + "\n" +
+            "  $scOut = sc.exe query '" + escapeSingle(serviceName) + "'\n" +
             "  $running = ($scOut | Select-String 'STATE.*RUNNING') -ne $null\n" +
             "} while (-not $running -and (Get-Date) -lt $deadline)\n" +
             "if (-not $running) { throw 'Service did not start within 120 seconds' }\n" +
-            "Write-Output 'Running'";
-        return runRemote(server, username, password, script);
+            "Write-Output 'Running'\n";
     }
 
     public static Result runRemote(String server, String username, String password, String scriptBlock)
             throws IOException, InterruptedException {
         if (isLocalServer(server)) {
-            // Server is this machine — run directly without WinRM to avoid loopback credential issues
             logger.info("Server " + server + " is local — running script directly (no WinRM)");
             return runScript(scriptBlock + "\n");
         }
@@ -120,22 +158,28 @@ public class PowerShellRunner {
                     "-File", tmpScript.toAbsolutePath().toString());
             pb.redirectErrorStream(true);
             Process process = pb.start();
-
-            StringBuilder output = new StringBuilder();
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    output.append(line).append("\n");
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            Thread outputReader = new Thread(() -> {
+                try {
+                    process.getInputStream().transferTo(output);
+                } catch (IOException ignored) {
+                    // Process termination can close the stream while the reader is active.
                 }
-            }
+            }, "ServiceSchedulerPowerShellOutput");
+            outputReader.setDaemon(true);
+            outputReader.start();
 
-            boolean finished = process.waitFor(420, java.util.concurrent.TimeUnit.SECONDS);
+            boolean finished = process.waitFor(420, TimeUnit.SECONDS);
             if (!finished) {
                 process.destroyForcibly();
+                process.waitFor(5, TimeUnit.SECONDS);
+                outputReader.join(1000);
                 logger.warning("PowerShell timed out");
+                return new Result(124, "PowerShell timed out after 420 seconds");
             }
+            outputReader.join(1000);
             int exitCode = process.exitValue();
-            String out = output.toString().trim();
+            String out = output.toString(StandardCharsets.UTF_8).trim();
             logger.info("PowerShell exit=" + exitCode + " output=" + out);
             return new Result(exitCode, out);
         } finally {

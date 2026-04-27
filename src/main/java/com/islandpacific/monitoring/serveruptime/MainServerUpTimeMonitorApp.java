@@ -5,17 +5,13 @@ import io.prometheus.client.exporter.HTTPServer;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.FileHandler;
-import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -39,9 +35,12 @@ public class MainServerUpTimeMonitorApp {
     private static int pingIntervalSeconds;
 
     // Map to store the current status of each server (true = up, false = down)
-    private static Map<String, Boolean> currentServerStatus = new HashMap<>();
+    private static final Map<String, Boolean> currentServerStatus = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static ScheduledExecutorService scheduler;
 
     private static EmailService emailService; // Instance of the EmailService
+    private static ServerUptimeService uptimeService;
     private static HTTPServer prometheusServer;
 
     public static void main(String[] args) {
@@ -66,13 +65,16 @@ public class MainServerUpTimeMonitorApp {
             // Add a shutdown hook for graceful termination
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 logger.info("Shutting down Server Downtime Monitor App gracefully...");
-                if (prometheusServer != null) prometheusServer.close();
-                // Ensure all log handlers are flushed/closed
-                for (Handler handler : logger.getHandlers()) {
-                    if (handler instanceof FileHandler) {
-                        handler.close();
+                if (scheduler != null) {
+                    scheduler.shutdown();
+                    try {
+                        if (!scheduler.awaitTermination(10, TimeUnit.SECONDS)) scheduler.shutdownNow();
+                    } catch (InterruptedException ie) {
+                        scheduler.shutdownNow();
+                        Thread.currentThread().interrupt();
                     }
                 }
+                if (prometheusServer != null) prometheusServer.close();
                 logger.info("Server Downtime Monitor App shutdown complete.");
             }));
 
@@ -90,10 +92,10 @@ public class MainServerUpTimeMonitorApp {
     }
 
     private static void setupLogger() throws IOException {
-        // Use standardized AppLogger
-        // Read log level from properties if available
-        String logLevel = System.getProperty("log.level", "INFO");
-        String logFolder = System.getProperty("log.folder", "logs");
+        String logLevel = serverInfoProperties.getProperty("log.level",
+                emailProperties.getProperty("log.level", "INFO"));
+        String logFolder = serverInfoProperties.getProperty("log.folder",
+                emailProperties.getProperty("log.folder", "logs"));
         com.islandpacific.monitoring.common.AppLogger.setupLogger("serveruptime", logLevel, logFolder);
     }
 
@@ -146,7 +148,8 @@ public class MainServerUpTimeMonitorApp {
         String authMethod = emailProperties.getProperty("mail.auth.method", "SMTP").toUpperCase();
         
         // Initialize EmailService
-        String mailHost = getRequiredProperty(emailProperties, "mail.smtp.host");
+        String mailHost = "SMTP".equals(authMethod) ? getRequiredProperty(emailProperties, "mail.smtp.host")
+                                                     : emailProperties.getProperty("mail.smtp.host", "");
         String mailPort = emailProperties.getProperty("mail.smtp.port", "25");
         String mailFrom = getRequiredProperty(emailProperties, "mail.from");
         String mailTo = getRequiredProperty(emailProperties, "mail.to");
@@ -188,6 +191,8 @@ public class MainServerUpTimeMonitorApp {
         emailService = new EmailService(mailHost, mailPort, mailFrom, mailTo, mailBcc,
                                         mailUsername, mailPassword, mailAuthEnabled, mailStartTlsEnabled, mailImportance,
                                         monitorHostName, authMethod, oauth2Provider, graphMailUrl, fromUser);
+        uptimeService = new ServerUptimeService(logger, serversToMonitor, emailService,
+                                                SERVER_STATUS, currentServerStatus);
     }
 
     private static String getRequiredProperty(Properties props, String key) {
@@ -200,26 +205,7 @@ public class MainServerUpTimeMonitorApp {
 
 
     private static void initializeMetricsAndInitialStatus() {
-        for (String server : serversToMonitor) {
-            String trimmedServer = server.trim();
-            boolean isUp = pingServer(trimmedServer); // Perform initial ping
-
-            // Update Prometheus metric based on initial ping
-            double statusMetricValue = isUp ? 1 : 0;
-            SERVER_STATUS.labels(trimmedServer).set(statusMetricValue);
-            
-            // Set initial status in the map
-            currentServerStatus.put(trimmedServer, isUp); 
-
-            // If server is found down on initial run, send an alert
-            if (!isUp) {
-                logger.warning("Server " + trimmedServer + " is DOWN on application startup. Sending initial alert.");
-                emailService.sendServerStatusAlert(trimmedServer, false); // Send a 'DOWN' email
-            } else {
-                logger.info("Server " + trimmedServer + " is UP on application startup.");
-            }
-        }
-      //  DefaultExports.initialize();
+        uptimeService.initializeStatus();
     }
 
     private static void startPrometheusExporter() throws IOException {
@@ -227,43 +213,7 @@ public class MainServerUpTimeMonitorApp {
     }
 
     private static void schedulePingMonitoring() {
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        scheduler.scheduleAtFixedRate(() -> {
-            for (String server : serversToMonitor) {
-                String trimmedServer = server.trim();
-                boolean isUp = pingServer(trimmedServer);
-                
-                // Retrieve previous status from our map
-                boolean previousStatus = currentServerStatus.getOrDefault(trimmedServer, false);
-
-                // Update Prometheus metric
-                double statusMetricValue = isUp ? 1 : 0;
-                SERVER_STATUS.labels(trimmedServer).set(statusMetricValue);
-
-                // Detect status change and send email
-                if (isUp != previousStatus) {
-                    logger.info("Server status change detected for " + trimmedServer + ": " + (previousStatus ? "DOWN -> UP" : "UP -> DOWN"));
-                    currentServerStatus.put(trimmedServer, isUp); // Update the stored status
-                    emailService.sendServerStatusAlert(trimmedServer, isUp); // Send email alert
-                } else {
-                    logger.fine("Server " + trimmedServer + " status remains " + (isUp ? "UP" : "DOWN") + ".");
-                }
-            }
-        }, 0, pingIntervalSeconds, TimeUnit.SECONDS);
-    }
-
-    private static boolean pingServer(String serverAddress) {
-        try {
-            InetAddress inet = InetAddress.getByName(serverAddress);
-            // This is generally reliable for "up". For "down", it depends on ICMP being allowed.
-            boolean reachable = inet.isReachable(5000); // 5000 milliseconds timeout
-            if (!reachable) {
-                logger.warning("Ping failed for " + serverAddress + ".");
-            }
-            return reachable;
-        } catch (IOException e) {
-            logger.warning("Error pinging " + serverAddress + ": " + e.getMessage());
-            return false;
-        }
+        scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler.scheduleAtFixedRate(uptimeService::checkAndAlert, 0, pingIntervalSeconds, TimeUnit.SECONDS);
     }
 }

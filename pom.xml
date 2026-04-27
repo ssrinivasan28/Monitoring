@@ -68,10 +68,37 @@
       <artifactId>webdrivermanager</artifactId>
       <version>5.8.0</version>
     </dependency>
+    <!-- TestNG + Mockito for unit testing -->
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <version>7.10.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>5.12.0</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
     <plugins>
+      <!-- TestNG provider for maven-surefire-plugin -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.2.5</version>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.maven.surefire</groupId>
+            <artifactId>surefire-testng</artifactId>
+            <version>3.2.5</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+
       <!-- Pre-copy JAR so ProGuard can read it without needing to rename (Windows renameTo workaround) -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -148,17 +149,19 @@ public class MainFileSystemCardinalityMonitor {
     }
 
     /**
-     * Sets up the main application logger.
+     * Sets up the main application logger using a lightweight properties read — avoids
+     * creating a full FileSystemCardinalityConfig (which opens FileHandlers) just for log config.
      */
     private static void setupLogger() throws IOException {
         String logLevel = "INFO";
         String logFolder = "logs";
-        try {
-            FileSystemCardinalityConfig tempConfig = new FileSystemCardinalityConfig(emailPropertiesFilePath, monitorPropertiesFilePath, logger);
-            logLevel = tempConfig.getMonitorProps().getProperty("log.level", "INFO");
-            logFolder = tempConfig.getMonitorProps().getProperty("log.folder", "logs");
+        try (java.io.InputStream in = new java.io.FileInputStream(monitorPropertiesFilePath)) {
+            Properties p = new Properties();
+            p.load(in);
+            logLevel = p.getProperty("log.level", "INFO");
+            logFolder = p.getProperty("log.folder", "logs");
         } catch (Exception e) {
-            // Use defaults if config not available yet
+            // Use defaults if properties file not readable yet
         }
         com.islandpacific.monitoring.common.AppLogger.setupLogger("filesystemcardinalitymonitoring", logLevel, logFolder);
     }

@@ -60,7 +60,9 @@ public class MainWindowsMonitor {
             logger.info("Polling every " + config.getMonitorIntervalMs() / 1000 + " seconds.");
             logger.info("Alert window size: " + config.getAlertWindowSize());
 
-            scheduler.scheduleAtFixedRate(() -> {
+            // scheduleWithFixedDelay ensures the next cycle starts only after the previous one fully finishes,
+            // preventing overlapping cycles if a poll runs long. Initial delay gives services time to warm up.
+            scheduler.scheduleWithFixedDelay(() -> {
                 try {
                     logger.info("Starting parallel Windows metrics collection cycle...");
                     checkAllServerMetrics(pollPool);
@@ -70,7 +72,7 @@ public class MainWindowsMonitor {
                     emailService.sendErrorAlert("Cycle Error",
                             "An error occurred during the monitoring cycle: " + e.getMessage());
                 }
-            }, 5, config.getMonitorIntervalMs(), TimeUnit.MILLISECONDS);
+            }, 5000, config.getMonitorIntervalMs(), TimeUnit.MILLISECONDS);
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 if (logger != null)
@@ -134,11 +136,14 @@ public class MainWindowsMonitor {
         List<WindowsMonitorInfo> currentInfos = new ArrayList<>();
         for (Future<WindowsMonitorInfo> future : futures) {
             try {
-                WindowsMonitorInfo info = future.get(config.getMonitorIntervalMs(), TimeUnit.MILLISECONDS);
+                WindowsMonitorInfo info = future.get(30, TimeUnit.SECONDS);
                 if (info != null) {
                     currentInfos.add(info);
                     processAlerts(info);
                 }
+            } catch (java.util.concurrent.TimeoutException e) {
+                logger.warning("Poll timed out for a host after 30s — skipping this cycle's result");
+                future.cancel(true);
             } catch (Exception e) {
                 logger.log(Level.SEVERE, "Error retrieving task result: " + e.getMessage(), e);
             }
@@ -162,28 +167,37 @@ public class MainWindowsMonitor {
             Map<String, Double> prevDisks = lastDiskUsage.computeIfAbsent(host, k -> new ConcurrentHashMap<>());
             for (Map.Entry<String, WindowsMonitorInfo.DiskInfo> entry : info.getDisks().entrySet()) {
                 String drive = entry.getKey();
-                double current = entry.getValue().usagePercent;
+                double current = entry.getValue().getUsagePercent();
                 double limit = config.getDiskAlertThreshold();
 
                 checkMetric(host, "DISK_" + drive, current, limit, hostCounters);
 
-                // Growth check: alert if usage increases by more than 5% in one cycle
+                // Growth alert is windowed like other metrics to prevent email flooding.
                 if (prevDisks.containsKey(drive)) {
                     double diff = current - prevDisks.get(drive);
                     if (diff > 5.0) {
                         logger.warning(
                                 String.format("[%s] Rapid disk growth detected on %s: +%.2f%%", host, drive, diff));
-                        emailService.sendErrorAlert("Rapid Disk Growth: " + drive + " on " + host,
-                                "Disk " + drive + " usage increased by " + String.format("%.2f%%", diff)
-                                        + " since last check (Current: " + String.format("%.2f%%", current) + ")");
+                        String growthKey = "DISK_GROWTH_" + drive;
+                        int growthCount = hostCounters.getOrDefault(growthKey, 0) + 1;
+                        hostCounters.put(growthKey, growthCount);
+                        if (growthCount == config.getAlertWindowSize()) {
+                            emailService.sendErrorAlert("Rapid Disk Growth: " + drive + " on " + host,
+                                    "Disk " + drive + " usage increased by " + String.format("%.2f%%", diff)
+                                            + " since last check (Current: " + String.format("%.2f%%", current) + ")");
+                        }
+                    } else {
+                        hostCounters.put("DISK_GROWTH_" + drive, 0);
                     }
                 }
                 prevDisks.put(drive, current);
             }
         }
 
-        // Service Alerts (No windowing for services, report immediately if stopped)
-        for (Map.Entry<String, String> entry : info.getServiceStatuses().entrySet()) {
+        // Service Alerts (windowed to avoid alert storms on transient blips)
+        Map<String, String> serviceStatuses = info.getServiceStatuses();
+        if (serviceStatuses == null) serviceStatuses = Collections.emptyMap();
+        for (Map.Entry<String, String> entry : serviceStatuses.entrySet()) {
             if (!"Running".equalsIgnoreCase(entry.getValue())) {
                 String serviceKey = "SERVICE_" + entry.getKey();
                 int count = hostCounters.getOrDefault(serviceKey, 0) + 1;
@@ -198,18 +212,20 @@ public class MainWindowsMonitor {
             }
         }
 
-        // Finalize system alert if CPU or Memory persistently breached
-        if (hostCounters.getOrDefault("CPU", 0) >= config.getAlertWindowSize() ||
-                hostCounters.getOrDefault("Memory", 0) >= config.getAlertWindowSize()) {
+        // Consolidated system alert: fires once per breach window, resets when BOTH CPU and Memory recover
+        boolean cpuBreached    = hostCounters.getOrDefault("CPU", 0) >= config.getAlertWindowSize();
+        boolean memoryBreached = hostCounters.getOrDefault("Memory", 0) >= config.getAlertWindowSize();
 
-            // Only send one consolidated system alert per window breach
-            if (hostCounters.getOrDefault("ALERTE_SENT", 0) == 0) {
+        if (cpuBreached || memoryBreached) {
+            // Send one alert per window breach — suppress further alerts until full recovery
+            if (hostCounters.getOrDefault("ALERT_SENT", 0) == 0) {
                 emailService.sendSystemAlert(info, config.getCpuAlertThreshold(), config.getMemoryAlertThreshold(),
                         config.getDiskAlertThreshold());
-                hostCounters.put("ALERTE_SENT", 1);
+                hostCounters.put("ALERT_SENT", 1);
             }
         } else {
-            hostCounters.put("ALERTE_SENT", 0);
+            // Both CPU and Memory are below threshold — reset so next breach fires a new alert
+            hostCounters.put("ALERT_SENT", 0);
         }
     }
 

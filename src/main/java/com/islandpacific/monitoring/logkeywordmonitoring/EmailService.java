@@ -279,70 +279,47 @@ public class EmailService {
         }
     }
 
-    /**
-     * Builds HTML content for the alert email.
-     */
     private String buildAlertHtmlContent(String subject, String messageBody, boolean useDataUri) {
-        StringBuilder htmlBodyBuilder = new StringBuilder();
-
-        // Start HTML structure with basic styling
-        htmlBodyBuilder.append("<!DOCTYPE html>")
-                .append("<html>")
-                .append("<head>")
-                .append("<meta charset=\"utf-8\">")
-                .append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
-                .append("<title>").append(subject).append("</title>")
-                .append("<style>")
-                .append("body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; color: #333333; background-color: #f4f4f4; margin: 0; padding: 0; }")
-                .append(".container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); overflow: hidden; }")
-                .append(".header { background-color: #ffffff; padding: 10px 25px; text-align: left; }")
-                .append(".header img { display: block; max-width: 200px; height: auto; border: 0; }")
-                .append(".content-area { padding: 25px; line-height: 1.6; }")
-                .append("h3 { font-size: 20px; color: #e74c3c; margin-top: 0; margin-bottom: 15px; font-weight: 600; }")
-                .append("p { font-size: 14px; color: #555555; margin-bottom: 10px; white-space: pre-wrap; }")
-                .append(".footer { background-color: #f9f9f9; padding: 20px 25px; text-align: center; font-size: 12px; color: #999999; border-top: 1px solid #eeeeee; }")
-                .append("</style>")
-                .append("</head>")
-                .append("<body>")
-                .append("<table width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\">")
-                .append("<tr>")
-                .append("<td align=\"center\" valign=\"top\">")
-                .append("<table class=\"container\" width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\">")
-                .append("<tr>")
-                .append("<td class=\"header\">");
-
-        // Insert the company logo
+        String timestamp = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm:ss"));
+        String year = String.valueOf(java.time.Year.now().getValue());
+        StringBuilder sb = new StringBuilder();
+        sb.append("<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>")
+          .append("body{margin:0;padding:0;background:#f0f2f5;font-family:'Segoe UI',Tahoma,Geneva,sans-serif;font-size:14px;color:#333}")
+          .append(".wrap{max-width:620px;margin:30px auto}")
+          .append(".card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)}")
+          .append(".logo-bar{background:#fff;padding:16px 28px;border-bottom:3px solid #c0392b}")
+          .append(".logo-bar img{display:block;max-width:150px;height:50px;object-fit:contain}")
+          .append(".badge-bar{background:#c0392b;padding:18px 28px}")
+          .append(".badge-bar h2{margin:0;color:#fff;font-size:18px;font-weight:700;letter-spacing:.5px}")
+          .append(".badge{display:inline-block;background:#fdecea;color:#c0392b;font-size:11px;font-weight:700;letter-spacing:1px;padding:3px 10px;border-radius:20px;margin-left:10px;vertical-align:middle}")
+          .append(".body{padding:24px 28px}")
+          .append(".intro{font-size:14px;color:#444;line-height:1.7;margin:0 0 20px}")
+          .append("table.details{width:100%;border-collapse:collapse;margin-bottom:20px}")
+          .append("table.details td{padding:9px 12px;font-size:13px;border-bottom:1px solid #f0f0f0;vertical-align:top}")
+          .append("table.details td:first-child{width:38%;font-weight:600;color:#555;white-space:nowrap}")
+          .append("table.details td:last-child{color:#222}")
+          .append(".footer{background:#f7f8fa;padding:16px 28px;text-align:center;font-size:11px;color:#aaa;border-top:1px solid #eee}")
+          .append("</style></head><body><div class='wrap'><div class='card'>")
+          .append("<div class='logo-bar'>");
         if (useDataUri) {
-            htmlBodyBuilder.append("<img src='").append(DEFAULT_LOGO_BASE64).append("' ");
+            sb.append("<img src='").append(DEFAULT_LOGO_BASE64).append("' alt='Island Pacific'/>");
         } else {
-            htmlBodyBuilder.append("<img src='cid:logo' ");
+            sb.append("<img src='cid:logo' alt='Island Pacific'/>");
         }
-        htmlBodyBuilder
-                .append("alt='Company Logo' width='200' style='display: block; width: 200px; max-width: 200px; height: auto; border: 0;' />");
-
-        htmlBodyBuilder.append("</td>")
-                .append("</tr>")
-                .append("<tr>")
-                .append("<td class=\"content-area\">")
-                .append("<h3>").append(subject).append("</h3>")
-                .append("<p>").append(messageBody).append("</p>")
-                .append("<p>Thank you,</p>")
-                .append("<p>Island Pacific Retail Systems</p>")
-                .append("</td>")
-                .append("</tr>")
-                .append("<tr>")
-                .append("<td class=\"footer\">")
-                .append("<p>&copy; ").append(java.time.Year.now().getValue())
-                .append(" Island Pacific. All rights reserved.</p>")
-                .append("</td>")
-                .append("</tr>")
-                .append("</table>")
-                .append("</td>")
-                .append("</tr>")
-                .append("</table>")
-                .append("</body>")
-                .append("</html>");
-        return htmlBodyBuilder.toString();
+        sb.append("</div>")
+          .append("<div class='badge-bar'><h2>Log Keyword Alert<span class='badge'>ALERT</span></h2></div>")
+          .append("<div class='body'>")
+          .append("<p class='intro'>One or more monitored keywords were detected in the log files. Please review the details below.</p>")
+          .append("<table class='details'>")
+          .append("<tr><td>Timestamp</td><td>").append(timestamp).append("</td></tr>")
+          .append("</table>")
+          .append(messageBody)
+          .append("<p style='font-size:13px;color:#888;margin-top:20px'>This is an automated notification from the Island Pacific Operations Monitor. Please do not reply to this email.</p>")
+          .append("</div>")
+          .append("<div class='footer'>&copy; ").append(year).append(" Island Pacific. All rights reserved. &nbsp;|&nbsp; Operations Monitor</div>")
+          .append("</div></div></body></html>");
+        return sb.toString();
     }
 
     private String getPriorityHeader(String importance) {

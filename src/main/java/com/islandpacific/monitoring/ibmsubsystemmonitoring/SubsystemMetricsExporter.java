@@ -106,15 +106,27 @@ public class SubsystemMetricsExporter {
             metrics.append("# TYPE ibmi_subsystem_status gauge\n");
             // Use subsystem_name and subsystem_library labels
             metrics.append(String.format("ibmi_subsystem_status{subsystem_name=\"%s\", subsystem_library=\"%s\", status_text=\"%s\"} %.0f\n",
-                                        sub.getName(), sub.getLibrary(), sub.getStatus(), statusValue));
+                                        escapePrometheusLabel(sub.getName()), escapePrometheusLabel(sub.getLibrary()),
+                                        escapePrometheusLabel(sub.getStatus()), statusValue));
             
             // Subsystem Info (static info as a gauge with value 1, using labels)
             metrics.append("# HELP ibmi_subsystem_info General information about the IBM i subsystem.\n");
             metrics.append("# TYPE ibmi_subsystem_info gauge\n");
             metrics.append(String.format("ibmi_subsystem_info{subsystem_name=\"%s\", subsystem_library=\"%s\", description=\"%s\"} 1\n",
-                                        sub.getName(), sub.getLibrary(), sub.getDescription()));
+                                        escapePrometheusLabel(sub.getName()), escapePrometheusLabel(sub.getLibrary()),
+                                        escapePrometheusLabel(sub.getDescription())));
         }
 
         return metrics.toString();
+    }
+
+    private String escapePrometheusLabel(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value
+                .replace("\\", "\\\\")
+                .replace("\n", "\\n")
+                .replace("\"", "\\\"");
     }
 }

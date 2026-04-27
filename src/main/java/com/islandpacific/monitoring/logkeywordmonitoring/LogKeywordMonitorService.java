@@ -28,6 +28,12 @@ public class LogKeywordMonitorService {
     // Track if we've sent an alert for each keyword in each file
     private final Map<String, Set<String>> alertedKeywords;
 
+    // Persisted state file — survives service restarts so positions are not lost
+    private static final String POSITIONS_STATE_FILE = "logs/processed/lkm_positions.properties";
+
+    // Overridable for testing
+    private final String positionsStateFile;
+
     public LogKeywordMonitorService(
             Logger logger,
             List<LogKeywordMonitorConfig.LogFileConfig> logFileConfigs,
@@ -37,6 +43,20 @@ public class LogKeywordMonitorService {
             ConcurrentHashMap<String, Long> linesScanned,
             ConcurrentHashMap<String, Long> readErrors,
             LogKeywordMonitorMetrics metrics) {
+        this(logger, logFileConfigs, emailService, totalMatchCounts, newMatchCounts,
+                linesScanned, readErrors, metrics, POSITIONS_STATE_FILE);
+    }
+
+    LogKeywordMonitorService(
+            Logger logger,
+            List<LogKeywordMonitorConfig.LogFileConfig> logFileConfigs,
+            EmailService emailService,
+            ConcurrentHashMap<String, ConcurrentHashMap<String, Long>> totalMatchCounts,
+            ConcurrentHashMap<String, ConcurrentHashMap<String, Long>> newMatchCounts,
+            ConcurrentHashMap<String, Long> linesScanned,
+            ConcurrentHashMap<String, Long> readErrors,
+            LogKeywordMonitorMetrics metrics,
+            String positionsStateFile) {
         this.logger = logger;
         this.logFileConfigs = logFileConfigs;
         this.emailService = emailService;
@@ -44,8 +64,47 @@ public class LogKeywordMonitorService {
         this.newMatchCounts = newMatchCounts;
         this.linesScanned = linesScanned;
         this.readErrors = readErrors;
+        this.positionsStateFile = positionsStateFile;
         this.filePositions = new HashMap<>();
         this.alertedKeywords = new HashMap<>();
+        loadPersistedPositions();
+    }
+
+    private void loadPersistedPositions() {
+        Path stateFile = Paths.get(positionsStateFile);
+        if (!Files.exists(stateFile)) {
+            logger.info("No persisted log positions found (first run or state file missing). Full scan will run.");
+            return;
+        }
+        Properties props = new Properties();
+        try (InputStream in = Files.newInputStream(stateFile)) {
+            props.load(in);
+            for (String key : props.stringPropertyNames()) {
+                try {
+                    filePositions.put(key, Long.parseLong(props.getProperty(key)));
+                } catch (NumberFormatException e) {
+                    logger.warning("Ignoring invalid position entry in state file for: " + key);
+                }
+            }
+            logger.info("Loaded persisted read positions for " + filePositions.size() + " log file(s).");
+        } catch (IOException e) {
+            logger.warning("Could not load persisted log positions: " + e.getMessage() + ". Full scan will run.");
+        }
+    }
+
+    private void persistPositions() {
+        try {
+            Path stateFile = Paths.get(positionsStateFile);
+            Files.createDirectories(stateFile.getParent());
+            Properties props = new Properties();
+            filePositions.forEach((path, pos) -> props.setProperty(path, String.valueOf(pos)));
+            try (OutputStream out = Files.newOutputStream(stateFile,
+                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+                props.store(out, "LogKeywordMonitor file positions — do not edit manually");
+            }
+        } catch (IOException e) {
+            logger.warning("Could not persist log positions: " + e.getMessage());
+        }
     }
 
     /**
@@ -54,8 +113,8 @@ public class LogKeywordMonitorService {
     public void checkLogsAndSendAlerts() {
         logger.fine("Starting log keyword check cycle...");
 
-        // Clear new match counts for this cycle
-        newMatchCounts.clear();
+        // Reset per-cycle new counts in-place (do not clear the shared map — that would zero Prometheus metrics)
+        newMatchCounts.values().forEach(Map::clear);
 
         for (LogKeywordMonitorConfig.LogFileConfig logFileConfig : logFileConfigs) {
             try {
@@ -113,56 +172,46 @@ public class LogKeywordMonitorService {
 
         logger.fine("Reading new data from " + logPathStr + " (position " + lastPosition + " to " + currentSize + ")");
 
-        // Read new lines from file
-        try (RandomAccessFile raf = new RandomAccessFile(logPath.toFile(), "r")) {
-            raf.seek(lastPosition);
+        // Read new lines from file using UTF-8; use a FileInputStream with skip to honour the byte offset
+        long linesRead = 0;
+        long newPosition = lastPosition;
+        try (java.io.FileInputStream fis = new java.io.FileInputStream(logPath.toFile())) {
+            fis.skip(lastPosition);
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(fis, java.nio.charset.StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    linesRead++;
 
-            String line;
-            long linesRead = 0;
+                    Map<String, Integer> matches = logFileConfig.findMatches(line);
+                    if (!matches.isEmpty()) {
+                        logger.fine("Found matches in line: " + line.substring(0, Math.min(100, line.length())));
 
-            while ((line = raf.readLine()) != null) {
-                linesRead++;
-
-                // Convert from ISO-8859-1 (default) to UTF-8 if needed
-                line = new String(line.getBytes("ISO-8859-1"), "UTF-8");
-
-                // Check for keyword matches
-                Map<String, Integer> matches = logFileConfig.findMatches(line);
-
-                if (!matches.isEmpty()) {
-                    logger.fine("Found matches in line: " + line.substring(0, Math.min(100, line.length())));
-
-                    // Update match counts
-                    for (Map.Entry<String, Integer> entry : matches.entrySet()) {
-                        String keyword = entry.getKey();
-                        int count = entry.getValue();
-
-                        // Initialize maps if needed
                         totalMatchCounts.putIfAbsent(logPathStr, new ConcurrentHashMap<>());
                         newMatchCounts.putIfAbsent(logPathStr, new ConcurrentHashMap<>());
 
-                        // Update counters
-                        totalMatchCounts.get(logPathStr).merge(keyword, (long) count, Long::sum);
-                        newMatchCounts.get(logPathStr).merge(keyword, (long) count, Long::sum);
-
-                        logger.info("Keyword match: '" + keyword + "' in " + logPathStr);
+                        for (Map.Entry<String, Integer> entry : matches.entrySet()) {
+                            String keyword = entry.getKey();
+                            int count = entry.getValue();
+                            totalMatchCounts.get(logPathStr).merge(keyword, (long) count, Long::sum);
+                            newMatchCounts.get(logPathStr).merge(keyword, (long) count, Long::sum);
+                            logger.info("Keyword match: '" + keyword + "' in " + logPathStr);
+                        }
                     }
                 }
             }
-
-            // Update file position
-            long newPosition = raf.getFilePointer();
-            filePositions.put(logPathStr, newPosition);
-
-            // Update lines scanned metric
-            linesScanned.merge(logPathStr, linesRead, Long::sum);
-
-            logger.fine("Scanned " + linesRead + " new lines from " + logPathStr);
+            // Record byte position as current file size (we read to EOF)
+            newPosition = currentSize;
         }
+        filePositions.put(logPathStr, newPosition);
+        persistPositions();
+        linesScanned.merge(logPathStr, linesRead, Long::sum);
+        logger.fine("Scanned " + linesRead + " new lines from " + logPathStr);
     }
 
     private void sendAlertsForNewMatches() {
-        if (newMatchCounts.isEmpty()) {
+        boolean anyNew = newMatchCounts.values().stream().anyMatch(m -> !m.isEmpty());
+        if (!anyNew) {
             logger.fine("No new keyword matches to alert on.");
             return;
         }
@@ -195,7 +244,8 @@ public class LogKeywordMonitorService {
 
             // Get config for this log file to check alert settings
             LogKeywordMonitorConfig.LogFileConfig config = findConfigForPath(logFile);
-            boolean alertOnFirstMatch = (config != null) ? config.isAlertOnFirstMatch() : true;
+            // Default false (alert every time) when config not found — safer than silently suppressing
+            boolean alertOnFirstMatch = (config != null) && config.isAlertOnFirstMatch();
 
             // Initialize alerted keywords set for this file
             alertedKeywords.putIfAbsent(logFile, new HashSet<>());

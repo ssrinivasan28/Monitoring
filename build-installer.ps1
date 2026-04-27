@@ -398,6 +398,25 @@ function Start-Build {
             }
         }
 
+        # Compile standalone Windows Monitoring Agent installer if it exists
+        $winIss = Join-Path $ProjectRoot "WindowsMonitoringSetup.iss"
+        if (Test-Path $winIss) {
+            Write-Step "Compiling Windows Monitoring Agent standalone installer..."
+            $winOutput = & $innoSetupPath $winIss 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "WindowsMonitoringSetup.iss compilation failed (non-fatal)"
+                $winOutput | ForEach-Object { Write-Info $_ }
+            } else {
+                Write-Success "WindowsMonitoringAgentSetup.exe compiled"
+                $winExe = Join-Path $OutputDir "WindowsMonitoringAgentSetup.exe"
+                if (Test-Path $winExe) {
+                    $winSize = ((Get-Item $winExe).Length / 1MB).ToString("F2")
+                    Write-Info "  Location: $winExe"
+                    Write-Info "  Size: $winSize MB"
+                }
+            }
+        }
+
         # Step 6: Verify output
         $exePath = Test-OutputExecutable
         
@@ -412,9 +431,10 @@ function Start-Build {
         Write-Success "Installer: $exePath"
         Write-Host ""
         Write-Info "Next steps:"
-        Write-Info "  1. Test the installer on a clean VM"
-        Write-Info "  2. Verify all services install correctly"
-        Write-Info "  3. Check Grafana dashboards load properly"
+        Write-Info "  1. Test IslandPacificMonitoringSetup.exe on a clean VM"
+        Write-Info "  2. Test WindowsMonitoringAgentSetup.exe for Windows-only deployments"
+        Write-Info "  3. Verify all services install and start correctly"
+        Write-Info "  4. Confirm alert emails are delivered as expected"
         Write-Host ""
         
         return $exePath

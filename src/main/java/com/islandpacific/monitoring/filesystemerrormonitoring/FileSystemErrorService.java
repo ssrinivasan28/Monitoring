@@ -32,6 +32,9 @@ public class FileSystemErrorService {
     private static final Pattern FILE_EXTENSION_PATTERN = Pattern.compile("\\.([a-zA-Z0-9]{1,5})(?:\\s.*)?$");
     private static final String LAST_RUN_LOG = "logs/fs_error_last_run_timestamp.txt";
 
+    // Index for O(1) lookup by name — avoids linear search per email send
+    private final Map<String, FileSystemErrorConfig.MonitoringConfig> configByName;
+
     public FileSystemErrorService(Logger mainLogger,
                                   List<FileSystemErrorConfig.MonitoringConfig> monitoringConfigs,
                                   EmailService emailService,
@@ -44,14 +47,17 @@ public class FileSystemErrorService {
         this.totalFileCounts = totalFileCounts;
         this.newFileCounts = newFileCounts;
         this.metricsService = metricsService;
+        this.configByName = new HashMap<>();
+        for (FileSystemErrorConfig.MonitoringConfig cfg : monitoringConfigs) {
+            configByName.put(cfg.getName(), cfg);
+        }
     }
 
     /**
      * Checks for new error files across all configured locations and sends email notifications.
      */
     public void checkNewFilesAndSendEmail() {
-        newFileCounts.clear();
-        totalFileCounts.clear();
+        // Do not clear — update in-place so Prometheus metrics are never zeroed mid-scan
 
         Map<String, Map<String, List<String>>> newFilesForEmail = new ConcurrentHashMap<>();
 

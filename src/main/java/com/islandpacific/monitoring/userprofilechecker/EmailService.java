@@ -291,11 +291,12 @@ public class EmailService {
                 .append("<h3>IBM i User Disabled Alert</h3>")
                 .append("<p><strong>").append(disabledUsers.size())
                 .append("</strong> user profile(s) were disabled on <strong>")
-                .append(systemName).append("</strong> at <strong>").append(eventTimestamp).append("</strong>.</p>")
+                .append(escapeHtml(systemName)).append("</strong> at <strong>")
+                .append(escapeHtml(eventTimestamp)).append("</strong>.</p>")
                 .append("<table><tr><th>User ID</th><th>Name</th></tr>");
         for (Map.Entry<String, String> entry : disabledUsers.entrySet()) {
-            html.append("<tr><td>").append(entry.getKey()).append("</td><td>")
-                    .append(entry.getValue()).append("</td></tr>");
+            html.append("<tr><td>").append(escapeHtml(entry.getKey())).append("</td><td>")
+                    .append(escapeHtml(entry.getValue())).append("</td></tr>");
         }
         html.append("</table>")
                 .append("<p style='margin-top:20px;'>Please investigate this issue on your IBM i system as soon as possible.</p>")
@@ -305,5 +306,17 @@ public class EmailService {
                 .append(" Island Pacific. All rights reserved.</div>")
                 .append("</div></body></html>");
         return html.toString();
+    }
+
+    private String escapeHtml(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 }

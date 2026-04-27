@@ -229,111 +229,124 @@ public class EmailService {
     }
 
     private String buildSystemAlertHtml(WindowsMonitorInfo info, double cpuLimit, double memLimit, double diskLimit) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<!DOCTYPE html><html><head>")
-          .append("<meta charset=\"utf-8\">")
-          .append("<style>")
-          .append("body{font-family:'Segoe UI',Tahoma,sans-serif;font-size:14px;color:#333;background:#f4f4f4;margin:0;padding:0}")
-          .append(".container{max-width:600px;margin:20px auto;background:#fff;border-radius:8px;box-shadow:0 4px 10px rgba(0,0,0,.05);overflow:hidden}")
-          .append(".header{background:#fff;padding:10px 25px;height:60px}")
-          .append(".header img{display:block;max-width:150px;height:100%;object-fit:contain}")
-          .append(".content{padding:25px;line-height:1.6}")
-          .append("h3{font-size:20px;color:#e74c3c;margin-top:0;font-weight:600}")
-          .append("h4{font-size:16px;color:#34495e;border-bottom:1px solid #eee;padding-bottom:5px}")
-          .append("p{font-size:14px;color:#555}")
-          .append("table{border-collapse:collapse;width:100%;margin-bottom:15px}")
-          .append("th{background:#f2f2f2;padding:8px;text-align:left;border:1px solid #ddd}")
-          .append("td{padding:8px;border:1px solid #ddd;color:#555}")
-          .append("ul{margin-left:25px}li{margin-bottom:5px;color:#555}")
-          .append("strong{color:#333;font-weight:700}")
-          .append(".footer{background:#f9f9f9;padding:20px 25px;text-align:center;font-size:12px;color:#999;border-top:1px solid #eee}")
-          .append("</style></head><body>")
-          .append("<table width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\"><tr><td align=\"center\">")
-          .append("<table class=\"container\" width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">")
-          .append("<tr><td class=\"header\"><img src='cid:logo' alt='Logo' width='150' height='60'/></td></tr>")
-          .append("<tr><td class=\"content\">")
-          .append("<h3>Windows System Alert: ").append(info.getHostName()).append("</h3>")
-          .append("<p>Hi Team,</p>")
-          .append("<p>This is an automated alert from Island Pacific Operations Monitor.</p>")
-          .append("<p>Threshold breaches detected:</p>")
-          .append("<table><tr><th>Metric</th><th>Value</th><th>Threshold</th></tr>");
+        String timestamp = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm:ss"));
 
+        StringBuilder breaches = new StringBuilder();
+        breaches.append("<table style='width:100%;border-collapse:collapse;margin-bottom:16px'>")
+                .append("<thead><tr style='background:#34495e;color:#fff'>")
+                .append("<th style='padding:10px 12px;text-align:left;border:1px solid #ddd'>Metric</th>")
+                .append("<th style='padding:10px 12px;text-align:left;border:1px solid #ddd'>Value</th>")
+                .append("<th style='padding:10px 12px;text-align:left;border:1px solid #ddd'>Threshold</th>")
+                .append("</tr></thead><tbody>");
+        int row = 0;
         if (info.getCpuUtilization() > cpuLimit) {
-            sb.append("<tr><td>CPU Usage</td><td>").append(String.format("%.2f%%", info.getCpuUtilization()))
-              .append("</td><td>").append(cpuLimit).append("%</td></tr>");
+            String bg = (row++ % 2 == 0) ? "#f9f9f9" : "#fff";
+            breaches.append("<tr style='background:").append(bg).append("'>")
+                    .append("<td style='padding:9px 12px;border:1px solid #ddd'>CPU Usage</td>")
+                    .append("<td style='padding:9px 12px;border:1px solid #ddd'>").append(String.format("%.2f%%", info.getCpuUtilization())).append("</td>")
+                    .append("<td style='padding:9px 12px;border:1px solid #ddd'>").append(cpuLimit).append("%</td></tr>");
         }
         if (info.getMemoryUtilization() > memLimit) {
-            sb.append("<tr><td>Memory Usage</td><td>").append(String.format("%.2f%%", info.getMemoryUtilization()))
-              .append("</td><td>").append(memLimit).append("%</td></tr>");
+            String bg = (row++ % 2 == 0) ? "#f9f9f9" : "#fff";
+            breaches.append("<tr style='background:").append(bg).append("'>")
+                    .append("<td style='padding:9px 12px;border:1px solid #ddd'>Memory Usage</td>")
+                    .append("<td style='padding:9px 12px;border:1px solid #ddd'>").append(String.format("%.2f%%", info.getMemoryUtilization())).append("</td>")
+                    .append("<td style='padding:9px 12px;border:1px solid #ddd'>").append(memLimit).append("%</td></tr>");
         }
         if (info.getDisks() != null) {
             for (Map.Entry<String, WindowsMonitorInfo.DiskInfo> entry : info.getDisks().entrySet()) {
-                if (entry.getValue().usagePercent > diskLimit) {
-                    sb.append("<tr><td>Disk ").append(entry.getKey()).append("</td><td>")
-                      .append(String.format("%.2f%%", entry.getValue().usagePercent))
-                      .append("</td><td>").append(diskLimit).append("%</td></tr>");
+                if (entry.getValue().getUsagePercent() > diskLimit) {
+                    String bg = (row++ % 2 == 0) ? "#f9f9f9" : "#fff";
+                    breaches.append("<tr style='background:").append(bg).append("'>")
+                            .append("<td style='padding:9px 12px;border:1px solid #ddd'>Disk ").append(entry.getKey()).append("</td>")
+                            .append("<td style='padding:9px 12px;border:1px solid #ddd'>").append(String.format("%.2f%%", entry.getValue().getUsagePercent())).append("</td>")
+                            .append("<td style='padding:9px 12px;border:1px solid #ddd'>").append(diskLimit).append("%</td></tr>");
                 }
             }
         }
-        sb.append("</table>");
+        breaches.append("</tbody></table>");
 
+        StringBuilder extra = new StringBuilder();
         if (info.getServiceStatuses() != null) {
-            boolean hasIssues = info.getServiceStatuses().values().stream()
-                    .anyMatch(s -> !"Running".equalsIgnoreCase(s));
+            boolean hasIssues = info.getServiceStatuses().values().stream().anyMatch(s -> !"Running".equalsIgnoreCase(s));
             if (hasIssues) {
-                sb.append("<h4>Service Status Issues:</h4><ul>");
+                extra.append("<p style='font-weight:600;color:#34495e;margin:16px 0 8px'>Service Status Issues:</p><ul style='margin:0 0 16px 20px;padding:0'>");
                 info.getServiceStatuses().forEach((name, status) -> {
-                    if (!"Running".equalsIgnoreCase(status)) {
-                        sb.append("<li><strong style=\"color:#e74c3c;\">").append(name)
-                          .append(":</strong> ").append(status).append("</li>");
-                    }
+                    if (!"Running".equalsIgnoreCase(status))
+                        extra.append("<li style='margin-bottom:4px;color:#555'><strong style='color:#e74c3c'>").append(name).append(":</strong> ").append(status).append("</li>");
                 });
-                sb.append("</ul>");
+                extra.append("</ul>");
             }
         }
+        Map<String, Double> topProcesses = info.getTopProcesses();
+        if (topProcesses != null && !topProcesses.isEmpty()) {
+            extra.append("<p style='font-weight:600;color:#34495e;margin:16px 0 8px'>Top Processes:</p><ul style='margin:0 0 16px 20px;padding:0'>");
+            topProcesses.forEach((name, cpu) ->
+                extra.append("<li style='margin-bottom:4px;color:#555'>").append(name).append(": ").append(String.format("%.2f%%", cpu)).append("</li>"));
+            extra.append("</ul>");
+        }
 
-        sb.append("<h4>Top Processes:</h4><ul>");
-        info.getTopProcesses().forEach((name, cpu) ->
-            sb.append("<li>").append(name).append(": ").append(String.format("%.2f%%", cpu)).append("</li>"));
-        sb.append("</ul>");
-
-        sb.append("<p><strong>System Uptime:</strong> ")
-          .append(String.format("%.2f", info.getSystemUptimeHours())).append(" hours</p>")
-          .append("<p>Thank you,<br/>Island Pacific Retail Systems</p>")
-          .append("</td></tr>")
-          .append("<tr><td class=\"footer\"><p>&copy; ").append(java.time.Year.now().getValue())
-          .append(" Island Pacific. All rights reserved.</p></td></tr>")
-          .append("</table></td></tr></table></body></html>");
-
-        return sb.toString();
+        return buildHtmlEmail("#c0392b", "ALERT", "#fdecea", "#c0392b",
+                "Windows System Alert: " + info.getHostName(),
+                "One or more performance thresholds have been breached on the server listed below. Please review and take corrective action.",
+                new String[][]{
+                    {"Server", info.getHostName()},
+                    {"System Uptime", String.format("%.2f hours", info.getSystemUptimeHours())},
+                    {"Timestamp", timestamp}
+                },
+                breaches.toString() + extra.toString());
     }
 
     private String buildErrorHtml(String errorMessage) {
+        String timestamp = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm:ss"));
+        return buildHtmlEmail("#c0392b", "ERROR", "#fdecea", "#c0392b",
+                "Windows Monitor Error",
+                "An error was encountered by the Windows Monitor. Please review the details below.",
+                new String[][]{
+                    {"Error", errorMessage},
+                    {"Timestamp", timestamp}
+                },
+                null);
+    }
+
+    private String buildHtmlEmail(String accentColor, String badge, String badgeBg, String badgeText,
+            String heading, String intro, String[][] rows, String extraHtml) {
+        String year = String.valueOf(java.time.Year.now().getValue());
         StringBuilder sb = new StringBuilder();
-        sb.append("<!DOCTYPE html><html><head>")
-          .append("<meta charset=\"utf-8\">")
-          .append("<style>")
-          .append("body{font-family:'Segoe UI',Tahoma,sans-serif;font-size:14px;color:#333;background:#f4f4f4;margin:0;padding:0}")
-          .append(".container{max-width:600px;margin:20px auto;background:#fff;border-radius:8px;box-shadow:0 4px 10px rgba(0,0,0,.05);overflow:hidden}")
-          .append(".header{background:#fff;padding:10px 25px;height:60px}")
-          .append(".header img{display:block;max-width:150px;height:100%;object-fit:contain}")
-          .append(".content{padding:25px;line-height:1.6}")
-          .append("h3{font-size:20px;color:#e74c3c;margin-top:0;font-weight:600}")
-          .append("p{font-size:14px;color:#555}")
-          .append(".footer{background:#f9f9f9;padding:20px 25px;text-align:center;font-size:12px;color:#999;border-top:1px solid #eee}")
-          .append("</style></head><body>")
-          .append("<table width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\"><tr><td align=\"center\">")
-          .append("<table class=\"container\" width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">")
-          .append("<tr><td class=\"header\"><img src='cid:logo' alt='Logo' width='150' height='60'/></td></tr>")
-          .append("<tr><td class=\"content\">")
-          .append("<h3>Monitor Error</h3>")
-          .append("<p>Hi Team,</p>")
-          .append("<p>").append(errorMessage).append("</p>")
-          .append("<p>Thank you,<br/>Island Pacific Retail Systems</p>")
-          .append("</td></tr>")
-          .append("<tr><td class=\"footer\"><p>&copy; ").append(java.time.Year.now().getValue())
-          .append(" Island Pacific. All rights reserved.</p></td></tr>")
-          .append("</table></td></tr></table></body></html>");
+        sb.append("<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>")
+          .append("body{margin:0;padding:0;background:#f0f2f5;font-family:'Segoe UI',Tahoma,Geneva,sans-serif;font-size:14px;color:#333}")
+          .append(".wrap{max-width:620px;margin:30px auto}")
+          .append(".card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)}")
+          .append(".logo-bar{background:#fff;padding:16px 28px;border-bottom:3px solid ").append(accentColor).append("}")
+          .append(".logo-bar img{display:block;max-width:150px;height:50px;object-fit:contain}")
+          .append(".badge-bar{background:").append(accentColor).append(";padding:18px 28px}")
+          .append(".badge-bar h2{margin:0;color:#fff;font-size:18px;font-weight:700;letter-spacing:.5px}")
+          .append(".badge{display:inline-block;background:").append(badgeBg).append(";color:").append(badgeText).append(";font-size:11px;font-weight:700;letter-spacing:1px;padding:3px 10px;border-radius:20px;margin-left:10px;vertical-align:middle}")
+          .append(".body{padding:24px 28px}")
+          .append(".intro{font-size:14px;color:#444;line-height:1.7;margin:0 0 20px}")
+          .append("table.details{width:100%;border-collapse:collapse;margin-bottom:20px}")
+          .append("table.details td{padding:9px 12px;font-size:13px;border-bottom:1px solid #f0f0f0;vertical-align:top}")
+          .append("table.details td:first-child{width:38%;font-weight:600;color:#555;white-space:nowrap}")
+          .append("table.details td:last-child{color:#222}")
+          .append(".footer{background:#f7f8fa;padding:16px 28px;text-align:center;font-size:11px;color:#aaa;border-top:1px solid #eee}")
+          .append("</style></head><body><div class='wrap'><div class='card'>")
+          .append("<div class='logo-bar'><img src='cid:logo' alt='Island Pacific'/></div>")
+          .append("<div class='badge-bar'><h2>").append(heading)
+          .append("<span class='badge'>").append(badge).append("</span></h2></div>")
+          .append("<div class='body'>")
+          .append("<p class='intro'>").append(intro).append("</p>")
+          .append("<table class='details'>");
+        for (String[] row : rows) {
+            sb.append("<tr><td>").append(row[0]).append("</td><td>").append(row[1]).append("</td></tr>");
+        }
+        sb.append("</table>");
+        if (extraHtml != null) sb.append(extraHtml);
+        sb.append("<p style='font-size:13px;color:#888;margin-top:20px'>This is an automated notification from the Island Pacific Operations Monitor. Please do not reply to this email.</p>")
+          .append("</div>")
+          .append("<div class='footer'>&copy; ").append(year).append(" Island Pacific. All rights reserved. &nbsp;|&nbsp; Operations Monitor</div>")
+          .append("</div></div></body></html>");
         return sb.toString();
     }
 }

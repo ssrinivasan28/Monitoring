@@ -294,86 +294,64 @@ public class EmailService {
         }
     }
 
-    /**
-     * Builds HTML content for the email.
-     */
     private String buildEmailHtmlContent(String locationName, String folderPath, String subject, String bodyContent,
             boolean useDataUri) {
-        StringBuilder htmlBodyBuilder = new StringBuilder();
+        String timestamp = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm:ss"));
+        return buildHtmlEmail("#c0392b", "ALERT", "#fdecea", "#c0392b",
+                "File System Cardinality Alert",
+                "A file count threshold breach has been detected in the monitored folder below. Please investigate as soon as possible.",
+                new String[][]{
+                    {"Client", clientName},
+                    {"Location", locationName},
+                    {"Folder Path", folderPath},
+                    {"Detail", bodyContent.replace("\n", " ")},
+                    {"Timestamp", timestamp}
+                }, useDataUri);
+    }
 
-        // Start HTML structure with basic styling for a responsive and readable email
-        htmlBodyBuilder.append("<!DOCTYPE html>")
-                .append("<html>")
-                .append("<head>")
-                .append("<meta charset=\"utf-8\">")
-                .append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
-                .append("<title>File Monitor Alert</title>")
-                .append("<style>")
-                .append("body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; color: #333333; background-color: #f4f4f4; margin: 0; padding: 0; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }")
-                .append("table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }")
-                .append("img { border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; }")
-                .append("a { text-decoration: none; color: #1a73e8; }")
-                .append(".container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); overflow: hidden; }")
-                .append(".header { background-color: #ffffff; padding: 10px 25px; text-align: left; }")
-                .append(".header img { display: block; max-width: 200px; height: auto; border: 0; }")
-                .append(".content-area { padding: 25px; line-height: 1.6; }")
-                .append("h3 { font-size: 20px; color: #e74c3c; margin-top: 0; margin-bottom: 15px; font-weight: 600; }")
-                .append("h4 { font-size: 16px; color: #34495e; margin-top: 20px; margin-bottom: 10px; font-weight: 600; border-bottom: 1px solid #eeeeee; padding-bottom: 5px; }")
-                .append("p { font-size: 14px; color: #555555; margin-bottom: 10px; }")
-                .append("ul { list-style-type: disc; margin-left: 25px; padding-left: 0; margin-top: 5px; margin-bottom: 15px; }")
-                .append("li { margin-bottom: 5px; color: #555555; }")
-                .append("strong { color: #333333; font-weight: 700; }")
-                .append(".footer { background-color: #f9f9f9; padding: 20px 25px; text-align: center; font-size: 12px; color: #999999; border-top: 1px solid #eeeeee; }")
-                .append(".button { display: inline-block; padding: 10px 20px; margin-top: 20px; background-color: #1a73e8; color: #ffffff; text-decoration: none; border-radius: 5px; font-weight: 600; }")
-                .append("</style>")
-                .append("</head>")
-                .append("<body>")
-                .append("<table width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\">")
-                .append("<tr>")
-                .append("<td align=\"center\" valign=\"top\">")
-                .append("<table class=\"container\" width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\">")
-                .append("<tr>")
-                .append("<td class=\"header\">");
-
-        // Insert the company logo using its Content-ID for embedding
-        // Use data URI for Graph API, or cid:logo for SMTP with MIME attachment
+    private String buildHtmlEmail(String accentColor, String badge, String badgeBg, String badgeText,
+            String heading, String intro, String[][] rows, boolean useDataUri) {
+        String year = String.valueOf(java.time.Year.now().getValue());
+        StringBuilder sb = new StringBuilder();
+        sb.append("<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>")
+          .append("body{margin:0;padding:0;background:#f0f2f5;font-family:'Segoe UI',Tahoma,Geneva,sans-serif;font-size:14px;color:#333}")
+          .append(".wrap{max-width:620px;margin:30px auto}")
+          .append(".card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)}")
+          .append(".logo-bar{background:#fff;padding:16px 28px;border-bottom:3px solid ").append(accentColor).append("}")
+          .append(".logo-bar img{display:block;max-width:150px;height:50px;object-fit:contain}")
+          .append(".badge-bar{background:").append(accentColor).append(";padding:18px 28px}")
+          .append(".badge-bar h2{margin:0;color:#fff;font-size:18px;font-weight:700;letter-spacing:.5px}")
+          .append(".badge{display:inline-block;background:").append(badgeBg).append(";color:").append(badgeText).append(";font-size:11px;font-weight:700;letter-spacing:1px;padding:3px 10px;border-radius:20px;margin-left:10px;vertical-align:middle}")
+          .append(".body{padding:24px 28px}")
+          .append(".intro{font-size:14px;color:#444;line-height:1.7;margin:0 0 20px}")
+          .append("table.details{width:100%;border-collapse:collapse;margin-bottom:20px}")
+          .append("table.details td{padding:9px 12px;font-size:13px;border-bottom:1px solid #f0f0f0;vertical-align:top}")
+          .append("table.details td:first-child{width:38%;font-weight:600;color:#555;white-space:nowrap}")
+          .append("table.details td:last-child{color:#222}")
+          .append(".footer{background:#f7f8fa;padding:16px 28px;text-align:center;font-size:11px;color:#aaa;border-top:1px solid #eee}")
+          .append("</style></head><body><div class='wrap'><div class='card'>")
+          .append("<div class='logo-bar'>");
         if (useDataUri) {
-            htmlBodyBuilder.append("<img src='").append(DEFAULT_LOGO_BASE64).append("' ");
+            sb.append("<img src='").append(DEFAULT_LOGO_BASE64).append("' alt='Island Pacific'/>");
         } else {
-            htmlBodyBuilder.append("<img src='cid:logo' ");
+            sb.append("<img src='cid:logo' alt='Island Pacific'/>");
         }
-        htmlBodyBuilder
-                .append("alt='Company Logo' width='200' style='display: block; width: 200px; max-width: 200px; height: auto; border: 0;' />");
-
-        htmlBodyBuilder.append("</td>")
-                .append("</tr>")
-                .append("<tr>")
-                .append("<td class=\"content-area\">")
-                .append(String.format("<h3>[%s] File System Cardinality Alert</h3>", clientName))
-                .append("<p>Hi Team,</p>")
-                .append(String.format(
-                        "<p>This is an automated alert from Island Pacific Operations Monitor. The following issue was detected for <strong>%s</strong> at location: <strong>%s</strong>.</p>",
-                        clientName, locationName))
-                .append(String.format("<p><strong>Folder Path:</strong> %s</p>", folderPath))
-                .append("<p>").append(bodyContent.replace("\n", "<br/>")).append("</p>")
-                .append("<p>Please investigate this folder as soon as possible.</p>")
-                .append("<p>Thank you,</p>")
-                .append("<p>Island Pacific Retail Systems</p>")
-                .append("</td>")
-                .append("</tr>")
-                .append("<tr>")
-                .append("<td class=\"footer\">")
-                .append("<p>&copy; ").append(java.time.Year.now().getValue())
-                .append(" Island Pacific. All rights reserved.</p>")
-                .append("</td>")
-                .append("</tr>")
-                .append("</table>")
-                .append("</td>")
-                .append("</tr>")
-                .append("</table>")
-                .append("</body>")
-                .append("</html>");
-        return htmlBodyBuilder.toString();
+        sb.append("</div>")
+          .append("<div class='badge-bar'><h2>").append(heading)
+          .append("<span class='badge'>").append(badge).append("</span></h2></div>")
+          .append("<div class='body'>")
+          .append("<p class='intro'>").append(intro).append("</p>")
+          .append("<table class='details'>");
+        for (String[] row : rows) {
+            sb.append("<tr><td>").append(row[0]).append("</td><td>").append(row[1]).append("</td></tr>");
+        }
+        sb.append("</table>")
+          .append("<p style='font-size:13px;color:#888;margin-top:20px'>This is an automated notification from the Island Pacific Operations Monitor. Please do not reply to this email.</p>")
+          .append("</div>")
+          .append("<div class='footer'>&copy; ").append(year).append(" Island Pacific. All rights reserved. &nbsp;|&nbsp; Operations Monitor</div>")
+          .append("</div></div></body></html>");
+        return sb.toString();
     }
 
     private String getPriorityHeader(String importance) {

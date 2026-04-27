@@ -2575,7 +2575,7 @@ begin
   WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\IBMJobQueCountMonitor\IBMJobQueCountMonitor.jar'), 15, 1000);
   WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\IBMJobQueStatusMonitor\IBMJobQueStatusMonitor.jar'), 15, 1000);
   WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\ServerUpTimeMonitor\ServerUpTimeMonitor.jar'), 15, 1000);
-  WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\IBMSubSystemMonitoring\IBMSubSystemMonitoring.jar'), 15, 1000);
+  WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\IBMSubSystemMonitoring\IBMSubSystemMonitor.jar'), 15, 1000);
   WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\IBMSystemMatrix\IBMSystemMatrix.jar'), 15, 1000);
   WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\IBMUserProfileChecker\IBMUserProfileChecker.jar'), 15, 1000);
   WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\NetWorkEnabler\NetWorkEnabler.jar'), 15, 1000);
@@ -5429,7 +5429,7 @@ begin
     if ChkSubSystemMonitor.Checked then
       InstallJavaMonitor('IBMSubSystemMonitoring', 'IPMonitoring_IBMSubSystemMonitoring',
         'IP Monitoring - IBM SubSystem Monitor', 'IBM SubSystem Monitor',
-        'IBMSubSystemMonitoring.jar', 'subsystem.properties',
+        'IBMSubSystemMonitor.jar', 'subsystem.properties',
         'ibm-subsystem-monitor', GetSubSystemMonitorPort(''), True);
     
     // ===== Install IBM System Matrix Monitor if selected =====

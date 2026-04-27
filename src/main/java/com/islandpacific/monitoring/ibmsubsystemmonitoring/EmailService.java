@@ -80,7 +80,7 @@ public class EmailService {
     private void sendSubsystemStatusViaGraphAPI(SubsystemInfo subsystemInfo) {
         try {
             String accessToken = oauth2TokenProvider.getAccessToken();
-            String subjectPrefix = clientName.isEmpty() ? "" : "[" + clientName + "] ";
+            String subjectPrefix = isBlank(clientName) ? "" : "[" + clientName + "] ";
             String subject = String.format("%sIBM i Subsystem Alert: %s/%s is %s on %s",
                     subjectPrefix, subsystemInfo.getLibrary(), subsystemInfo.getName(),
                     subsystemInfo.getStatus(), ibmiHost);
@@ -207,7 +207,7 @@ public class EmailService {
             }
             message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(combinedBcc));
 
-            String subjectPrefix = clientName.isEmpty() ? "" : "[" + clientName + "] ";
+            String subjectPrefix = isBlank(clientName) ? "" : "[" + clientName + "] ";
             message.setSubject(String.format("%sIBM i Subsystem Alert: %s/%s is %s on %s",
                     subjectPrefix, subsystemInfo.getLibrary(), subsystemInfo.getName(),
                     subsystemInfo.getStatus(), ibmiHost));
@@ -278,7 +278,7 @@ public class EmailService {
     private void sendErrorViaGraphAPI(String subject, String errorMessage) {
         try {
             String accessToken = oauth2TokenProvider.getAccessToken();
-            String subjectPrefix = clientName.isEmpty() ? "" : "[" + clientName + "] ";
+            String subjectPrefix = isBlank(clientName) ? "" : "[" + clientName + "] ";
             String fullSubject = subjectPrefix + "IBM i Subsystem Monitor Error: " + subject;
             String htmlBody = "<!DOCTYPE html><html><head><meta charset='utf-8'></head><body>" +
                     "<p>An error occurred in the IBM i Subsystem Monitor:</p>" +
@@ -392,7 +392,7 @@ public class EmailService {
             }
             message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(combinedBcc));
 
-            String subjectPrefix = clientName.isEmpty() ? "" : "[" + clientName + "] ";
+            String subjectPrefix = isBlank(clientName) ? "" : "[" + clientName + "] ";
             message.setSubject(subjectPrefix + "IBM i Subsystem Monitor Error: " + subject);
             message.setText("An error occurred in the IBM i Subsystem Monitor:\n\n" + errorMessage + "\n\nIBM i Host: "
                     + ibmiHost);
@@ -459,26 +459,26 @@ public class EmailService {
                 .append("<p>Hi Team,</p>");
 
         // Include client name if available
-        if (!clientName.isEmpty()) {
-            htmlBodyBuilder.append(String.format("<p>Client: <strong>%s</strong></p>", clientName));
+        if (!isBlank(clientName)) {
+            htmlBodyBuilder.append(String.format("<p>Client: <strong>%s</strong></p>", escapeHtml(clientName)));
         }
 
         htmlBodyBuilder.append(String.format(
                 "<p>This is an automated alert from Island Pacific Operations Monitor. A critical subsystem on <strong>%s</strong> has changed its status.</p>",
-                ibmiHost));
+                escapeHtml(ibmiHost)));
 
         // Subsystem Details
         htmlBodyBuilder.append("<h4>Subsystem Details:</h4>")
                 .append("<ul>")
-                .append("<li>Name: <strong>").append(subsystemInfo.getName()).append("</strong></li>")
-                .append("<li>Description: <strong>").append(subsystemInfo.getDescription()).append("</strong></li>")
-                .append("<li>Library: <strong>").append(subsystemInfo.getLibrary()).append("</strong></li>") // Display
+                .append("<li>Name: <strong>").append(escapeHtml(subsystemInfo.getName())).append("</strong></li>")
+                .append("<li>Description: <strong>").append(escapeHtml(subsystemInfo.getDescription())).append("</strong></li>")
+                .append("<li>Library: <strong>").append(escapeHtml(subsystemInfo.getLibrary())).append("</strong></li>") // Display
                                                                                                              // the
                                                                                                              // retrieved
                                                                                                              // library
                 .append("<li>Current Status: <strong style=\"color: ")
                 .append("ACTIVE".equalsIgnoreCase(subsystemInfo.getStatus()) ? "#28a745" : "#dc3545").append(";\">")
-                .append(subsystemInfo.getStatus()).append("</strong></li>")
+                .append(escapeHtml(subsystemInfo.getStatus())).append("</strong></li>")
                 .append("</ul>");
 
         htmlBodyBuilder.append("<p>Please investigate the IBM i system as soon as possible.</p>")
@@ -499,5 +499,21 @@ public class EmailService {
                 .append("</body>")
                 .append("</html>");
         return htmlBodyBuilder.toString();
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private String escapeHtml(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 }

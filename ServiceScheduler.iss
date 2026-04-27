@@ -329,9 +329,56 @@ begin
   SchedStr := GetScheduleString;
   P := TStringList.Create;
   try
+    // ── File header ─────────────────────────────────────────────────────────
+    P.Add('# ===============================');
+    P.Add('# Service Scheduler Configuration');
+    P.Add('# ===============================');
+    P.Add('');
+    P.Add('# Where to save screenshots');
     P.Add('screenshot.folder=screenshots');
     P.Add('');
-    P.Add('# Job 1 — configured during install');
+    P.Add('# -----------------------------------------------------------------------');
+    P.Add('# HOW THIS SERVICE WORKS');
+    P.Add('# -----------------------------------------------------------------------');
+    P.Add('# The Service Scheduler automatically stops and restarts Windows services');
+    P.Add('# on a timed schedule. For each job it will:');
+    P.Add('#');
+    P.Add('#   1. Wait until stop.time  — then stop the Windows service on the');
+    P.Add('#                              remote server via PowerShell (PSRemoting)');
+    P.Add('#   2. Wait until start.time — then start the service again');
+    P.Add('#   3. Poll the health URL   — every poll.interval.seconds until the');
+    P.Add('#                              application responds or poll.timeout.seconds');
+    P.Add('#                              is reached');
+    P.Add('#   4. Take a screenshot     — captures the URL in a browser once ready');
+    P.Add('#   5. Send an email alert   — with the screenshot attached, confirming');
+    P.Add('#                              the service restarted successfully (or');
+    P.Add('#                              reporting a timeout if it did not)');
+    P.Add('#');
+    P.Add('# Job 1 was configured by the installer wizard.');
+    P.Add('# To add more jobs, copy a job block below, increment the job number,');
+    P.Add('# fill in all fields, then restart this Windows service for changes');
+    P.Add('# to take effect.');
+    P.Add('#');
+    P.Add('# -----------------------------------------------------------------------');
+    P.Add('# Job field reference:');
+    P.Add('#   label               — display name (used in emails and filenames)');
+    P.Add('#   server              — hostname or IP of the application server');
+    P.Add('#   username            — Windows account for PSRemoting (DOMAIN\user)');
+    P.Add('#   password            — password for the above account');
+    P.Add('#   service.name        — exact Windows service name (sc query <name>)');
+    P.Add('#   url                 — URL to poll and screenshot after restart');
+    P.Add('#   stop.time           — HH:mm time to stop the service (24-hour clock)');
+    P.Add('#   start.time          — HH:mm time to start the service (must be after stop.time)');
+    P.Add('#   schedule            — DAILY | DAILY_EXCEPT_SATURDAY | DAILY_EXCEPT_SUNDAY | WEEKLY | MONTHLY_NTH_WEEKDAY');
+    P.Add('#   schedule.day        — (WEEKLY only) MONDAY..SUNDAY');
+    P.Add('#   schedule.nth        — (MONTHLY_NTH_WEEKDAY only) 1=first, 2=second, 3=third, 4=fourth');
+    P.Add('#   schedule.weekday    — (MONTHLY_NTH_WEEKDAY only) MONDAY..SUNDAY');
+    P.Add('#   poll.interval.seconds — how often to check the URL (default 10)');
+    P.Add('#   poll.timeout.seconds  — max wait for URL to become ready (default 120)');
+    P.Add('# -----------------------------------------------------------------------');
+    P.Add('');
+    // ── Job 1 — written from wizard input ───────────────────────────────────
+    P.Add('# Job 1: ' + Trim(Job1ServerPage.Values[1]) + ' — configured during install');
     P.Add('job.1.label='        + Trim(Job1ServerPage.Values[1]));
     P.Add('job.1.server='       + Trim(Job1ServerPage.Values[0]));
     P.Add('job.1.username='     + Trim(Job1CredPage.Values[0]));
@@ -350,24 +397,87 @@ begin
     P.Add('job.1.poll.interval.seconds=10');
     P.Add('job.1.poll.timeout.seconds=120');
     P.Add('');
-    P.Add('# ---------------------------------------------------------------');
-    P.Add('# Add more jobs below. Copy the block above, increment job number.');
-    P.Add('# Required fields per job: label, server, username, password,');
-    P.Add('#   service.name, url, stop.time, start.time, schedule');
-    P.Add('# ---------------------------------------------------------------');
+    // ── Template for additional jobs ─────────────────────────────────────────
+    P.Add('# -----------------------------------------------------------------------');
+    P.Add('# Add more jobs below. Copy this block, change job.N to the next number,');
+    P.Add('# and fill in all fields. Restart the Windows service when done.');
+    P.Add('# -----------------------------------------------------------------------');
+    P.Add('');
+    P.Add('# Job 2: <label>');
+    P.Add('#job.2.label=');
+    P.Add('#job.2.server=');
+    P.Add('#job.2.username=');
+    P.Add('#job.2.password=');
+    P.Add('#job.2.service.name=');
+    P.Add('#job.2.url=');
+    P.Add('#job.2.stop.time=');
+    P.Add('#job.2.start.time=');
+    P.Add('#job.2.schedule=DAILY');
+    P.Add('#job.2.poll.interval.seconds=10');
+    P.Add('#job.2.poll.timeout.seconds=120');
     P.SaveToFile(AppDir + '\servicescheduler.properties');
   finally
     P.Free;
   end;
 end;
 
+procedure GrantLogonAsService(Username: String);
+var
+  TempFile, DbFile: String;
+  Lines: TStringList;
+  I: Integer;
+  Found: Boolean;
+begin
+  TempFile := ExpandConstant('{tmp}\secedit_export.inf');
+  DbFile   := ExpandConstant('{tmp}\secedit.sdb');
+  // Export current policy
+  Exec('secedit.exe', '/export /cfg "' + TempFile + '" /quiet', '',
+       SW_HIDE, ewWaitUntilTerminated, I);
+  if not FileExists(TempFile) then Exit;
+  Lines := TStringList.Create;
+  try
+    Lines.LoadFromFile(TempFile);
+    Found := False;
+    for I := 0 to Lines.Count - 1 do begin
+      if Pos('SeServiceLogonRight', Lines[I]) > 0 then begin
+        if Pos(Username, Lines[I]) = 0 then
+          Lines[I] := Lines[I] + ',' + Username;
+        Found := True;
+        Break;
+      end;
+    end;
+    if not Found then
+      Lines.Add('SeServiceLogonRight = ' + Username);
+    Lines.SaveToFile(TempFile);
+  finally
+    Lines.Free;
+  end;
+  Exec('secedit.exe', '/import /cfg "' + TempFile + '" /db "' + DbFile + '" /overwrite /quiet', '',
+       SW_HIDE, ewWaitUntilTerminated, I);
+  Exec('secedit.exe', '/configure /db "' + DbFile + '" /quiet', '',
+       SW_HIDE, ewWaitUntilTerminated, I);
+end;
+
+function XmlEscape(Value: String): String;
+begin
+  Result := Value;
+  StringChangeEx(Result, '&', '&amp;', True);
+  StringChangeEx(Result, '<', '&lt;', True);
+  StringChangeEx(Result, '>', '&gt;', True);
+  StringChangeEx(Result, '"', '&quot;', True);
+  StringChangeEx(Result, '''', '&apos;', True);
+end;
+
 procedure WriteServiceXml;
 var
   X: TStringList;
-  InstDir, AppDir: String;
+  InstDir, AppDir, SvcUser, SvcPass: String;
 begin
   InstDir := ExpandConstant('{app}');
   AppDir  := InstDir + '\monitoring-services\{#MonitorDir}';
+  // Use job 1 credentials to run the service — needed for remote WinRM access
+  SvcUser := Trim(Job1CredPage.Values[0]);
+  SvcPass := Trim(Job1CredPage.Values[1]);
   X := TStringList.Create;
   try
     X.Add('<service>');
@@ -377,6 +487,10 @@ begin
     X.Add('  <executable>java</executable>');
     // SS: args[0]=email.properties  args[1]=servicescheduler.properties
     X.Add('  <arguments>-jar "' + AppDir + '\{#JarFile}" "' + AppDir + '\email.properties" "' + AppDir + '\servicescheduler.properties"</arguments>');
+    if SvcUser <> '' then begin
+      X.Add('  <username>' + XmlEscape(SvcUser) + '</username>');
+      X.Add('  <password>' + XmlEscape(SvcPass) + '</password>');
+    end;
     X.Add('  <logmode>rotate</logmode>');
     X.Add('  <log name="' + InstDir + '\logs\{#ServiceName}">');
     X.Add('    <sizeThreshold>10240</sizeThreshold>');
@@ -417,9 +531,11 @@ begin
         MsgBox('Warning: Could not restart the Windows service. Please start it manually from services.msc.',
                mbInformation, MB_OK);
     end else begin
-      // Fresh install: write config, register, then prompt user to start manually
+      // Fresh install: write config, grant logon right, register
       WriteEmailProps;
       WriteSchedulerProps;
+      if Trim(Job1CredPage.Values[0]) <> '' then
+        GrantLogonAsService(Trim(Job1CredPage.Values[0]));
       if not Exec(ServiceExe, 'install', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
         MsgBox('Warning: Could not register the Windows service.' + #13#10 +
                'Run "' + ServiceExe + ' install" manually.', mbInformation, MB_OK)

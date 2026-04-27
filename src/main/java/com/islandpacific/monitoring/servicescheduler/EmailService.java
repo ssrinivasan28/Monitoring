@@ -99,7 +99,7 @@ public class EmailService {
                 ? "Maintenance Complete: " + jobLabel + " is back online"
                 : "Maintenance Alert: " + jobLabel + " restart " + (!serviceRestarted ? "failed" : "succeeded but URL unreachable");
 
-        String body = buildBody(jobLabel, serviceName, url, serviceRestarted, urlReady);
+        String body = buildBody(jobLabel, serviceName, url, serviceRestarted, urlReady, screenshotPath);
         if ("OAUTH2".equals(authMethod) && oauth2 != null) {
             sendViaGraph(subject, body, screenshotPath);
         } else {
@@ -254,7 +254,7 @@ public class EmailService {
     }
 
     private String buildBody(String jobLabel, String serviceName, String url,
-            boolean serviceRestarted, boolean urlReady) {
+            boolean serviceRestarted, boolean urlReady, Path screenshotPath) {
         boolean success = serviceRestarted && urlReady;
         String accentColor = success ? "#1a7f4b" : "#c0392b";
         String badgeBg = success ? "#e8f5e9" : "#fdecea";
@@ -262,9 +262,14 @@ public class EmailService {
         String badge = success ? "ONLINE" : "ATTENTION REQUIRED";
         String timestamp = java.time.LocalDateTime.now()
                 .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm:ss"));
-        String screenshotNote = urlReady
-                ? "A screenshot of the application URL has been captured and is attached to this email."
-                : "The application URL did not respond within the timeout period. No screenshot was captured.";
+        String screenshotNote;
+        if (!urlReady) {
+            screenshotNote = "The application URL did not respond within the timeout period. No screenshot was captured.";
+        } else if (screenshotPath != null && screenshotPath.toFile().exists()) {
+            screenshotNote = "A screenshot of the application URL has been captured and is attached to this email.";
+        } else {
+            screenshotNote = "The application URL responded, but screenshot capture failed. No screenshot is attached.";
+        }
         String intro = success
                 ? "The scheduled maintenance window has completed successfully. The service has been restarted and the application is responding normally."
                 : "The scheduled maintenance window encountered an issue. Please review the details below and take corrective action if required.";

@@ -1,18 +1,13 @@
 package com.islandpacific.monitoring.filesystemerrormonitoring;
 
 import java.io.*;
-import java.nio.file.*;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
 
 /**
  * Main entry point for Windows File System Error Monitor.
@@ -70,26 +65,9 @@ public class MainFileSystemErrorMonitor {
     }
     
     private void setupLogging() {
-        try {
-            String logDir = configProps.getProperty("log.directory", "logs");
-            Files.createDirectories(Paths.get(logDir));
-            
-            String logFileName = String.format("%s/fserrormonitor_%s.log",
-                logDir,
-                LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));
-            
-            FileHandler fileHandler = new FileHandler(logFileName, true);
-            fileHandler.setFormatter(new SimpleFormatter());
-            fileHandler.setLevel(Level.ALL);
-            
-            Logger rootLogger = Logger.getLogger("");
-            rootLogger.addHandler(fileHandler);
-            rootLogger.setLevel(Level.INFO);
-            
-            LOGGER.info("Logging initialized. Log file: " + logFileName);
-        } catch (IOException e) {
-            System.err.println("Failed to setup logging: " + e.getMessage());
-        }
+        // Logging is already configured by AppLogger.setupLogger() in main() before
+        // this constructor runs — nothing to do here.
+        LOGGER.info("Logging initialized via AppLogger.");
     }
     
     /**
