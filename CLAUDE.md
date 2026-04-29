@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Response Rules (Mandatory)
+
+- Max 80–120 words unless user says "explain in detail" / "full answer" / "step-by-step"
+- Bullet fragments over full sentences
+- No greetings, filler ("sure", "let's"), or repetition of user input
+- Format: Problem → Cause → Fix
+- Code tasks: output code only, no explanation unless asked
+- Debugging: issue in 1–2 lines + exact fix
+
 ## Behavioral Guidelines
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
@@ -67,7 +76,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ## Build Commands
 
 ```powershell
-# Build all 16 monitoring JARs
+# Build all 17 monitoring JARs
 mvn clean package
 
 # Build and create Windows installer (runs mvn + Inno Setup)
@@ -83,7 +92,20 @@ mvn clean package
 .\build-installer.ps1 -Clean
 ```
 
-Built JARs land in `target/monitors/*.jar`. There are no automated tests — testing is manual (`curl http://localhost:<port>/metrics` after running a JAR).
+Built JARs land in `target/monitors/*.jar`.
+
+```powershell
+# Run all unit tests (TestNG + Mockito, no IBM i/Windows connectivity needed)
+mvn test
+
+# Run a single test class
+mvn test -Dtest=FileSystemCardinalityServiceTest
+
+# Run a specific test method
+mvn test -Dtest=FileSystemCardinalityServiceTest#alertSentOnlyOnThirdConsecutiveBreach_tooFew
+```
+
+Integration testing is manual: `curl http://localhost:<port>/metrics` after running a JAR against a real IBM i or Windows environment.
 
 ProGuard runs as part of the `package` phase; there is no way to skip it per-JAR without editing `pom.xml`.
 
@@ -91,12 +113,12 @@ ProGuard runs as part of the `package` phase; there is no way to skip it per-JAR
 
 ### Single-Module, Multi-Output Build
 
-This is **not** a multi-module Maven project. It is one Maven module (`src/main/java/com/islandpacific/monitoring/`) that produces 16 independent shaded JARs via the Maven Shade plugin. Each `<execution>` block in `pom.xml` specifies a `mainClass` to produce a different self-contained executable JAR.
+This is **not** a multi-module Maven project. It is one Maven module (`src/main/java/com/islandpacific/monitoring/`) that produces 17 independent shaded JARs via the Maven Shade plugin. Each `<execution>` block in `pom.xml` specifies a `mainClass` to produce a different self-contained executable JAR.
 
 **Build pipeline order within `package` phase:**
 1. **Maven Antrun** — pre-copies JAR to work around a Windows file-rename limitation with ProGuard
 2. **ProGuard** (v7.3.2) — obfuscates the compiled classes; config lives in `proguard.conf` at the repo root
-3. **Maven Shade** (v3.6.0, 17 executions) — produces fat JARs in `target/monitors/`, each with a `Main-Class` manifest entry
+3. **Maven Shade** (v3.6.0, 17 executions producing 17 JARs) — produces fat JARs in `target/monitors/`, each with a `Main-Class` manifest entry
 
 **Key runtime dependencies:**
 - `jt400` 21.0.4 — IBM i connectivity (AS400 API + JDBC)
@@ -109,12 +131,16 @@ This is **not** a multi-module Maven project. It is one Maven module (`src/main/
 
 Java 17 (compiler source/target).
 
-### 16 Monitoring Services
+### 18 Monitoring Services (+ 1 in-progress)
+
+`IBMJobDurationMonitor` (`ibmjobdurationmonitoring`) has a `Main*.java` but no Shade plugin execution in `pom.xml` yet — it does not produce a JAR.
+
+### Monitoring Services Table
 
 | JAR Name | Package | What it monitors |
 |---|---|---|
 | IBMIFSErrorMonitor | `ibmiifsmonitoring` | IBM i IFS folder file counts via SMB |
-| IBMRealTimeIFSMonitor | `filesystemerrormonitoring` | IFS error detection |
+| IBMRealTimeIFSMonitor | `ibmierrormonitoring` | IFS error detection |
 | IBMJobQueCountMonitor | `ibmjobquecountmonitoring` | IBM i job queue waiting-job counts |
 | IBMJobQueStatusMonitor | `ibmjobquestatusmonitoring` | IBM i job queue status changes |
 | IBMSubSystemMonitor | `ibmsubsystemmonitoring` | IBM i subsystem status |
@@ -123,14 +149,15 @@ Java 17 (compiler source/target).
 | IBMFileMemberMonitor | `ibmifilemembermonitor` | IBM i physical file member record counts |
 | IBMJobDurationMonitor | `ibmjobdurationmonitoring` | IBM i job run duration tracking |
 | IBMNetworkEnabler | `ibmnetworkenabler` | IBM i network connectivity |
-| IBMUserProfileChecker | `ibmuserprofilechecker` | IBM i user profile validation |
+| IBMUserProfileChecker | `userprofilechecker` | IBM i user profile validation |
 | ServerUpTimeMonitor | `serveruptime` | Server ping/uptime |
-| WinMonitor | `winmonitor` | Windows CPU, memory, disk, processes |
-| WinFSErrorMonitor | `filesystemerrormonitoring` (Win variant) | Windows file system error detection |
+| WinMonitor | `windowsmonitoring` | Windows CPU, memory, disk, processes |
+| WinFSErrorMonitor | `filesystemerrormonitoring` | Windows file system error detection |
 | WinFSCardinalityMonitor | `filesystemcardinalitymonitoring` | Windows folder file-count thresholds |
 | LogKeywordMonitor | `logkeywordmonitoring` | Log file keyword scanning |
 | WinServiceMonitor | `winservicemonitor` | Windows service run-state monitoring |
 | ServiceScheduler | `servicescheduler` | Scheduled job runner: URL polling, PowerShell scripts, Selenium screenshots, email alerts |
+| ShareFileMonitor | `sharefilemonitoring` | ShareFile folder file-count thresholds via FTPS (implicit SSL, port 990) |
 
 ### Per-Monitor Package Structure
 

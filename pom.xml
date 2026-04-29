@@ -68,6 +68,13 @@
       <artifactId>webdrivermanager</artifactId>
       <version>5.8.0</version>
     </dependency>
+    <!-- Apache Commons Net for FTPS (ShareFile monitor) -->
+    <dependency>
+      <groupId>commons-net</groupId>
+      <artifactId>commons-net</artifactId>
+      <version>3.10.0</version>
+    </dependency>
+
     <!-- TestNG + Mockito for unit testing -->
     <dependency>
       <groupId>org.testng</groupId>
@@ -574,6 +581,31 @@
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.islandpacific.monitoring.winservicemonitor.MainWinServiceMonitor</mainClass>
+                </transformer>
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+
+          <!-- ShareFile FTPS Cardinality Monitor -->
+          <execution>
+            <id>shade-sharefile-monitor</id>
+            <phase>package</phase>
+            <goals><goal>shade</goal></goals>
+            <configuration>
+              <outputFile>${project.build.directory}/monitors/ShareFileMonitor.jar</outputFile>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.islandpacific.monitoring.sharefilemonitoring.MainShareFileMonitor</mainClass>
                 </transformer>
               </transformers>
               <filters>
