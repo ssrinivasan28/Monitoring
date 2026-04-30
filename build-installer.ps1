@@ -417,6 +417,27 @@ function Start-Build {
             }
         }
 
+        # Compile standalone ShareFile Monitor installer if it exists
+        $sfIss = Join-Path $ProjectRoot "ShareFileMonitor.iss"
+        if (Test-Path $sfIss) {
+            Write-Step "Compiling ShareFile Monitor standalone installer..."
+            $sfJarSrc = Join-Path $MonitorsDir "ShareFileMonitor.jar"
+            $sfJarDst = Join-Path $ResourcesDir "monitoring-services\ShareFileMonitor\ShareFileMonitor.jar"
+            if (Test-Path $sfJarSrc) {
+                $sfDir = Split-Path $sfJarDst
+                if (-not (Test-Path $sfDir)) { New-Item -ItemType Directory -Path $sfDir -Force | Out-Null }
+                Copy-Item $sfJarSrc -Destination $sfJarDst -Force
+                Write-Info "  Copied ShareFileMonitor.jar to installer resources"
+            }
+            $sfOutput = & $innoSetupPath $sfIss 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "ShareFileMonitor.iss compilation failed (non-fatal)"
+                $sfOutput | ForEach-Object { Write-Info $_ }
+            } else {
+                Write-Success "ShareFileMonitorSetup.exe compiled"
+            }
+        }
+
         # Step 6: Verify output
         $exePath = Test-OutputExecutable
         
