@@ -13,6 +13,9 @@ public class WindowsMonitorConfig {
     private int pollThreads;
     private int alertWindowSize;
     private List<String> servicesToMonitor;
+    private List<String> killableProcesses;   // processes allowed to be killed on CPU breach
+    private boolean diskCleanupEnabled;
+    private int serviceMaxRestartAttempts;
     private Map<String, Credentials> hostCredentials = new HashMap<>();
 
     public static class Credentials {
@@ -63,6 +66,11 @@ public class WindowsMonitorConfig {
         config.alertWindowSize = Math.max(1, Integer.parseInt(appProps.getProperty("windows.alert.window.size", "3")));
         String servicesList = appProps.getProperty("windows.services.to.monitor", "");
         config.servicesToMonitor = servicesList.isEmpty() ? new ArrayList<>() : Arrays.asList(servicesList.split(","));
+        String killList = appProps.getProperty("windows.cpu.killable.processes", "");
+        config.killableProcesses = killList.isEmpty() ? new ArrayList<>()
+                : Arrays.asList(killList.split(","));
+        config.diskCleanupEnabled = Boolean.parseBoolean(appProps.getProperty("windows.disk.cleanup.enabled", "true"));
+        config.serviceMaxRestartAttempts = Integer.parseInt(appProps.getProperty("windows.service.max.restart.attempts", "3"));
 
         // Email properties
         config.authMethod = emailProps.getProperty("mail.auth.method", "SMTP").toUpperCase();
@@ -187,4 +195,8 @@ public class WindowsMonitorConfig {
     public Credentials getCredentialsForHost(String host) {
         return hostCredentials.get(host);
     }
+
+    public List<String> getKillableProcesses() { return killableProcesses; }
+    public boolean isDiskCleanupEnabled() { return diskCleanupEnabled; }
+    public int getServiceMaxRestartAttempts() { return serviceMaxRestartAttempts; }
 }

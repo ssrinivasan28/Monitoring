@@ -5,6 +5,8 @@ import io.prometheus.client.exporter.HTTPServer;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class WinServiceMetricsExporter {
 
@@ -25,6 +27,23 @@ public class WinServiceMetricsExporter {
             .labelNames("server", "service")
             .register();
 
+    // Unix epoch seconds when the service last transitioned to Not Running
+    private static final Gauge SERVICE_LAST_DOWN_TIME = Gauge.build()
+            .name("win_service_last_down_time")
+            .help("Unix timestamp (seconds) when the service last went down")
+            .labelNames("server", "service")
+            .register();
+
+    // Unix epoch seconds when the service last transitioned to Running
+    private static final Gauge SERVICE_LAST_UP_TIME = Gauge.build()
+            .name("win_service_last_up_time")
+            .help("Unix timestamp (seconds) when the service last came up")
+            .labelNames("server", "service")
+            .register();
+
+    // Tracks previous running state per "server::service" to detect transitions
+    private final Map<String, Boolean> previousRunning = new ConcurrentHashMap<>();
+
     public WinServiceMetricsExporter(int port) {
         this.port = port;
     }
@@ -38,15 +57,27 @@ public class WinServiceMetricsExporter {
     }
 
     public void updateMetrics(List<WinServiceInfo> results) {
+        long now = System.currentTimeMillis() / 1000L;
         for (WinServiceInfo info : results) {
             if (info == null || info.getServiceStatuses() == null) continue;
             String serverLabel = info.getServerName();
-            for (java.util.Map.Entry<String, String> entry : info.getServiceStatuses().entrySet()) {
+            for (Map.Entry<String, String> entry : info.getServiceStatuses().entrySet()) {
                 String service = entry.getKey();
                 String value = entry.getValue();
                 if (service == null || value == null) continue;
                 boolean running = "Running".equalsIgnoreCase(value);
                 SERVICE_STATUS.labels(serverLabel, service).set(running ? 1 : 0);
+
+                String key = serverLabel + "::" + service;
+                Boolean wasRunning = previousRunning.get(key);
+                if (wasRunning == null || wasRunning != running) {
+                    if (running) {
+                        SERVICE_LAST_UP_TIME.labels(serverLabel, service).set(now);
+                    } else {
+                        SERVICE_LAST_DOWN_TIME.labels(serverLabel, service).set(now);
+                    }
+                    previousRunning.put(key, running);
+                }
             }
         }
     }

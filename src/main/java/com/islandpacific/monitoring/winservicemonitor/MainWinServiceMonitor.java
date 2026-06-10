@@ -32,6 +32,8 @@ public class MainWinServiceMonitor {
     private static final ConcurrentHashMap<String, Boolean> alertedDown = new ConcurrentHashMap<>();
     // Track consecutive stable (up) cycles after recovery — must reach alertWindowSize before re-alerting
     private static final ConcurrentHashMap<String, Integer> stableCycles = new ConcurrentHashMap<>();
+    // Track how many restart attempts have been made per server+service
+    private static final ConcurrentHashMap<String, Integer> restartAttempts = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
         if (args.length >= 1) propertiesFilePath = args[0];
@@ -192,9 +194,23 @@ public class MainWinServiceMonitor {
 
                 if (count == config.getAlertWindowSize()) {
                     String displayName = info.getDisplayName(service);
-                    logger.warning("[" + server + "] ALERT threshold reached for service '" + displayName + "'");
-                    emailService.sendServiceDownAlert(server, displayName, status);
-                    alertedDown.put(key, true);
+                    int attempts = restartAttempts.getOrDefault(key, 0) + 1;
+                    restartAttempts.put(key, attempts);
+
+                    if (attempts <= config.getMaxRestartAttempts()) {
+                        logger.warning("[" + server + "] Attempting auto-restart of '" + displayName
+                                + "' (attempt " + attempts + "/" + config.getMaxRestartAttempts() + ")");
+                        WinServiceMonitorConfig.Credentials creds = config.getCredentialsForServer(server);
+                        boolean restarted = monitorService.restartService(server, displayName, creds);
+                        emailService.sendRestartAttemptAlert(server, displayName, status, attempts, restarted);
+                        // Reset downCycles so the window re-arms for the next check
+                        downCycles.put(key, 0);
+                    } else {
+                        logger.warning("[" + server + "] ESCALATION: service '" + displayName
+                                + "' failed to recover after " + config.getMaxRestartAttempts() + " restart attempts");
+                        emailService.sendEscalationAlert(server, displayName, status, attempts);
+                        alertedDown.put(key, true);
+                    }
                 }
             } else {
                 downCycles.put(key, 0);
@@ -210,6 +226,7 @@ public class MainWinServiceMonitor {
                         emailService.sendServiceRecoveryAlert(server, displayName);
                         alertedDown.put(key, false);
                         stableCycles.put(key, 0);
+                        restartAttempts.put(key, 0);
                     } else {
                         logger.info("[" + server + "] Service '" + service + "' up but waiting for stability ("
                                 + svcStable + "/" + config.getAlertWindowSize() + ")");

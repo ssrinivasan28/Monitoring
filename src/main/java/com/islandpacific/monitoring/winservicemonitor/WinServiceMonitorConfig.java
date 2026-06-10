@@ -11,6 +11,7 @@ public class WinServiceMonitorConfig {
     private int metricsPort;
     private int pollThreads;
     private int alertWindowSize;
+    private int maxRestartAttempts;
     private Map<String, Credentials> serverCredentials = new HashMap<>();
 
     // Email config
@@ -68,6 +69,7 @@ public class WinServiceMonitorConfig {
         cfg.metricsPort = Integer.parseInt(appProps.getProperty("metrics.port", "3026"));
         cfg.pollThreads = Integer.parseInt(appProps.getProperty("monitor.poll.threads", "5"));
         cfg.alertWindowSize = Integer.parseInt(appProps.getProperty("monitor.alert.window.size", "2"));
+        cfg.maxRestartAttempts = Integer.parseInt(appProps.getProperty("monitor.max.restart.attempts", "3"));
 
         cfg.logLevel = appProps.getProperty("log.level", "INFO");
         cfg.logFolder = appProps.getProperty("log.folder", "logs");
@@ -145,6 +147,7 @@ public class WinServiceMonitorConfig {
     public int getMetricsPort() { return metricsPort; }
     public int getPollThreads() { return pollThreads; }
     public int getAlertWindowSize() { return alertWindowSize; }
+    public int getMaxRestartAttempts() { return maxRestartAttempts; }
     public Credentials getCredentialsForServer(String server) { return serverCredentials.get(server); }
     public String getAuthMethod() { return authMethod; }
     public String getEmailHost() { return emailHost; }

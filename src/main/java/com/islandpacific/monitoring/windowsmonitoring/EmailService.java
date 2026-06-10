@@ -57,6 +57,91 @@ public class EmailService {
         send("ERROR: Windows Monitor - " + subject, buildErrorHtml(message));
     }
 
+    public void sendCpuKillAlert(String host, String processName, double cpuPercent, double threshold) {
+        String subject = "AUTO-ACTION: Killed high-CPU process '" + processName + "' on " + host;
+        String timestamp = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm:ss"));
+        String body = buildHtmlEmail(
+                "#e67e22", "CPU REMEDIATION", "#fff8e1", "#e67e22",
+                "High-CPU Process Terminated: " + esc(processName),
+                "A process consuming excessive CPU has been automatically terminated.",
+                new String[][]{
+                    {"Server", esc(host)},
+                    {"Process Killed", esc(processName)},
+                    {"CPU Utilization", String.format("%.1f%%", cpuPercent)},
+                    {"Threshold", String.format("%.1f%%", threshold)},
+                    {"Timestamp", timestamp},
+                    {"Action", "Monitor CPU — process may restart automatically."}
+                }, "");
+        send(subject, body);
+    }
+
+    public void sendDiskCleanupAlert(String host, String drive, double usagePercent, double threshold, boolean succeeded) {
+        String outcome = succeeded ? "Cleanup completed" : "Cleanup command FAILED";
+        String subject = "AUTO-ACTION: Disk cleanup on " + drive + " (" + host + ") — " + outcome;
+        String timestamp = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm:ss"));
+        String accentColor = succeeded ? "#1a7f4b" : "#c0392b";
+        String body = buildHtmlEmail(
+                accentColor, "DISK CLEANUP", succeeded ? "#e8f5e9" : "#fdecea", accentColor,
+                "Disk Cleanup: " + esc(drive) + " on " + esc(host),
+                "Disk usage exceeded threshold. An automatic cleanup was performed.",
+                new String[][]{
+                    {"Server", esc(host)},
+                    {"Drive", esc(drive)},
+                    {"Usage", String.format("%.1f%%", usagePercent)},
+                    {"Threshold", String.format("%.1f%%", threshold)},
+                    {"Outcome", outcome},
+                    {"Timestamp", timestamp}
+                }, "");
+        send(subject, body);
+    }
+
+    public void sendServiceRestartAlert(String host, String service, String status, int attempt, boolean succeeded) {
+        String outcome = succeeded ? "Restart command issued" : "Restart command FAILED";
+        String subject = "AUTO-RESTART [" + attempt + "]: Service '" + service + "' on " + host + " — " + outcome;
+        String timestamp = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm:ss"));
+        String accentColor = succeeded ? "#e67e22" : "#c0392b";
+        String body = buildHtmlEmail(
+                accentColor, "AUTO-RESTART", succeeded ? "#fff8e1" : "#fdecea", accentColor,
+                "Service Auto-Restart: " + esc(service),
+                "An automatic restart was attempted for a stopped Windows service.",
+                new String[][]{
+                    {"Server",          esc(host)},
+                    {"Service",         esc(service)},
+                    {"Status",          esc(status)},
+                    {"Restart Attempt", String.valueOf(attempt)},
+                    {"Outcome",         outcome},
+                    {"Timestamp",       timestamp}
+                }, "");
+        send(subject, body);
+    }
+
+    public void sendServiceEscalationAlert(String host, String service, String status, int attempts) {
+        String subject = "ESCALATION: Service '" + service + "' on " + host + " failed after " + attempts + " restart attempts";
+        String timestamp = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm:ss"));
+        String body = buildHtmlEmail(
+                "#7b241c", "ESCALATION", "#fdecea", "#7b241c",
+                "Service Cannot Be Recovered: " + esc(service),
+                "All automatic restart attempts have been exhausted. Manual intervention required.",
+                new String[][]{
+                    {"Server",                esc(host)},
+                    {"Service",               esc(service)},
+                    {"Status",                esc(status)},
+                    {"Restart Attempts Made", String.valueOf(attempts)},
+                    {"Timestamp",             timestamp},
+                    {"Action Required",       "Manual intervention required immediately."}
+                }, "");
+        send(subject, body);
+    }
+
+    private static String esc(String s) {
+        if (s == null) return "";
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
+    }
+
     private void send(String subject, String htmlBody) {
         if (config.getEmailFrom() == null || config.getEmailTo() == null) {
             logger.warning("Email config incomplete — skipping alert: " + subject);

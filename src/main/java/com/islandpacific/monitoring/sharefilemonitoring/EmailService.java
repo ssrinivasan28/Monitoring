@@ -61,7 +61,7 @@ public class EmailService {
 
     public void sendEmail(String locationName, String remotePath, String subject, String body, String importance) {
         if (emailProperties.getProperty("mail.from") == null) {
-            logger.warning("mail.from not configured â€” skipping email for '" + locationName + "'");
+            logger.warning("mail.from not configured -- skipping email for '" + locationName + "'");
             return;
         }
         if ("OAUTH2".equals(authMethod) && oauth2TokenProvider != null && graphMailUrl != null) {
@@ -140,7 +140,7 @@ public class EmailService {
         final String pass = emailProperties.getProperty("mail.smtp.password");
 
         if (host == null || from == null) {
-            logger.warning("SMTP host or from missing â€” skipping email for '" + locationName + "'");
+            logger.warning("SMTP host or from missing -- skipping email for '" + locationName + "'");
             return;
         }
 

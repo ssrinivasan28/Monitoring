@@ -426,4 +426,126 @@ public class WindowsMonitorMetricsService {
         }
         return 0.0;
     }
+
+    /**
+     * Attempts to start a stopped Windows service by name.
+     * Local: sc start. Remote: Start-Service via PowerShell.
+     * Returns true if the command completed without error.
+     */
+    public boolean restartService(String host, String serviceName, WindowsMonitorConfig.Credentials creds) {
+        logger.info("[" + host + "] Attempting to restart service: " + serviceName);
+        try {
+            if (isLocalHost(host)) {
+                ProcessBuilder pb = new ProcessBuilder("sc", "start", serviceName);
+                pb.redirectErrorStream(true);
+                Process p = pb.start();
+                boolean finished = p.waitFor(30, java.util.concurrent.TimeUnit.SECONDS);
+                if (!finished) { p.destroyForcibly(); return false; }
+                int exit = p.exitValue();
+                if (exit == 0) {
+                    logger.info("[" + host + "] Service restart succeeded: " + serviceName);
+                    return true;
+                }
+                logger.warning("[" + host + "] sc start exited " + exit + " for: " + serviceName);
+                return false;
+            } else {
+                String psCmd = "Start-Service -Name '" + serviceName.replace("'", "''")
+                        + "' -ErrorAction Stop; Write-Output 'ok'";
+                String output = executePowerShell(host, psCmd, creds, 30);
+                boolean ok = output.toLowerCase().contains("ok")
+                        && !output.toLowerCase().contains("error")
+                        && !output.toLowerCase().contains("exception");
+                if (ok) logger.info("[" + host + "] Remote service restart succeeded: " + serviceName);
+                else    logger.warning("[" + host + "] Remote restart output: " + output);
+                return ok;
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "[" + host + "] restartService failed for " + serviceName, e);
+            return false;
+        }
+    }
+
+    /**
+     * Kills the highest-CPU process on the host if its name appears in the killable allow-list.
+     * Returns the name of the killed process, or null if nothing was killed.
+     */
+    public String killTopCpuProcess(String host, List<String> killableProcesses,
+            WindowsMonitorConfig.Credentials creds) {
+        if (killableProcesses == null || killableProcesses.isEmpty()) {
+            logger.info("[" + host + "] CPU kill: no killable process list configured — skipping");
+            return null;
+        }
+        try {
+            // Get the top CPU process name (not idle/system)
+            String psQuery = "Get-CimInstance Win32_PerfFormattedData_PerfProc_Process " +
+                    "| Where-Object { $_.IDProcess -ne 0 -and $_.Name -ne '_Total' -and $_.Name -ne 'Idle' } " +
+                    "| Sort-Object PercentProcessorTime -Descending " +
+                    "| Select-Object -First 1 -ExpandProperty Name";
+            String topProcess;
+            if (isLocalHost(host)) {
+                topProcess = executeLocalPowerShell(psQuery, 10).trim();
+            } else {
+                topProcess = executePowerShell(host, psQuery, creds, 15).trim();
+            }
+            if (topProcess.isEmpty()) {
+                logger.info("[" + host + "] CPU kill: could not determine top process");
+                return null;
+            }
+            boolean allowed = killableProcesses.stream()
+                    .anyMatch(k -> k.trim().equalsIgnoreCase(topProcess));
+            if (!allowed) {
+                logger.info("[" + host + "] CPU kill: top process '" + topProcess
+                        + "' not in killable list — skipping");
+                return null;
+            }
+            String killCmd = "Stop-Process -Name '" + topProcess.replace("'", "''") + "' -Force -ErrorAction SilentlyContinue";
+            if (isLocalHost(host)) {
+                executeLocalPowerShell(killCmd, 10);
+            } else {
+                executePowerShell(host, killCmd, creds, 15);
+            }
+            logger.warning("[" + host + "] CPU kill: terminated process '" + topProcess + "'");
+            return topProcess;
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "[" + host + "] CPU kill failed: " + e.getMessage(), e);
+            return null;
+        }
+    }
+
+    /**
+     * Runs disk cleanup on the given drive letter (e.g. "C:").
+     * Uses cleanmgr /sagerun:1 on local; deletes common temp folders on remote.
+     * Returns true if the command was dispatched without error.
+     */
+    public boolean runDiskCleanup(String host, String drive, WindowsMonitorConfig.Credentials creds) {
+        logger.info("[" + host + "] Disk cleanup triggered for drive: " + drive);
+        try {
+            String driveLetter = drive.replace("\\", "").replace("/", "").trim();
+            if (driveLetter.isEmpty()) driveLetter = "C:";
+            if (!driveLetter.endsWith(":")) driveLetter += ":";
+
+            // Remove common temp folders — safe and fast vs. waiting for cleanmgr UI
+            String cleanCmd = "$d = '" + driveLetter.replace("'", "''") + "'; " +
+                    "Remove-Item -Path \"$d\\Windows\\Temp\\*\" -Recurse -Force -ErrorAction SilentlyContinue; " +
+                    "Remove-Item -Path \"$d\\Users\\*\\AppData\\Local\\Temp\\*\" -Recurse -Force -ErrorAction SilentlyContinue; " +
+                    "Write-Output 'cleanup done'";
+            String output;
+            if (isLocalHost(host)) {
+                output = executeLocalPowerShell(cleanCmd, 60);
+            } else {
+                output = executePowerShell(host, cleanCmd, creds, 60);
+            }
+            boolean ok = output.toLowerCase().contains("cleanup done");
+            if (ok) {
+                logger.info("[" + host + "] Disk cleanup completed for drive " + driveLetter);
+            } else {
+                logger.warning("[" + host + "] Disk cleanup output unexpected: " + output);
+            }
+            return ok;
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "[" + host + "] Disk cleanup failed: " + e.getMessage(), e);
+            return false;
+        }
+    }
+
 }

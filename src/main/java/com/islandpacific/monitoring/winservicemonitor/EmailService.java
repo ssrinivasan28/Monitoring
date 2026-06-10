@@ -70,6 +70,51 @@ public class EmailService {
         send(subject, body);
     }
 
+    public void sendRestartAttemptAlert(String server, String service, String status, int attempt, boolean succeeded) {
+        String outcome = succeeded ? "Restart command issued" : "Restart command FAILED";
+        String subject = "AUTO-RESTART [" + attempt + "]: Service '" + service + "' on " + server + " — " + outcome;
+        String timestamp = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm:ss"));
+        String body = buildHtmlEmail(
+                succeeded ? "#e67e22" : "#c0392b",
+                "AUTO-RESTART",
+                succeeded ? "#fff8e1" : "#fdecea",
+                succeeded ? "#e67e22" : "#c0392b",
+                "Auto-Restart Attempted: " + escapeHtml(service),
+                "An automatic restart was attempted for a stopped Windows service.",
+                new String[][]{
+                    {"Server", escapeHtml(server)},
+                    {"Service Name", escapeHtml(service)},
+                    {"Status", escapeHtml(status)},
+                    {"Restart Attempt", String.valueOf(attempt)},
+                    {"Outcome", escapeHtml(outcome)},
+                    {"Timestamp", timestamp}
+                });
+        send(subject, body);
+    }
+
+    public void sendEscalationAlert(String server, String service, String status, int attempts) {
+        String subject = "ESCALATION: Service '" + service + "' on " + server + " failed after " + attempts + " restart attempts";
+        String timestamp = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm:ss"));
+        String body = buildHtmlEmail(
+                "#7b241c",
+                "ESCALATION",
+                "#fdecea",
+                "#7b241c",
+                "Escalation: Service Cannot Be Recovered — " + escapeHtml(service),
+                "All automatic restart attempts have been exhausted. Immediate manual intervention is required.",
+                new String[][]{
+                    {"Server", escapeHtml(server)},
+                    {"Service Name", escapeHtml(service)},
+                    {"Status", escapeHtml(status)},
+                    {"Restart Attempts Made", String.valueOf(attempts)},
+                    {"Timestamp", timestamp},
+                    {"Action Required", "Manual intervention required immediately."}
+                });
+        send(subject, body);
+    }
+
 
     private void send(String subject, String htmlBody) {
         logger.info("Attempting to send email: " + subject);

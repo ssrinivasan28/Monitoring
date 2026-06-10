@@ -191,6 +191,39 @@ public class WinServiceMonitorService {
         return statuses;
     }
 
+    public boolean restartService(String server, String serviceName, WinServiceMonitorConfig.Credentials creds) {
+        logger.info("[" + server + "] Attempting to restart service: " + serviceName);
+        try {
+            if (isLocalHost(server)) {
+                ProcessBuilder pb = new ProcessBuilder("sc", "start", serviceName);
+                pb.redirectErrorStream(true);
+                Process p = pb.start();
+                boolean finished = p.waitFor(30, java.util.concurrent.TimeUnit.SECONDS);
+                if (!finished) { p.destroyForcibly(); return false; }
+                int exit = p.exitValue();
+                if (exit == 0) {
+                    logger.info("[" + server + "] Restart command succeeded for: " + serviceName);
+                    return true;
+                }
+                logger.warning("[" + server + "] sc start exited with code " + exit + " for: " + serviceName);
+                return false;
+            } else {
+                String psCmd = "Restart-Service -DisplayName '" + serviceName.replace("'", "''") + "' -Force";
+                String output = executePowerShell(server, psCmd, creds);
+                boolean success = !output.toLowerCase().contains("error") && !output.toLowerCase().contains("exception");
+                if (success) {
+                    logger.info("[" + server + "] Remote restart succeeded for: " + serviceName);
+                } else {
+                    logger.warning("[" + server + "] Remote restart may have failed for: " + serviceName + " — " + output);
+                }
+                return success;
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "[" + server + "] Restart failed for " + serviceName + ": " + e.getMessage(), e);
+            return false;
+        }
+    }
+
     private String executePowerShell(String server, String command, WinServiceMonitorConfig.Credentials creds) {
         StringBuilder output = new StringBuilder();
         try {

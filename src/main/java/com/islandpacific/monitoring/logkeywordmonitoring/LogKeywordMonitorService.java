@@ -25,8 +25,8 @@ public class LogKeywordMonitorService {
     // Track last read position for each log file (by absolute path)
     private final Map<String, Long> filePositions;
 
-    // Track if we've sent an alert for each keyword in each file
-    private final Map<String, Set<String>> alertedKeywords;
+    // Track matched lines per cycle: file -> keyword -> list of matching lines
+    private final Map<String, Map<String, List<String>>> newMatchLines;
 
     // Persisted state file — survives service restarts so positions are not lost
     private static final String POSITIONS_STATE_FILE = "logs/processed/lkm_positions.properties";
@@ -66,7 +66,7 @@ public class LogKeywordMonitorService {
         this.readErrors = readErrors;
         this.positionsStateFile = positionsStateFile;
         this.filePositions = new HashMap<>();
-        this.alertedKeywords = new HashMap<>();
+        this.newMatchLines = new HashMap<>();
         loadPersistedPositions();
     }
 
@@ -115,6 +115,7 @@ public class LogKeywordMonitorService {
 
         // Reset per-cycle new counts in-place (do not clear the shared map — that would zero Prometheus metrics)
         newMatchCounts.values().forEach(Map::clear);
+        newMatchLines.values().forEach(Map::clear);
 
         for (LogKeywordMonitorConfig.LogFileConfig logFileConfig : logFileConfigs) {
             try {
@@ -189,12 +190,14 @@ public class LogKeywordMonitorService {
 
                         totalMatchCounts.putIfAbsent(logPathStr, new ConcurrentHashMap<>());
                         newMatchCounts.putIfAbsent(logPathStr, new ConcurrentHashMap<>());
+                        newMatchLines.putIfAbsent(logPathStr, new HashMap<>());
 
                         for (Map.Entry<String, Integer> entry : matches.entrySet()) {
                             String keyword = entry.getKey();
                             int count = entry.getValue();
                             totalMatchCounts.get(logPathStr).merge(keyword, (long) count, Long::sum);
                             newMatchCounts.get(logPathStr).merge(keyword, (long) count, Long::sum);
+                            newMatchLines.get(logPathStr).computeIfAbsent(keyword, k -> new ArrayList<>()).add(line);
                             logger.info("Keyword match: '" + keyword + "' in " + logPathStr);
                         }
                     }
@@ -216,23 +219,9 @@ public class LogKeywordMonitorService {
             return;
         }
 
-        // Build alert message with HTML table
         StringBuilder alertMessage = new StringBuilder();
         alertMessage.append("<h4 style='color: #2c3e50; margin-bottom: 15px;'>Keyword Detection Summary</h4>");
         alertMessage.append("<p style='margin-bottom: 20px;'>The following keywords were detected in monitored log files:</p>");
-        
-        alertMessage.append("<table style='width: 100%; border-collapse: collapse; margin-bottom: 20px;'>");
-        alertMessage.append("<thead>");
-        alertMessage.append("<tr style='background-color: #34495e; color: white;'>");
-        alertMessage.append("<th style='padding: 12px; text-align: left; border: 1px solid #ddd;'>Log File</th>");
-        alertMessage.append("<th style='padding: 12px; text-align: left; border: 1px solid #ddd;'>Keyword</th>");
-        alertMessage.append("<th style='padding: 12px; text-align: center; border: 1px solid #ddd;'>New Matches</th>");
-        alertMessage.append("</tr>");
-        alertMessage.append("</thead>");
-        alertMessage.append("<tbody>");
-
-        boolean hasNewAlerts = false;
-        int rowCount = 0;
 
         for (Map.Entry<String, ConcurrentHashMap<String, Long>> fileEntry : newMatchCounts.entrySet()) {
             String logFile = fileEntry.getKey();
@@ -242,79 +231,58 @@ public class LogKeywordMonitorService {
                 continue;
             }
 
-            // Get config for this log file to check alert settings
-            LogKeywordMonitorConfig.LogFileConfig config = findConfigForPath(logFile);
-            // Default false (alert every time) when config not found — safer than silently suppressing
-            boolean alertOnFirstMatch = (config != null) && config.isAlertOnFirstMatch();
-
-            // Initialize alerted keywords set for this file
-            alertedKeywords.putIfAbsent(logFile, new HashSet<>());
-            Set<String> alerted = alertedKeywords.get(logFile);
-
-            // Extract just the filename for cleaner display
             String fileName = logFile.substring(Math.max(logFile.lastIndexOf('\\'), logFile.lastIndexOf('/')) + 1);
-            
-            boolean firstKeywordForFile = true;
 
+            alertMessage.append("<h5 style='color: #34495e; margin: 15px 0 5px;' title='")
+                       .append(escapeHtml(logFile)).append("'>")
+                       .append(escapeHtml(fileName)).append("</h5>");
+
+            alertMessage.append("<table style='width: 100%; border-collapse: collapse; margin-bottom: 15px;'>");
+            alertMessage.append("<thead><tr style='background-color: #34495e; color: white;'>");
+            alertMessage.append("<th style='padding: 10px; text-align: left; border: 1px solid #ddd;'>Keyword</th>");
+            alertMessage.append("<th style='padding: 10px; text-align: left; border: 1px solid #ddd;'>Matching Lines</th>");
+            alertMessage.append("<th style='padding: 10px; text-align: center; border: 1px solid #ddd; width: 80px;'>Count</th>");
+            alertMessage.append("</tr></thead><tbody>");
+
+            int rowCount = 0;
             for (Map.Entry<String, Long> keywordEntry : keywordCounts.entrySet()) {
                 String keyword = keywordEntry.getKey();
                 long count = keywordEntry.getValue();
 
-                // Check if we should alert
-                boolean shouldAlert = !alertOnFirstMatch || !alerted.contains(keyword);
+                List<String> lines = newMatchLines.getOrDefault(logFile, Collections.emptyMap())
+                        .getOrDefault(keyword, Collections.emptyList());
 
-                if (shouldAlert) {
-                    // Alternate row colors
-                    String rowColor = (rowCount % 2 == 0) ? "#f9f9f9" : "#ffffff";
-                    
-                    alertMessage.append("<tr style='background-color: ").append(rowColor).append(";'>");
-                    
-                    // Only show filename in first row for this file
-                    if (firstKeywordForFile) {
-                        alertMessage.append("<td style='padding: 10px; border: 1px solid #ddd; font-size: 12px; font-family: monospace;' title='")
-                                   .append(escapeHtml(logFile)).append("'>")
-                                   .append(escapeHtml(fileName)).append("</td>");
-                        firstKeywordForFile = false;
-                    } else {
-                        alertMessage.append("<td style='padding: 10px; border: 1px solid #ddd;'></td>");
-                    }
-                    
-                    // Keyword column with color coding
-                    String keywordColor = getKeywordColor(keyword);
-                    alertMessage.append("<td style='padding: 10px; border: 1px solid #ddd;'>")
-                               .append("<span style='background-color: ").append(keywordColor)
-                               .append("; color: white; padding: 4px 8px; border-radius: 3px; font-weight: bold; font-size: 12px;'>")
-                               .append(escapeHtml(keyword)).append("</span></td>");
-                    
-                    // Count column
-                    alertMessage.append("<td style='padding: 10px; border: 1px solid #ddd; text-align: center; font-weight: bold;'>")
-                               .append(count).append("</td>");
-                    
-                    alertMessage.append("</tr>");
-                    
-                    hasNewAlerts = true;
-                    rowCount++;
+                String rowColor = (rowCount % 2 == 0) ? "#f9f9f9" : "#ffffff";
+                alertMessage.append("<tr style='background-color: ").append(rowColor).append(";'>");
 
-                    // Mark as alerted if alertOnFirstMatch is enabled
-                    if (alertOnFirstMatch) {
-                        alerted.add(keyword);
-                    }
+                String keywordColor = getKeywordColor(keyword);
+                alertMessage.append("<td style='padding: 10px; border: 1px solid #ddd; vertical-align: top;'>")
+                           .append("<span style='background-color: ").append(keywordColor)
+                           .append("; color: white; padding: 4px 8px; border-radius: 3px; font-weight: bold; font-size: 12px;'>")
+                           .append(escapeHtml(keyword)).append("</span></td>");
+
+                alertMessage.append("<td style='padding: 10px; border: 1px solid #ddd; font-family: monospace; font-size: 12px;'>");
+                for (String matchedLine : lines) {
+                    alertMessage.append(escapeHtml(matchedLine)).append("<br/>");
                 }
+                alertMessage.append("</td>");
+
+                alertMessage.append("<td style='padding: 10px; border: 1px solid #ddd; text-align: center; font-weight: bold; vertical-align: top;'>")
+                           .append(count).append("</td>");
+                alertMessage.append("</tr>");
+                rowCount++;
             }
+
+            alertMessage.append("</tbody></table>");
         }
-        
-        alertMessage.append("</tbody>");
-        alertMessage.append("</table>");
+
         alertMessage.append("<p style='color: #7f8c8d; font-size: 13px;'>Please review the log files for full details.</p>");
 
-        if (hasNewAlerts) {
-            // Send email alert
-            try {
-                emailService.sendAlert("Log Keyword Alert", alertMessage.toString());
-                logger.info("Email alert sent for keyword matches");
-            } catch (Exception e) {
-                logger.log(Level.SEVERE, "Failed to send email alert: " + e.getMessage(), e);
-            }
+        try {
+            emailService.sendAlert("Log Keyword Alert", alertMessage.toString());
+            logger.info("Email alert sent for keyword matches");
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to send email alert: " + e.getMessage(), e);
         }
     }
 
@@ -344,15 +312,5 @@ public class LogKeywordMonitorService {
                    .replace("'", "&#39;");
     }
 
-    private LogKeywordMonitorConfig.LogFileConfig findConfigForPath(String logPath) {
-        for (LogKeywordMonitorConfig.LogFileConfig config : logFileConfigs) {
-            // Check if this path matches any of the resolved paths
-            for (Path resolvedPath : config.getResolvedPaths()) {
-                if (resolvedPath.toAbsolutePath().toString().equals(logPath)) {
-                    return config;
-                }
-            }
-        }
-        return null;
-    }
+
 }

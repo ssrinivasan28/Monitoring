@@ -45,7 +45,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Messages]
 WelcomeLabel1=Welcome to the Island Pacific Windows Monitoring Agent
-WelcomeLabel2=This wizard will install the Island Pacific Windows Monitoring Agent on your server.%n%nThe following monitoring services are available:%n%n  • WinMonitor           — CPU, memory, disk and Windows services%n  • WinFSErrorMonitor    — Error file detection in watched folders%n  • WinFSCardinalityMonitor — File count threshold alerting%n  • LogKeywordMonitor    — Application log keyword scanning%n  • ServerUpTimeMonitor  — Network reachability and ping health%n%nAll agents run as Windows services and send email alerts when action is needed.%n%nClick Next to continue, or Cancel to exit.
+WelcomeLabel2=This wizard will install the Island Pacific Windows Monitoring Agent on your server.%n%nThe following monitoring services are available:%n%n  • WinMonitor           — CPU, memory, disk and Windows services%n  • WinFSErrorMonitor    — Error file detection in watched folders%n  • WinFSCardinalityMonitor — File count threshold alerting%n  • LogKeywordMonitor    — Application log keyword scanning%n  • ServerUpTimeMonitor  — Network reachability and ping health%n  • WinServiceMonitor    — Windows service state monitoring%n%nAll agents run as Windows services and send email alerts when action is needed.%n%nClick Next to continue, or Cancel to exit.
 FinishedHeadingLabel=Installation Complete
 FinishedLabel=The Island Pacific Windows Monitoring Agent has been installed successfully.%n%nInstalled services are now running and monitoring your Windows environment.%n%nEach agent writes daily log files to its log folder. You can verify service status at any time with:%n%n  sc query IPMonitoring_WinMonitor%n  sc query IPMonitoring_WinFSErrorMonitor%n  sc query IPMonitoring_WinFSCardinalityMonitor%n  sc query IPMonitoring_LogKeywordMonitor%n  sc query IPMonitoring_ServerUpTimeMonitor%n%nClick Finish to close this wizard.
 FinishedLabelNoIcons=The Island Pacific Windows Monitoring Agent has been installed. Selected monitoring services are now active.
@@ -63,6 +63,8 @@ Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "I
 Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_WinFSCardinalityMonitor.exe"; Flags: ignoreversion
 Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_LogKeywordMonitor.exe"; Flags: ignoreversion
 Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_ServerUpTimeMonitor.exe"; Flags: ignoreversion
+Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_WinServiceMonitor.exe"; Flags: ignoreversion
+Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_FolderLogKeywordMonitor.exe"; Flags: ignoreversion
 
 ; JAR files (always updated on upgrade)
 Source: "installer\resources\monitoring-services\WinMonitor\*.jar"; DestDir: "{app}\monitoring-services\WinMonitor"; Flags: ignoreversion; Check: IsWinMonitorSelected
@@ -70,6 +72,8 @@ Source: "installer\resources\monitoring-services\WinFSErrorMonitor\*.jar"; DestD
 Source: "installer\resources\monitoring-services\WinFSCardinalityMonitor\*.jar"; DestDir: "{app}\monitoring-services\WinFSCardinalityMonitor"; Flags: ignoreversion; Check: IsWinFSCardinalityMonitorSelected
 Source: "installer\resources\monitoring-services\LogKeywordMonitor\*.jar"; DestDir: "{app}\monitoring-services\LogKeywordMonitor"; Flags: ignoreversion; Check: IsLogKeywordMonitorSelected
 Source: "installer\resources\monitoring-services\ServerUpTimeMonitor\*.jar"; DestDir: "{app}\monitoring-services\ServerUpTimeMonitor"; Flags: ignoreversion; Check: IsServerUpTimeMonitorSelected
+Source: "installer\resources\monitoring-services\WinServiceMonitor\*.jar"; DestDir: "{app}\monitoring-services\WinServiceMonitor"; Flags: ignoreversion; Check: IsWinServiceMonitorSelected
+Source: "installer\resources\monitoring-services\FolderLogKeywordMonitor\*.jar"; DestDir: "{app}\monitoring-services\FolderLogKeywordMonitor"; Flags: ignoreversion; Check: IsFolderLogKeywordMonitorSelected
 
 ; Properties files - only written if not already present (preserves user config on upgrade)
 Source: "installer\resources\monitoring-services\WinMonitor\*.properties"; DestDir: "{app}\monitoring-services\WinMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsWinMonitorSelected
@@ -78,6 +82,9 @@ Source: "installer\resources\monitoring-services\WinFSCardinalityMonitor\*.prope
 Source: "installer\resources\monitoring-services\LogKeywordMonitor\*.properties"; DestDir: "{app}\monitoring-services\LogKeywordMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsLogKeywordMonitorSelected
 Source: "logkeywordmonitor.properties"; DestDir: "{app}\monitoring-services\LogKeywordMonitor"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsLogKeywordMonitorSelected
 Source: "installer\resources\monitoring-services\ServerUpTimeMonitor\*.properties"; DestDir: "{app}\monitoring-services\ServerUpTimeMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsServerUpTimeMonitorSelected
+Source: "installer\resources\monitoring-services\WinServiceMonitor\*.properties"; DestDir: "{app}\monitoring-services\WinServiceMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsWinServiceMonitorSelected
+Source: "installer\resources\monitoring-services\FolderLogKeywordMonitor\*.properties"; DestDir: "{app}\monitoring-services\FolderLogKeywordMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsFolderLogKeywordMonitorSelected
+Source: "folderlogkeywordmonitor.properties"; DestDir: "{app}\monitoring-services\FolderLogKeywordMonitor"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsFolderLogKeywordMonitorSelected
 
 [Registry]
 Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstallPath"; ValueData: "{app}"; Flags: uninsdeletekey
@@ -104,6 +111,10 @@ Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstalledWinF
 Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstalledWinFSCardinalityMonitor"; ValueData: "{code:GetInstalledWinFSCardinalityMonitor}"; Flags: uninsdeletevalue
 Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstalledLogKeywordMonitor"; ValueData: "{code:GetInstalledLogKeywordMonitor}"; Flags: uninsdeletevalue
 Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstalledServerUpTimeMonitor"; ValueData: "{code:GetInstalledServerUpTimeMonitor}"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "WinServiceMonitorPort"; ValueData: "{code:GetWinServiceMonitorPort}"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstalledWinServiceMonitor"; ValueData: "{code:GetInstalledWinServiceMonitor}"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "FolderLogKeywordMonitorPort"; ValueData: "{code:GetFolderLogKeywordMonitorPort}"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstalledFolderLogKeywordMonitor"; ValueData: "{code:GetInstalledFolderLogKeywordMonitor}"; Flags: uninsdeletevalue
 
 [UninstallDelete]
 Type: files; Name: "{app}\services\*.xml"
@@ -113,6 +124,8 @@ Type: dirifempty; Name: "{app}\monitoring-services\WinFSErrorMonitor"
 Type: dirifempty; Name: "{app}\monitoring-services\WinFSCardinalityMonitor"
 Type: dirifempty; Name: "{app}\monitoring-services\LogKeywordMonitor"
 Type: dirifempty; Name: "{app}\monitoring-services\ServerUpTimeMonitor"
+Type: dirifempty; Name: "{app}\monitoring-services\WinServiceMonitor"
+Type: dirifempty; Name: "{app}\monitoring-services\FolderLogKeywordMonitor"
 Type: dirifempty; Name: "{app}\monitoring-services"
 Type: dirifempty; Name: "{app}\services"
 Type: dirifempty; Name: "{app}"
@@ -138,6 +151,8 @@ var
   ChkWinFSCardinalityMonitor: TNewCheckBox;
   ChkLogKeywordMonitor:      TNewCheckBox;
   ChkServerUpTimeMonitor:    TNewCheckBox;
+  ChkWinServiceMonitor:      TNewCheckBox;
+  ChkFolderLogKeywordMonitor: TNewCheckBox;
 
   // ---- SMTP page controls ----
   SmtpHostEdit, SmtpPortEdit, SmtpUsernameEdit, SmtpPasswordEdit: TNewEdit;
@@ -157,6 +172,8 @@ var
   WinFSCardinalityMonitorPortEdit: TNewEdit;
   LogKeywordMonitorPortEdit:      TNewEdit;
   ServerUpTimeMonitorPortEdit:    TNewEdit;
+  WinServiceMonitorPortEdit:      TNewEdit;
+  FolderLogKeywordMonitorPortEdit: TNewEdit;
 
   // ---- Port page labels (for visibility control) ----
   LblWinMonitorPort:             TNewStaticText;
@@ -164,6 +181,8 @@ var
   LblWinFSCardinalityMonitorPort: TNewStaticText;
   LblLogKeywordMonitorPort:      TNewStaticText;
   LblServerUpTimeMonitorPort:    TNewStaticText;
+  LblWinServiceMonitorPort:      TNewStaticText;
+  LblFolderLogKeywordMonitorPort: TNewStaticText;
 
   // ---- State ----
   IsUpgrade: Boolean;
@@ -310,6 +329,8 @@ function GetWinFSErrorMonitorPort(Param: string): string;      begin Result := W
 function GetWinFSCardinalityMonitorPort(Param: string): string; begin Result := WinFSCardinalityMonitorPortEdit.Text; end;
 function GetLogKeywordMonitorPort(Param: string): string;      begin Result := LogKeywordMonitorPortEdit.Text; end;
 function GetServerUpTimeMonitorPort(Param: string): string;    begin Result := ServerUpTimeMonitorPortEdit.Text; end;
+function GetWinServiceMonitorPort(Param: string): string;      begin Result := WinServiceMonitorPortEdit.Text; end;
+function GetFolderLogKeywordMonitorPort(Param: string): string; begin Result := FolderLogKeywordMonitorPortEdit.Text; end;
 
 function GetInstalledWinMonitor(Param: string): string;
 begin if ChkWinMonitor.Checked then Result := 'true' else Result := 'false'; end;
@@ -321,6 +342,10 @@ function GetInstalledLogKeywordMonitor(Param: string): string;
 begin if ChkLogKeywordMonitor.Checked then Result := 'true' else Result := 'false'; end;
 function GetInstalledServerUpTimeMonitor(Param: string): string;
 begin if ChkServerUpTimeMonitor.Checked then Result := 'true' else Result := 'false'; end;
+function GetInstalledWinServiceMonitor(Param: string): string;
+begin if ChkWinServiceMonitor.Checked then Result := 'true' else Result := 'false'; end;
+function GetInstalledFolderLogKeywordMonitor(Param: string): string;
+begin if ChkFolderLogKeywordMonitor.Checked then Result := 'true' else Result := 'false'; end;
 
 // =============================================================================
 // [Check] functions used in [Files] section
@@ -330,6 +355,8 @@ function IsWinFSErrorMonitorSelected: Boolean;     begin Result := ChkWinFSError
 function IsWinFSCardinalityMonitorSelected: Boolean; begin Result := ChkWinFSCardinalityMonitor.Checked; end;
 function IsLogKeywordMonitorSelected: Boolean;     begin Result := ChkLogKeywordMonitor.Checked; end;
 function IsServerUpTimeMonitorSelected: Boolean;   begin Result := ChkServerUpTimeMonitor.Checked; end;
+function IsWinServiceMonitorSelected: Boolean;     begin Result := ChkWinServiceMonitor.Checked; end;
+function IsFolderLogKeywordMonitorSelected: Boolean; begin Result := ChkFolderLogKeywordMonitor.Checked; end;
 
 // =============================================================================
 // Helper: write email.properties into a monitor service folder
@@ -632,6 +659,18 @@ begin
   AddLabel(Page, ChkServerUpTimeMonitor.Top + ChkServerUpTimeMonitor.Height + ScaleY(2), SW,
     '    Immediate DOWN alert when a server goes unreachable; UP alert on recovery', False);
 
+  ChkWinServiceMonitor := AddCheckBox(Page,
+    ChkServerUpTimeMonitor.Top + ChkServerUpTimeMonitor.Height + ScaleY(24),
+    'WinServiceMonitor  —  Monitors Windows services.msc for configured services', True);
+  AddLabel(Page, ChkWinServiceMonitor.Top + ChkWinServiceMonitor.Height + ScaleY(2), SW,
+    '    Alerts when a service goes down; recovery alert when it comes back up', False);
+
+  ChkFolderLogKeywordMonitor := AddCheckBox(Page,
+    ChkWinServiceMonitor.Top + ChkWinServiceMonitor.Height + ScaleY(24),
+    'FolderLogKeywordMonitor  —  Scans all files in a folder recursively for keywords', True);
+  AddLabel(Page, ChkFolderLogKeywordMonitor.Top + ChkFolderLogKeywordMonitor.Height + ScaleY(2), SW,
+    '    Alerts once per file per day when a keyword is found', False);
+
   // ------------------------------------------------------------------
   // 3. Email authentication method
   // ------------------------------------------------------------------
@@ -838,6 +877,36 @@ begin
   ServerUpTimeMonitorPortEdit.Left := Round(SW * 0.70);
   ServerUpTimeMonitorPortEdit.Width := Round(SW * 0.30);
   ServerUpTimeMonitorPortEdit.Text := GetSavedValue('ServerUpTimeMonitorPort', '3014');
+
+  LblWinServiceMonitorPort := TNewStaticText.Create(Page);
+  LblWinServiceMonitorPort.Parent := Page.Surface;
+  LblWinServiceMonitorPort.Top := ServerUpTimeMonitorPortEdit.Top + ServerUpTimeMonitorPortEdit.Height + ScaleY(8);
+  LblWinServiceMonitorPort.Left := 0;
+  LblWinServiceMonitorPort.Width := Round(SW * 0.68);
+  LblWinServiceMonitorPort.Caption := 'WinServiceMonitor port:';
+  LblWinServiceMonitorPort.AutoSize := True;
+
+  WinServiceMonitorPortEdit := TNewEdit.Create(Page);
+  WinServiceMonitorPortEdit.Parent := Page.Surface;
+  WinServiceMonitorPortEdit.Top := LblWinServiceMonitorPort.Top;
+  WinServiceMonitorPortEdit.Left := Round(SW * 0.70);
+  WinServiceMonitorPortEdit.Width := Round(SW * 0.30);
+  WinServiceMonitorPortEdit.Text := GetSavedValue('WinServiceMonitorPort', '3026');
+
+  LblFolderLogKeywordMonitorPort := TNewStaticText.Create(Page);
+  LblFolderLogKeywordMonitorPort.Parent := Page.Surface;
+  LblFolderLogKeywordMonitorPort.Top := WinServiceMonitorPortEdit.Top + WinServiceMonitorPortEdit.Height + ScaleY(8);
+  LblFolderLogKeywordMonitorPort.Left := 0;
+  LblFolderLogKeywordMonitorPort.Width := Round(SW * 0.68);
+  LblFolderLogKeywordMonitorPort.Caption := 'FolderLogKeywordMonitor port:';
+  LblFolderLogKeywordMonitorPort.AutoSize := True;
+
+  FolderLogKeywordMonitorPortEdit := TNewEdit.Create(Page);
+  FolderLogKeywordMonitorPortEdit.Parent := Page.Surface;
+  FolderLogKeywordMonitorPortEdit.Top := LblFolderLogKeywordMonitorPort.Top;
+  FolderLogKeywordMonitorPortEdit.Left := Round(SW * 0.70);
+  FolderLogKeywordMonitorPortEdit.Width := Round(SW * 0.30);
+  FolderLogKeywordMonitorPortEdit.Text := GetSavedValue('FolderLogKeywordMonitorPort', '3027');
 end;
 
 // =============================================================================
@@ -865,7 +934,7 @@ begin
   if PageID = ServicePortsPage.ID then
     Result := not (ChkWinMonitor.Checked or ChkWinFSErrorMonitor.Checked or
                    ChkWinFSCardinalityMonitor.Checked or ChkLogKeywordMonitor.Checked or
-                   ChkServerUpTimeMonitor.Checked);
+                   ChkServerUpTimeMonitor.Checked or ChkWinServiceMonitor.Checked);
 end;
 
 // =============================================================================
@@ -882,7 +951,7 @@ begin
   begin
     HasMonitor := ChkWinMonitor.Checked or ChkWinFSErrorMonitor.Checked or
                   ChkWinFSCardinalityMonitor.Checked or ChkLogKeywordMonitor.Checked or
-                  ChkServerUpTimeMonitor.Checked;
+                  ChkServerUpTimeMonitor.Checked or ChkWinServiceMonitor.Checked;
     if not HasMonitor then
     begin
       MsgBox('Please select at least one monitoring agent to install.', mbError, MB_OK);
@@ -936,6 +1005,11 @@ begin
       MsgBox('ServerUpTimeMonitor port must be a number between 1024 and 65535.', mbError, MB_OK);
       Result := False; Exit;
     end;
+    if ChkWinServiceMonitor.Checked and not IsValidPort(WinServiceMonitorPortEdit.Text) then
+    begin
+      MsgBox('WinServiceMonitor port must be a number between 1024 and 65535.', mbError, MB_OK);
+      Result := False; Exit;
+    end;
   end;
 end;
 
@@ -951,6 +1025,7 @@ begin
     StopAndUninstallService('IPMonitoring_WinFSCardinalityMonitor.exe');
     StopAndUninstallService('IPMonitoring_LogKeywordMonitor.exe');
     StopAndUninstallService('IPMonitoring_ServerUpTimeMonitor.exe');
+    StopAndUninstallService('IPMonitoring_WinServiceMonitor.exe');
     Exit;
   end;
 
@@ -995,6 +1070,14 @@ begin
       'Pings servers to detect outages and send recovery alerts',
       'ServerUpTimeMonitor.jar', 'serverinfo.properties',
       GetServerUpTimeMonitorPort(''));
+
+  if ChkWinServiceMonitor.Checked then
+    InstallWinMonitor(
+      'WinServiceMonitor', 'IPMonitoring_WinServiceMonitor',
+      'IP Monitoring - Windows Service Monitor',
+      'Monitors Windows services and sends alerts on state changes',
+      'WinServiceMonitor.jar', 'winservicemonitor.properties',
+      GetWinServiceMonitorPort(''));
 end;
 
 // =============================================================================
@@ -1009,4 +1092,5 @@ begin
   StopAndUninstallService('IPMonitoring_WinFSCardinalityMonitor.exe');
   StopAndUninstallService('IPMonitoring_LogKeywordMonitor.exe');
   StopAndUninstallService('IPMonitoring_ServerUpTimeMonitor.exe');
+  StopAndUninstallService('IPMonitoring_WinServiceMonitor.exe');
 end;

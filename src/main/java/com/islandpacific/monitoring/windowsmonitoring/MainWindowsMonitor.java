@@ -29,6 +29,8 @@ public class MainWindowsMonitor {
 
     // Disk Growth Tracking: Map<Host, Map<Drive, PreviousUsagePercent>>
     private static final Map<String, Map<String, Double>> lastDiskUsage = new ConcurrentHashMap<>();
+    // Service restart attempt counts: Map<"host::service", attemptCount>
+    private static final Map<String, Integer> serviceRestartAttempts = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
         if (args.length >= 1)
@@ -194,21 +196,39 @@ public class MainWindowsMonitor {
             }
         }
 
-        // Service Alerts (windowed to avoid alert storms on transient blips)
+        // Service Alerts with auto-restart and escalation
         Map<String, String> serviceStatuses = info.getServiceStatuses();
         if (serviceStatuses == null) serviceStatuses = Collections.emptyMap();
         for (Map.Entry<String, String> entry : serviceStatuses.entrySet()) {
-            if (!"Running".equalsIgnoreCase(entry.getValue())) {
-                String serviceKey = "SERVICE_" + entry.getKey();
+            String service = entry.getKey();
+            String status  = entry.getValue();
+            String serviceKey  = "SERVICE_" + service;
+            String restartKey  = host + "::" + service;
+
+            if (!"Running".equalsIgnoreCase(status)) {
                 int count = hostCounters.getOrDefault(serviceKey, 0) + 1;
                 hostCounters.put(serviceKey, count);
 
-                if (count == config.getAlertWindowSize()) { // Alert once per window breach
-                    emailService.sendErrorAlert("Service Stopped: " + entry.getKey() + " on " + host,
-                            "Service " + entry.getKey() + " is in status: " + entry.getValue());
+                if (count == config.getAlertWindowSize()) {
+                    int attempts = serviceRestartAttempts.getOrDefault(restartKey, 0) + 1;
+                    serviceRestartAttempts.put(restartKey, attempts);
+
+                    if (attempts <= config.getServiceMaxRestartAttempts()) {
+                        logger.warning("[" + host + "] Auto-restarting service '" + service
+                                + "' (attempt " + attempts + "/" + config.getServiceMaxRestartAttempts() + ")");
+                        WindowsMonitorConfig.Credentials creds = config.getCredentialsForHost(host);
+                        boolean restarted = metricsService.restartService(host, service, creds);
+                        emailService.sendServiceRestartAlert(host, service, status, attempts, restarted);
+                        hostCounters.put(serviceKey, 0); // re-arm window
+                    } else {
+                        logger.warning("[" + host + "] ESCALATION: service '" + service
+                                + "' failed after " + config.getServiceMaxRestartAttempts() + " restart attempts");
+                        emailService.sendServiceEscalationAlert(host, service, status, attempts);
+                    }
                 }
             } else {
-                hostCounters.remove("SERVICE_" + entry.getKey());
+                hostCounters.remove(serviceKey);
+                serviceRestartAttempts.put(restartKey, 0);
             }
         }
 
@@ -223,9 +243,38 @@ public class MainWindowsMonitor {
                         config.getDiskAlertThreshold());
                 hostCounters.put("ALERT_SENT", 1);
             }
+            // Remediation 3: kill top CPU process (once per breach window)
+            if (cpuBreached && hostCounters.getOrDefault("CPU_KILL_DONE", 0) == 0) {
+                WindowsMonitorConfig.Credentials creds = config.getCredentialsForHost(host);
+                String killed = metricsService.killTopCpuProcess(host, config.getKillableProcesses(), creds);
+                if (killed != null) {
+                    emailService.sendCpuKillAlert(host, killed, info.getCpuUtilization(),
+                            config.getCpuAlertThreshold());
+                }
+                hostCounters.put("CPU_KILL_DONE", 1);
+            }
         } else {
             // Both CPU and Memory are below threshold — reset so next breach fires a new alert
             hostCounters.put("ALERT_SENT", 0);
+            hostCounters.put("CPU_KILL_DONE", 0);
+        }
+
+        // Remediation 4: disk cleanup — once per drive per breach window
+        if (config.isDiskCleanupEnabled() && info.getDisks() != null) {
+            for (Map.Entry<String, WindowsMonitorInfo.DiskInfo> entry : info.getDisks().entrySet()) {
+                String drive = entry.getKey();
+                boolean diskBreached = hostCounters.getOrDefault("DISK_" + drive, 0) >= config.getAlertWindowSize();
+                String cleanKey = "DISK_CLEAN_DONE_" + drive;
+                if (diskBreached && hostCounters.getOrDefault(cleanKey, 0) == 0) {
+                    WindowsMonitorConfig.Credentials creds = config.getCredentialsForHost(host);
+                    boolean cleaned = metricsService.runDiskCleanup(host, drive, creds);
+                    emailService.sendDiskCleanupAlert(host, drive, entry.getValue().getUsagePercent(),
+                            config.getDiskAlertThreshold(), cleaned);
+                    hostCounters.put(cleanKey, 1);
+                } else if (!diskBreached) {
+                    hostCounters.put(cleanKey, 0);
+                }
+            }
         }
     }
 
