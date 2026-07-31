@@ -34,7 +34,8 @@ Product-direction decisions captured with the stakeholder (SSrinivasan). These r
 | 25 | Flagship demo | **Cross-platform correlation** — IBM i outage + Windows fallout → one incident with root cause |
 | 26 | SLA definition | **Composite health** (reachable + SLA-critical components running), **24×7**, **no maintenance exclusions**, **99.9% default with per-tenant override**. Per-system, rolled up per tenant. See [`REPORTING.md`](REPORTING.md) |
 | 27 | Data-source config | **Multiple** metrics/logs data sources per tenant (add more as monitoring grows), **managed in the Admin UI**, stored in `tenant_datasource`; the query gateway **fans out** across a tenant's enabled sources and **falls back to the central** `application.yml` endpoint (central, per-tenant, hybrid) |
-| 28 | Scope freeze | v1 scope **FROZEN at 36 build chunks (Phases 0–4)**. MVP = ⭐ set; **production-ready = all 36 + the Definition of Done** in [`ENTERPRISE_READINESS.md`](ENTERPRISE_READINESS.md). Phase 4 = production hardening (DR, self-monitoring, secrets rotation, resilience, perf, security, AI-safety, SOC 2 + a11y) |
+| 28 | Scope freeze | v1 scope **FROZEN at 37 build chunks (Phases 0–4)**. MVP = ⭐ set; **production-ready = all 37 + the Definition of Done** in [`ENTERPRISE_READINESS.md`](ENTERPRISE_READINESS.md). Phase 4 = production hardening (DR, self-monitoring, secrets rotation, resilience, perf, security, AI-safety, SOC 2 + a11y) |
+| 29 | Dashboards for all monitors | **Config-driven dashboard engine** (`0.12`): dashboards defined as JSON, **import existing Grafana JSON**, and **new monitoring needs only a definition** (no code). Renders via the gateway (multi-source, tenant-scoped) |
 
 ## Key implications for the build
 

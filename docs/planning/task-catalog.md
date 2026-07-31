@@ -1,10 +1,10 @@
 # IP Sentinel — Task Catalog
 
-> **Scope: FROZEN — v1 = 36 chunks (Phases 0–4).** Phase 0:11 · 1:8 · 2:4 · 3:5 · 4:8.
-> MVP = ⭐ set. **Production-ready = all 36 + the Definition of Done in
+> **Scope: FROZEN — v1 = 37 chunks (Phases 0–4).** Phase 0:12 · 1:8 · 2:4 · 3:5 · 4:8.
+> MVP = ⭐ set. **Production-ready = all 37 + the Definition of Done in
 > [ENTERPRISE_READINESS.md](../ip-sentinel/ENTERPRISE_READINESS.md).**
 
-The full backlog: 36 ticket-sized build chunks derived from the [build prompts](../ip-sentinel/prompts/README.md).
+The full backlog: 37 ticket-sized build chunks derived from the [build prompts](../ip-sentinel/prompts/README.md).
 Each row is one build session / PR. ⭐ = MVP. Paste
 [`00-shared-preamble.md`](../ip-sentinel/prompts/00-shared-preamble.md) + the chunk to build.
 
@@ -22,6 +22,7 @@ Each row is one build session / PR. ⭐ = MVP. Paste
 | 0.9 | [Fleet Overview — capacity headroom](../ip-sentinel/prompts/phase-0/0.9-fleet-overview.md) | ⭐ | 0.4, 0.8 | Weighted-blend headroom + hard critical override; no LLM |
 | 0.10 | [Pilot dashboards (uPlot parity)](../ip-sentinel/prompts/phase-0/0.10-pilot-dashboards.md) | ⭐ | 0.4, 0.8 | SPA panels match Grafana JSON for pilot monitors |
 | 0.11 | [Data-plane & packaging](../ip-sentinel/prompts/phase-0/0.11-data-plane-packaging.md) | | 0.9, 0.10 | Remote-write w/ tenant label; WinSW install; monitors unchanged |
+| 0.12 | [Config-driven dashboard engine](../ip-sentinel/prompts/phase-0/0.12-dashboard-engine.md) | | 0.10 | Dashboards from JSON defs; Grafana import; new monitor = new definition, no code |
 
 ## Phase 1 — Correlation, triage, integrations
 | ID | Task | MVP | Depends on | Acceptance (summary) |
@@ -64,4 +65,4 @@ Each row is one build session / PR. ⭐ = MVP. Paste
 | 4.7 | [AI safety eval & red-team](../ip-sentinel/prompts/phase-4/4.7-ai-safety-eval-redteam.md) | | 1.2, 2.1 | Eval thresholds in CI; injection can't alter actions/cross tenants |
 | 4.8 | [Compliance (SOC 2) & accessibility](../ip-sentinel/prompts/phase-4/4.8-compliance-accessibility.md) | | 0.7, 0.8 | Audit immutability proven; evidence exportable; SPA WCAG 2.1 AA |
 
-**36 tasks total · MVP = the ⭐ set · Production-ready = all 36 + the Definition of Done.**
+**37 tasks total · MVP = the ⭐ set · Production-ready = all 37 + the Definition of Done.**

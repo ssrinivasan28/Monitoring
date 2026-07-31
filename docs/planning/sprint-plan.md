@@ -13,7 +13,7 @@ adjust velocity to your team.
 - **M5 — Production-ready (end Sprint 11):** Phase 4 hardening complete + Definition of Done green
   (see [ENTERPRISE_READINESS.md](../ip-sentinel/ENTERPRISE_READINESS.md)). SOC 2 evidence then accrues over the audit period.
 
-> **Frozen scope: 36 chunks (Phases 0–4).**
+> **Frozen scope: 37 chunks (Phases 0–4).**
 
 ## Sprint 0 — Inception (setup)
 Repo scaffolding for `aiops-platform/` + `aiops-web/`, CI pipeline, Postgres 18 + pgvector env,
@@ -47,6 +47,7 @@ Testcontainers harness, coding standards wired. No feature chunks.
 - 1.5 Lightweight incident lifecycle
 - 1.6 Microsoft Teams integration ⭐
 - 1.7 ITSM two-way sync
+- 0.12 Config-driven dashboard engine (dashboards for all monitor types; post-pilot)
 
 ## Sprint 6 — ChatOps (Pro)  → **M3**
 - 2.1 Assistant agent

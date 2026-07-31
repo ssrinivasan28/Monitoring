@@ -29,6 +29,7 @@ Build in order within a phase. Phases are sequential (1 assumes 0, etc.). The **
 | 0.9 | [Fleet Overview — capacity headroom](phase-0/0.9-fleet-overview.md) | ⭐ |
 | 0.10 | [Pilot dashboards (uPlot parity)](phase-0/0.10-pilot-dashboards.md) | ⭐ |
 | 0.11 | [Data-plane & packaging](phase-0/0.11-data-plane-packaging.md) | |
+| 0.12 | [Config-driven dashboard engine (all monitor types)](phase-0/0.12-dashboard-engine.md) | |
 
 ## Phase 1 — Correlation, triage, integrations
 | # | Chunk | |
@@ -71,7 +72,7 @@ Build in order within a phase. Phases are sequential (1 assumes 0, etc.). The **
 | 4.7 | [AI safety evaluation & red-team](phase-4/4.7-ai-safety-eval-redteam.md) | |
 | 4.8 | [Compliance (SOC 2) & accessibility](phase-4/4.8-compliance-accessibility.md) | |
 
-> **Scope frozen: 36 chunks total** (Phase 0:11 · 1:8 · 2:4 · 3:5 · 4:8).
+> **Scope frozen: 37 chunks total** (Phase 0:12 · 1:8 · 2:4 · 3:5 · 4:8).
 > ⭐ = MVP: fleet view + pilot dashboards (Phase 0) and the cross-platform correlation showcase
-> (Phase 1) for one pilot tenant. **Production-ready = all 36 + the Definition of Done in
+> (Phase 1) for one pilot tenant. **Production-ready = all 37 + the Definition of Done in
 > [ENTERPRISE_READINESS.md](../ENTERPRISE_READINESS.md).**

@@ -102,7 +102,7 @@ reviews will ask for on day one.
 ---
 
 ## Definition of Done: Production-Ready
-The product is **production-ready** when **all 36 chunks (Phases 0–4)** are complete **and** every
+The product is **production-ready** when **all 37 chunks (Phases 0–4)** are complete **and** every
 box below is green. Phase 4 chunks deliver most of these.
 
 - [ ] **Functional:** all Phase 0–3 chunks merged; MVP demo passes end-to-end.
@@ -116,4 +116,4 @@ box below is green. Phase 4 chunks deliver most of these.
 - [ ] **Compliance:** audit immutability proven; evidence exportable; **SPA WCAG 2.1 AA**; subprocessor + access-review docs (`4.8`).
 - [ ] **SOC 2 Type II:** controls **operating** over the audit period (process — begins once the above are in place).
 
-> Frozen scope: **36 chunks (Phases 0–4)**. MVP = the ⭐ set; production-ready = this checklist all green.
+> Frozen scope: **37 chunks (Phases 0–4)**. MVP = the ⭐ set; production-ready = this checklist all green.

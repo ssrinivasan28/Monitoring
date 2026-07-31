@@ -54,6 +54,7 @@ architecture). Write the individual ADR files as each is formalized; this table 
 | 0017 | **SOC 2 Type II** compliance target | Accepted | #24 |
 | 0018 | Primary KPI = **alert-noise reduction** | Accepted | #22 |
 | 0019 | **Multiple UI-managed per-tenant data sources** (`tenant_datasource`; gateway fan-out + central fallback) | Accepted | #27 |
-| 0020 | **Scope frozen at 36 chunks (Phases 0–4)**; production-ready = all 36 + Definition of Done | Accepted | #28 |
+| 0020 | **Scope frozen at 37 chunks (Phases 0–4)**; production-ready = all 37 + Definition of Done | Accepted | #28 |
+| 0021 | **Config-driven dashboard engine** (`0.12`) — JSON definitions, Grafana import, new monitor = new definition | Accepted | #29 |
 
 > "#N" refers to the numbered entry in [PRODUCT_DECISIONS.md](../ip-sentinel/PRODUCT_DECISIONS.md).
