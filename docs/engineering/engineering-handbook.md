@@ -62,6 +62,11 @@ A chunk is **Done** when:
 - Provide a seed/fixture for the **cross-platform correlation demo** (chunk 1.8).
 
 ## 8. Using the build prompts
-Open a fresh Claude Code session on `IPSentinel`, paste
-[`prompts/00-shared-preamble.md`](../ip-sentinel/prompts/00-shared-preamble.md), then the chunk from the
-[task catalog](../planning/task-catalog.md). Build to Acceptance; open a PR. Build chunks in order per phase.
+On `IPSentinel`, feed a chunk to Claude Code one of three ways (see
+[prompts/README.md](../ip-sentinel/prompts/README.md)):
+- **`/build-chunk 0.9`** — the slash command reads the shared preamble + chunk and builds to Acceptance.
+- **Point at files** — *"Read prompts/00-shared-preamble.md and the chunk for 0.9, then implement it."*
+- **`./show-prompt.ps1 0.9`** (or `.sh`) — copies preamble + chunk to the clipboard to paste elsewhere.
+
+Pick chunks from the [task catalog](../planning/task-catalog.md) / [sprint plan](../planning/sprint-plan.md);
+build in order per phase; open a PR into `IPSentinel` per chunk.

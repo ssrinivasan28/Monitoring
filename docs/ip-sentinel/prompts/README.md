@@ -1,10 +1,13 @@
 # IP Sentinel — Build Prompts (ticket-sized)
 
-Each chunk below is a **single build session / PR**. Workflow:
+Each chunk below is a **single build session / PR**. Three ways to feed a chunk to Claude Code:
 
-1. Open a fresh Claude Code session on the `IPSentinel` branch.
-2. Paste [`00-shared-preamble.md`](00-shared-preamble.md), then paste the chunk file.
-3. Build to the chunk's **Acceptance** criteria; open a PR; move to the next.
+- **Slash command (easiest):** on the `IPSentinel` branch, run `/build-chunk 0.9` — it reads the
+  preamble + chunk and builds to Acceptance. (Defined in `.claude/commands/build-chunk.md`.)
+- **Point at the files:** *"Read `prompts/00-shared-preamble.md` and the chunk for 0.9, then implement it."*
+- **Clipboard helper:** `./show-prompt.ps1 0.9` (or `show-prompt.sh 0.9`) copies preamble + chunk ready to paste.
+
+Then build to the chunk's **Acceptance** criteria; open a PR; move to the next.
 
 Build in order within a phase. Phases are sequential (1 assumes 0, etc.). The **MVP** is the ⭐ chunks.
 
