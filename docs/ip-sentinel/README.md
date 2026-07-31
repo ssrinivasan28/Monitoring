@@ -13,6 +13,7 @@ with an AI operations analyst built in.
 | File | What it is |
 |---|---|
 | [`ENHANCEMENT_PLAN.md`](ENHANCEMENT_PLAN.md) | The full plan — vision, capabilities, UI modules, agent roster, architecture, roadmap, governance, verification. |
+| [`PRODUCT_DECISIONS.md`](PRODUCT_DECISIONS.md) | Living log of product-direction decisions (personas, fleet view, tiers, auth, retention, etc.) and their build implications. |
 | [`enhancement-plan.html`](enhancement-plan.html) | The same plan as a branded, self-contained web page for sharing (open in a browser). |
 | [`DEPLOYMENT.md`](DEPLOYMENT.md) | How it's packaged (Windows/WinSW-led, containers for scale) and the three hosting topologies with a recommendation. |
 | [`ENTERPRISE_READINESS.md`](ENTERPRISE_READINESS.md) | Non-functional requirements — SLAs, DR/backup, AI safety, security, compliance, self-monitoring — with status and first-release priorities. |
