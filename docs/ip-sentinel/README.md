@@ -17,20 +17,17 @@ with an AI operations analyst built in.
 | [`enhancement-plan.html`](enhancement-plan.html) | The same plan as a branded, self-contained web page for sharing (open in a browser). |
 | [`DEPLOYMENT.md`](DEPLOYMENT.md) | How it's packaged (Windows/WinSW-led, containers for scale) and the three hosting topologies with a recommendation. |
 | [`ENTERPRISE_READINESS.md`](ENTERPRISE_READINESS.md) | Non-functional requirements — SLAs, DR/backup, AI safety, security, compliance, self-monitoring — with status and first-release priorities. |
-| [`prompts/phase-0-foundation.md`](prompts/phase-0-foundation.md) | Foundation + governance spine + UI shell. |
-| [`prompts/phase-1-correlation-triage.md`](prompts/phase-1-correlation-triage.md) | Correlation & triage engine + integrations. |
-| [`prompts/phase-2-chatops.md`](prompts/phase-2-chatops.md) | Natural-language ChatOps. |
-| [`prompts/phase-3-adaptive-thresholds.md`](prompts/phase-3-adaptive-thresholds.md) | Adaptive thresholds, forecasting & learning. |
+| [`prompts/`](prompts/README.md) | **Ticket-sized build prompts** — ~28 focused chunks across 4 phases, plus a shared preamble. See [`prompts/README.md`](prompts/README.md) for the index. |
 
-## How to use the phase prompts
+## How to use the build prompts
 
-1. Read [`ENHANCEMENT_PLAN.md`](ENHANCEMENT_PLAN.md) for the full picture.
-2. When you're ready to build a phase, open a **fresh Claude Code session on the `IPSentinel`
-   branch** and paste the entire contents of that phase's prompt file.
-3. Each prompt is self-contained: it carries a shared preamble (goals, stack, brand, the read-only
-   rule, "don't touch the 21 monitors") plus that phase's deliverables and acceptance criteria.
-4. Build phases in order — 1 assumes 0 is merged, and so on. Recommended MVP = Phase 0 + a thin
-   Phase 1 slice (correlation → incident console + Teams + ServiceNow for one pilot tenant).
+1. Read [`ENHANCEMENT_PLAN.md`](ENHANCEMENT_PLAN.md) + [`PRODUCT_DECISIONS.md`](PRODUCT_DECISIONS.md).
+2. Open [`prompts/README.md`](prompts/README.md) and pick the next chunk (build in order per phase).
+3. In a **fresh Claude Code session on the `IPSentinel` branch**, paste
+   [`prompts/00-shared-preamble.md`](prompts/00-shared-preamble.md) first, then the chunk. Build to its
+   **Acceptance** criteria, open a PR, move on.
+4. **MVP = the ⭐ chunks:** fleet view + pilot dashboards (Phase 0) and the cross-platform correlation
+   showcase for one pilot tenant (Phase 1).
 
 ## Stack at a glance
 - **Backend:** Java 17 + Spring Boot (`aiops-platform/`)
