@@ -8,6 +8,10 @@ Each chunk below is a **single build session / PR**. Workflow:
 
 Build in order within a phase. Phases are sequential (1 assumes 0, etc.). The **MVP** is the ⭐ chunks.
 
+> **Detail level:** `0.1` and every **⭐ MVP chunk** are **fully detailed** specs (context, scope,
+> concrete deliverables, gotchas, tests, acceptance checklist, references). The remaining chunks are
+> concise specs — ask to expand any to full detail when you reach it.
+
 ## Phase 0 — Foundation, governance, fleet view
 | # | Chunk | |
 |---|---|---|
