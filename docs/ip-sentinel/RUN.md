@@ -1,0 +1,55 @@
+# IP Sentinel — How to Run (simple guide)
+
+Think of each **chunk** (like `0.1`, `0.9`) as a **to-do ticket**. "Running" one = telling Claude to
+build that ticket. There are **28 tickets total** (about 9 are the ⭐ MVP).
+
+## How many chunks
+| Phase | Chunks | Count |
+|---|---|---|
+| Phase 0 — Foundation + fleet view | `0.1`–`0.11` | 11 |
+| Phase 1 — Correlation + integrations | `1.1`–`1.8` | 8 |
+| Phase 2 — ChatOps (Pro) | `2.1`–`2.4` | 4 |
+| Phase 3 — Adaptive + reporting | `3.1`–`3.5` | 5 |
+| **Total** | | **28** |
+
+## Run ONE ticket — pick one way
+
+**Way 1 — Slash command (simplest).** In Claude Code, on the `IPSentinel` branch, type:
+```
+/build-chunk 0.1
+```
+Claude reads the instructions and builds ticket 0.1.
+
+**Way 2 — Plain English.**
+```
+Read the preamble and chunk 0.1, then build it.
+```
+
+**Way 3 — Copy to clipboard, paste elsewhere.**
+```
+powershell -ExecutionPolicy Bypass -File docs/ip-sentinel/prompts/show-prompt.ps1 0.1
+```
+Then paste (Ctrl+V) into a chat and send.
+
+> Use Way 1. Ways 2–3 are backups.
+
+## Do the whole project
+Run the tickets **in order**, one at a time — `0.1`, `0.2`, … `0.11`, `1.1`, … `3.5` (28 total).
+Order is in [`../planning/sprint-plan.md`](../planning/sprint-plan.md). After each, save the work as a
+PR into `IPSentinel`, then do the next.
+
+## See the actual app (later, after some Phase 0 chunks exist)
+Start the program:
+```
+cd aiops-platform && mvn spring-boot:run
+```
+Open in a browser:
+```
+https://localhost:8443
+```
+(Needs Java 17, Maven, Node, PostgreSQL 18 + pgvector, and your existing Prometheus/Loki.)
+
+## Simplest summary
+- **Build a ticket** → type `/build-chunk <number>`.
+- **Do the project** → run all 28 in order, `0.1` first.
+- **See the app** (later) → `mvn spring-boot:run`, then open `localhost:8443`.

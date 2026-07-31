@@ -18,7 +18,8 @@ with an AI operations analyst built in.
 | [`DEPLOYMENT.md`](DEPLOYMENT.md) | How it's packaged (Windows/WinSW-led, containers for scale) and the three hosting topologies with a recommendation. |
 | [`ENTERPRISE_READINESS.md`](ENTERPRISE_READINESS.md) | Non-functional requirements — SLAs, DR/backup, AI safety, security, compliance, self-monitoring — with status and first-release priorities. |
 | [`REPORTING.md`](REPORTING.md) | Contents of the daily/weekly/monthly customer reports, delivery/export behavior, and open SLA-definition questions. |
-| [`prompts/`](prompts/README.md) | **Ticket-sized build prompts** — ~28 focused chunks across 4 phases, plus a shared preamble. See [`prompts/README.md`](prompts/README.md) for the index. |
+| [`prompts/`](prompts/README.md) | **Ticket-sized build prompts** — 28 focused chunks across 4 phases, plus a shared preamble. See [`prompts/README.md`](prompts/README.md) for the index. |
+| [`RUN.md`](RUN.md) | Simple how-to-run guide: what a chunk is, the 3 ways to run one, and how many there are (28). |
 
 ## How to use the build prompts
 
