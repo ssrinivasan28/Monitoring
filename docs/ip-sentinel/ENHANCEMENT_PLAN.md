@@ -125,6 +125,7 @@ Every agent call is redacted, audited, and cost-metered.
 | **Anomaly / Baseline Agent** | Learn baselines/seasonality; flag anomalies; recommend thresholds | Scheduled | `promql_query` (history) |
 | **Forecasting / Capacity Agent** | Project disk/ASP fill, cert runway, job-duration drift | Scheduled | `promql_query` (history) |
 | **Knowledge Curator Agent** | Turn resolved incidents + runbooks into searchable memory (chunk → embed → store) | On resolve / KB upload | `kb_search`, embeddings |
+| **Reporting / Digest Agent** | Generate daily/weekly/monthly health & SLA reports (AI prose when available, templated fallback when the LLM is off) | Scheduled | `promql_query`, `kb_search` |
 
 **Supporting (not LLM agents):** the **Orchestrator** (routes work, retries, Claude↔local fallback),
 the **Notification Router** (channel selection, dedupe, per-channel formatting), and the
