@@ -1,0 +1,699 @@
+<title>IP Sentinel — Project Enhancement Plan</title>
+<style>
+  :root {
+    --ground: #FFFFFF;
+    --surface: #FFFFFF;
+    --surface-2: #F1F6FC;
+    --ink: #0D1B2E;
+    --ink-soft: #5A6A7E;
+    --ink-faint: #94A3B8;
+    --line: #D5E0EE;
+    --accent: #0057B8;
+    --accent-soft: rgba(0,87,184,.08);
+    --accent-2: #F5A300;
+    --accent-2-soft: #FEF3CD;
+    --good: #22C55E;
+    --warn: #F59E0B;
+    --crit: #EF4444;
+    --shadow: 0 1px 2px rgba(13,27,46,.05), 0 8px 24px rgba(13,27,46,.07);
+    --font-display: ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-body: ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "Cascadia Code", "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --maxw: 60rem;
+  }
+  /* Single light theme — pinned white for all viewers (dark mode intentionally disabled) */
+  :root[data-theme="light"],
+  :root[data-theme="dark"] {
+    --ground: #FFFFFF; --surface: #FFFFFF; --surface-2: #F1F6FC;
+    --ink: #0D1B2E; --ink-soft: #5A6A7E; --ink-faint: #94A3B8; --line: #D5E0EE;
+    --accent: #0057B8; --accent-soft: rgba(0,87,184,.08);
+    --accent-2: #F5A300; --accent-2-soft: #FEF3CD;
+    --good: #22C55E; --warn: #F59E0B; --crit: #EF4444;
+    --shadow: 0 1px 2px rgba(13,27,46,.05), 0 8px 24px rgba(13,27,46,.07);
+  }
+  :root { color-scheme: light; }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 1.5rem; }
+
+  /* ---- Eyebrow / labels ---- */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 .9rem;
+  }
+  .kicker {
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  /* ---- Hero ---- */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid var(--line);
+    background:
+      radial-gradient(120% 140% at 82% -10%, var(--accent-soft), transparent 55%),
+      var(--surface);
+  }
+  .hero .rings {
+    position: absolute; top: -14rem; right: -12rem; width: 40rem; height: 40rem;
+    pointer-events: none; opacity: .5;
+  }
+  .hero .rings span {
+    position: absolute; inset: 0; margin: auto; border-radius: 50%;
+    border: 1px solid var(--accent); opacity: .12;
+  }
+  .hero .rings span:nth-child(1){ width: 14rem; height: 14rem; }
+  .hero .rings span:nth-child(2){ width: 22rem; height: 22rem; opacity:.14; border-color: var(--accent-2); }
+  .hero .rings span:nth-child(3){ width: 30rem; height: 30rem; opacity:.06; }
+  .hero .rings span:nth-child(4){ width: 38rem; height: 38rem; opacity:.04; }
+  .hero .inner { position: relative; padding: 4.2rem 0 3.2rem; }
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.4rem, 6vw, 3.9rem);
+    line-height: 1.02;
+    letter-spacing: -.028em;
+    font-weight: 800;
+    margin: 0 0 .5rem;
+    text-wrap: balance;
+  }
+  h1 .sub { color: var(--accent); }
+  .lede {
+    font-size: clamp(1.05rem, 2.4vw, 1.3rem);
+    color: var(--ink-soft);
+    max-width: 44ch;
+    margin: 0 0 1.8rem;
+    text-wrap: pretty;
+  }
+  .metastrip {
+    display: flex; flex-wrap: wrap; gap: 1.6rem 2.4rem;
+    padding-top: 1.5rem; border-top: 1px solid var(--line);
+    font-family: var(--font-mono); font-size: .78rem;
+  }
+  .metastrip div span { display:block; color: var(--ink-faint); letter-spacing:.1em; text-transform:uppercase; font-size:.66rem; margin-bottom:.2rem; }
+  .metastrip div strong { font-weight: 600; color: var(--ink); }
+
+  /* ---- Pills ---- */
+  .pill {
+    display: inline-flex; align-items: center; gap: .4rem;
+    font-family: var(--font-mono); font-size: .68rem; letter-spacing: .08em;
+    text-transform: uppercase; padding: .3rem .6rem; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-soft);
+  }
+  .pill.accent { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); background: var(--accent-soft); }
+  .pill .dot { width:.5rem; height:.5rem; border-radius:50%; background: currentColor; }
+  .pillrow { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:1.4rem; }
+
+  /* ---- Section scaffolding ---- */
+  section { padding: 3.4rem 0; border-bottom: 1px solid var(--line); }
+  .sechead { margin-bottom: 1.8rem; }
+  h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 3.4vw, 2.05rem);
+    letter-spacing: -.02em; font-weight: 750; margin: .1rem 0 .5rem;
+    text-wrap: balance;
+  }
+  h2 + .sectionsub { color: var(--ink-soft); margin: 0; max-width: 60ch; }
+  h3 { font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em; margin: 0 0 .35rem; }
+  p { margin: 0 0 1rem; }
+  p:last-child { margin-bottom: 0; }
+  a { color: var(--accent); }
+  strong { color: var(--ink); font-weight: 650; }
+
+  /* ---- Problem list ---- */
+  .painlist { display: grid; gap: .8rem; margin: 0; padding: 0; list-style: none; }
+  .painlist li {
+    display: grid; grid-template-columns: auto 1fr; gap: .85rem; align-items: start;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 1rem 1.15rem; box-shadow: var(--shadow);
+  }
+  .painlist .tag {
+    font-family: var(--font-mono); font-size: .62rem; letter-spacing:.08em; text-transform:uppercase;
+    color: var(--crit); border: 1px solid color-mix(in srgb, var(--crit) 35%, var(--line));
+    background: color-mix(in srgb, var(--crit) 8%, transparent);
+    padding: .28rem .5rem; border-radius: 6px; white-space: nowrap; margin-top:.15rem;
+  }
+  .painlist b { color: var(--ink); }
+
+  /* ---- Pillars ---- */
+  .pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .pillar {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 1.4rem; box-shadow: var(--shadow); position: relative;
+  }
+  .pillar .num { font-family: var(--font-mono); font-size:.72rem; color: var(--accent); letter-spacing:.1em; }
+  .pillar h3 { margin-top: .5rem; }
+  .pillar p { color: var(--ink-soft); font-size: .93rem; margin: 0; }
+
+  /* ---- Capability grid ---- */
+  .capgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+  .cap {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 1.3rem 1.35rem; box-shadow: var(--shadow);
+  }
+  .cap .capkey { display:flex; align-items:center; gap:.6rem; margin-bottom:.7rem; }
+  .cap .capkey .code { font-family: var(--font-mono); font-size:.72rem; color: var(--accent); background: var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); padding:.2rem .45rem; border-radius:6px; }
+  .cap h3 { margin: 0; font-size: 1rem; }
+  .cap ul { margin: 0; padding-left: 1.05rem; color: var(--ink-soft); font-size:.9rem; }
+  .cap ul li { margin: .32rem 0; }
+  .cap ul li::marker { color: var(--accent); }
+
+  /* ---- Module list ---- */
+  .modules { display: grid; grid-template-columns: repeat(2,1fr); gap: .7rem; }
+  .mod { display:grid; grid-template-columns: auto 1fr; gap: .8rem; align-items:baseline;
+    background: var(--surface); border:1px solid var(--line); border-radius: 10px; padding: .85rem 1rem; }
+  .mod .mi { font-family: var(--font-mono); font-size:.72rem; color: var(--accent); }
+  .mod b { display:block; font-size:.94rem; }
+  .mod span { color: var(--ink-soft); font-size: .86rem; }
+
+  /* ---- Agent roster ---- */
+  .agentgrid { display:grid; grid-template-columns: repeat(2,1fr); gap: 1rem; }
+  .agent {
+    background: var(--surface); border:1px solid var(--line); border-radius: 14px;
+    padding: 1.2rem 1.3rem; box-shadow: var(--shadow); position: relative;
+  }
+  .agent.star { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+  .agent .ah { display:flex; align-items:center; justify-content:space-between; gap:.6rem; margin-bottom:.55rem; }
+  .agent h3 { margin:0; font-size:1rem; display:flex; align-items:center; gap:.4rem; }
+  .agent h3 .st { color: var(--accent-2); font-size:.9rem; }
+  .agent .trig {
+    font-family: var(--font-mono); font-size:.6rem; letter-spacing:.08em; text-transform:uppercase;
+    white-space:nowrap; color: var(--ink-soft); background: var(--surface-2);
+    border:1px solid var(--line); padding:.24rem .5rem; border-radius:6px;
+  }
+  .agent p { color: var(--ink-soft); font-size:.9rem; margin:0 0 .7rem; }
+  .agent .tools { display:flex; flex-wrap:wrap; gap:.35rem; }
+  .agent .tchip {
+    font-family: var(--font-mono); font-size:.66rem; color: var(--accent);
+    background: var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 25%, var(--line));
+    padding:.2rem .42rem; border-radius:5px;
+  }
+  .support {
+    margin-top: 1.2rem; background: var(--surface-2); border:1px solid var(--line);
+    border-radius: 12px; padding: 1.1rem 1.25rem;
+  }
+  .support .kicker { margin-bottom:.7rem; }
+  .support-list { display:grid; grid-template-columns: repeat(3,1fr); gap:.8rem; }
+  .support-list div { font-size:.85rem; color: var(--ink-soft); }
+  .support-list b { display:block; color: var(--ink); font-size:.9rem; margin-bottom:.15rem; }
+  .collab {
+    margin-top: 1rem; font-size:.9rem; color: var(--ink-soft);
+    border-left: 3px solid var(--accent); padding: .3rem 0 .3rem .9rem;
+  }
+  .collab b { color: var(--ink); }
+  @media (max-width: 720px) { .agentgrid, .support-list { grid-template-columns: 1fr; } }
+
+  /* ---- Agent / tools ---- */
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; align-items:start; }
+  .toolbox { background: var(--surface); border:1px solid var(--line); border-radius:14px; padding:1.3rem; box-shadow: var(--shadow); }
+  .tool { font-family: var(--font-mono); font-size:.82rem; display:flex; gap:.6rem; padding:.5rem 0; border-bottom:1px dashed var(--line); }
+  .tool:last-child { border-bottom: 0; }
+  .tool .tn { color: var(--accent); white-space:nowrap; }
+  .tool .td { color: var(--ink-soft); }
+  .flow { list-style:none; margin:0; padding:0; counter-reset: step; }
+  .flow li { position: relative; padding: 0 0 1.05rem 2.2rem; counter-increment: step; }
+  .flow li::before {
+    content: counter(step); position:absolute; left:0; top:-.1rem;
+    width: 1.5rem; height:1.5rem; border-radius:50%; display:grid; place-items:center;
+    font-family: var(--font-mono); font-size:.72rem; color: var(--surface); background: var(--accent);
+  }
+  .flow li::after {
+    content:""; position:absolute; left:.72rem; top:1.5rem; bottom:0; width:1px; background: var(--line);
+  }
+  .flow li:last-child { padding-bottom: 0; }
+  .flow li:last-child::after { display:none; }
+  .flow b { font-size: .92rem; }
+  .flow span { color: var(--ink-soft); font-size:.86rem; }
+
+  /* ---- Scenarios ---- */
+  .scenario {
+    background: var(--surface); border:1px solid var(--line); border-left: 3px solid var(--accent);
+    border-radius: 12px; padding: 1.2rem 1.35rem; margin-bottom: .9rem; box-shadow: var(--shadow);
+  }
+  .scenario .stitle { display:flex; align-items:center; gap:.6rem; margin-bottom:.5rem; }
+  .scenario .snum { font-family: var(--font-mono); font-size:.72rem; color: var(--accent); }
+  .scenario h3 { margin:0; font-size:1rem; }
+  .scenario p { color: var(--ink-soft); font-size:.92rem; margin:0; }
+  .scenario .out { margin-top:.6rem; font-size:.85rem; font-family: var(--font-mono); color: var(--good); }
+
+  /* ---- Architecture diagram ---- */
+  .diagram-wrap { overflow-x: auto; }
+  .diagram { min-width: 520px; display:grid; gap:.55rem; justify-items:center; font-family: var(--font-mono); }
+  .layer {
+    width: 100%; text-align:center; border:1px solid var(--line); border-radius: 10px;
+    padding: .85rem 1rem; background: var(--surface); font-size:.82rem; color: var(--ink-soft);
+  }
+  .layer b { display:block; color: var(--ink); font-size:.86rem; letter-spacing:.02em; margin-bottom:.15rem; }
+  .layer.sensors { background: var(--surface-2); }
+  .layer.brain { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); background: var(--accent-soft); }
+  .layer.brain b { color: var(--accent); }
+  .layer.two { display:grid; grid-template-columns: 1fr 1fr; gap:.55rem; padding:0; border:0; background:transparent; }
+  .layer.two .layer { margin:0; }
+  .arrow { color: var(--ink-faint); font-size:1rem; line-height:1; }
+
+  /* ---- Roadmap timeline ---- */
+  .timeline { list-style:none; margin:0; padding:0; }
+  .phase { position: relative; padding: 0 0 1.6rem 2.4rem; }
+  .phase::before {
+    content:""; position:absolute; left:.55rem; top:1.4rem; bottom:-.2rem; width:2px; background: var(--line);
+  }
+  .phase:last-child::before { display:none; }
+  .phase .marker {
+    position:absolute; left:0; top:.15rem; width:1.2rem; height:1.2rem; border-radius:50%;
+    background: var(--surface); border:2px solid var(--accent);
+  }
+  .phase.mvp .marker { background: var(--accent); }
+  .phase .phhead { display:flex; flex-wrap:wrap; align-items:center; gap:.6rem; margin-bottom:.4rem; }
+  .phase .pcode { font-family: var(--font-mono); font-size:.72rem; color: var(--accent); letter-spacing:.1em; }
+  .phase h3 { margin:0; font-size:1.02rem; }
+  .phase p { color: var(--ink-soft); font-size:.92rem; margin:0; }
+  .mvp-badge { font-family: var(--font-mono); font-size:.62rem; letter-spacing:.08em; text-transform:uppercase;
+    color: var(--good); border:1px solid color-mix(in srgb, var(--good) 35%, var(--line));
+    background: color-mix(in srgb, var(--good) 9%, transparent); padding:.22rem .5rem; border-radius:6px; }
+
+  /* ---- Governance chips ---- */
+  .chips { display:flex; flex-wrap:wrap; gap:.6rem; }
+  .chip { display:flex; align-items:center; gap:.5rem; background: var(--surface); border:1px solid var(--line);
+    border-radius: 999px; padding:.5rem .85rem; font-size:.86rem; box-shadow: var(--shadow); }
+  .chip .g { width:.55rem; height:.55rem; border-radius:50%; background: var(--good); }
+
+  /* ---- Verify / callout ---- */
+  .callout {
+    background: var(--surface-2); border:1px solid var(--line); border-radius: 14px;
+    padding: 1.3rem 1.4rem; display:grid; grid-template-columns: auto 1fr; gap:1rem; align-items:start;
+  }
+  .callout .bang { font-family: var(--font-mono); color: var(--accent-2); font-size:1.1rem; }
+  .callout b { color: var(--ink); }
+  .callout p { margin:0; color: var(--ink-soft); font-size:.92rem; }
+
+  .twocol { display:grid; grid-template-columns:1fr 1fr; gap: 1.2rem; }
+  .verify h3 { margin-bottom:.4rem; }
+  .verify ul { margin:0; padding-left:1.05rem; color: var(--ink-soft); font-size:.9rem; }
+  .verify ul li { margin:.3rem 0; }
+
+  footer { padding: 2.4rem 0 3rem; color: var(--ink-faint); font-family: var(--font-mono); font-size:.74rem; }
+  footer .wrap { display:flex; flex-wrap:wrap; justify-content:space-between; gap:.8rem; }
+
+  @media (max-width: 720px) {
+    .pillars, .capgrid, .modules, .split, .twocol { grid-template-columns: 1fr; }
+    .layer.two { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .pillar, .cap, .scenario { transition: transform .18s ease, box-shadow .18s ease; }
+    .cap:hover, .pillar:hover { transform: translateY(-2px); }
+  }
+</style>
+
+<header class="hero">
+  <div class="rings" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+  <div class="wrap inner">
+    <p class="eyebrow">Project Enhancement Plan · Operations Monitoring Suite</p>
+    <h1>IP Sentinel<br><span class="sub">the monitoring suite, given a brain.</span></h1>
+    <p class="lede">Turn 21 independent IBM&nbsp;i &amp; Windows monitors into one AI-driven, multi-tenant operations platform that correlates, explains, and remembers — with its own application UI.</p>
+    <div class="pillrow">
+      <span class="pill accent"><span class="dot"></span>Read-only insight</span>
+      <span class="pill">Claude API + local model</span>
+      <span class="pill">PostgreSQL 18 · pgvector</span>
+      <span class="pill">React / TypeScript UI</span>
+    </div>
+    <div class="metastrip">
+      <div><span>Prepared for</span><strong>Island Pacific — Operations</strong></div>
+      <div><span>Date</span><strong>2026-07-31</strong></div>
+      <div><span>Status</span><strong>Proposed · for review</strong></div>
+      <div><span>Working name</span><strong>IP Sentinel (placeholder)</strong></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="wrap">
+      <div class="sechead">
+        <p class="kicker">01 · Executive summary</p>
+        <h2>From alerts to answers</h2>
+      </div>
+      <p>The current suite is excellent at <strong>detection</strong>: each monitor polls a system, checks a static threshold, and emails when it trips. What it can't do is <strong>reason</strong> — correlate a burst of alerts into one incident, explain the likely cause, or remember how the last one was fixed. Today that work is done by an engineer with Grafana in one window and a green-screen in another.</p>
+      <p>IP&nbsp;Sentinel keeps every existing monitor as-is — they become the <strong>sensor layer</strong> — and adds a central <strong>AI operations analyst</strong> on top. When something breaks, it assembles a complete incident: what happened, everything related to it across platforms, the most likely root cause, the matching runbook, and what a human should check next. You can also just <strong>ask it questions in plain English</strong>. Every capability is <strong>read-only</strong> — it advises, it never acts.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="sechead">
+        <p class="kicker">02 · The problem today</p>
+        <h2>What the current suite can't do</h2>
+        <p class="sectionsub">Five gaps that slow every investigation down.</p>
+      </div>
+      <ul class="painlist">
+        <li><span class="tag">Noise</span><div><b>Alert storms, no correlation.</b> One IBM&nbsp;i outage trips subsystem, job-queue, QSYSOPR, and dependent Windows-service monitors at once — arriving as many disconnected emails with no single "incident" view.</div></li>
+        <li><span class="tag">Blind spots</span><div><b>No cross-client / cross-platform picture.</b> Each box is an island with its own Grafana; nobody sees the whole fleet at once.</div></li>
+        <li><span class="tag">Manual</span><div><b>Every diagnosis starts from scratch.</b> An engineer reads charts, logs, and IBM&nbsp;i state by hand to guess the cause, each time.</div></li>
+        <li><span class="tag">False alarms</span><div><b>Static thresholds only.</b> Fixed limits fire on harmless spikes and miss slow-building problems entirely.</div></li>
+        <li><span class="tag">No memory</span><div><b>Knowledge lives in people's heads.</b> The same incident is re-investigated repeatedly; runbooks and past fixes aren't searchable.</div></li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="sechead">
+        <p class="kicker">03 · The product</p>
+        <h2>A single pane of glass with an analyst built in</h2>
+        <p class="sectionsub">Three pillars define what IP&nbsp;Sentinel is.</p>
+      </div>
+      <div class="pillars">
+        <div class="pillar"><div class="num">Pillar 01</div><h3>See everything</h3><p>Unified fleet dashboards for metrics and logs across every client and platform — no more Grafana-per-box.</p></div>
+        <div class="pillar"><div class="num">Pillar 02</div><h3>Understand fast</h3><p>AI correlation and root-cause reasoning turn alert noise into a short list of ranked, explained incidents.</p></div>
+        <div class="pillar"><div class="num">Pillar 03</div><h3>Never re-learn</h3><p>Every incident, resolution, and runbook becomes searchable memory that makes the next diagnosis faster.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="sechead">
+        <p class="kicker">04 · Capabilities</p>
+        <h2>What it can do</h2>
+        <p class="sectionsub">Six capability areas, delivered across the phased roadmap.</p>
+      </div>
+      <div class="capgrid">
+        <div class="cap">
+          <div class="capkey"><span class="code">A</span><h3>Unified observability</h3></div>
+          <ul>
+            <li>Fleet health grid — every tenant &amp; monitor at a glance</li>
+            <li>Metric dashboards for IBM&nbsp;i (subsystems, job queues, QSYSOPR, IFS, system matrix) and Windows (CPU/mem/disk/services)</li>
+            <li>Log explorer over central Loki, tenant-scoped</li>
+            <li>Click an anomaly → jump to the logs &amp; related incidents</li>
+          </ul>
+        </div>
+        <div class="cap">
+          <div class="capkey"><span class="code">B</span><h3>AI incident intelligence</h3></div>
+          <ul>
+            <li>Correlate simultaneous breaches into one incident</li>
+            <li>Root-cause hypothesis with confidence &amp; evidence</li>
+            <li>RAG-grounded in <em>your</em> runbooks &amp; past incidents</li>
+            <li>Severity/impact scoring, dedupe, flap detection, timeline</li>
+          </ul>
+        </div>
+        <div class="cap">
+          <div class="capkey"><span class="code">C</span><h3>Natural-language ChatOps</h3></div>
+          <ul>
+            <li>Ask questions in plain English, in-app or in Teams/Slack</li>
+            <li>Agent answers via live metrics, logs &amp; IBM&nbsp;i SQL</li>
+            <li>Cites the exact queries it ran</li>
+            <li>Scoped by role to the user's tenants</li>
+          </ul>
+        </div>
+        <div class="cap">
+          <div class="capkey"><span class="code">D</span><h3>Predictive &amp; adaptive</h3></div>
+          <ul>
+            <li>Learned baselines catch anomalies static limits miss</li>
+            <li>Forecasts: disk/ASP fill date, cert runway, job drift</li>
+            <li>Threshold recommendations for human approval</li>
+            <li>Never rewrites config on its own</li>
+          </ul>
+        </div>
+        <div class="cap">
+          <div class="capkey"><span class="code">E</span><h3>Integrations &amp; workflow</h3></div>
+          <ul>
+            <li>ServiceNow / Jira — open &amp; enrich tickets</li>
+            <li>PagerDuty / Opsgenie — page on-call with context</li>
+            <li>Teams / Slack — incidents &amp; ChatOps</li>
+            <li>SIEM / webhook — Splunk, Sentinel, or any endpoint</li>
+          </ul>
+        </div>
+        <div class="cap">
+          <div class="capkey"><span class="code">F</span><h3>Governance &amp; admin</h3></div>
+          <ul>
+            <li>Full audit of every prompt, tool call &amp; answer</li>
+            <li>PII/secret redaction before any LLM call</li>
+            <li>Azure AD SSO + RBAC, per-tenant isolation</li>
+            <li>Cost/token dashboards, quotas &amp; model routing</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="sechead">
+        <p class="kicker">05 · The application</p>
+        <h2>Eight modules, one custom UI</h2>
+        <p class="sectionsub">A React/TypeScript SPA replaces Grafana entirely. The browser never queries Prometheus or Loki directly — every read passes through the platform's tenant-scoped, audited gateway.</p>
+      </div>
+      <div class="modules">
+        <div class="mod"><span class="mi">M1</span><div><b>Fleet Overview</b><span>Multi-tenant health grid; filter by client, platform, severity.</span></div></div>
+        <div class="mod"><span class="mi">M2</span><div><b>Dashboards</b><span>uPlot metric panels per monitor category, with anomaly overlays.</span></div></div>
+        <div class="mod"><span class="mi">M3</span><div><b>Log Explorer</b><span>LogQL search over central Loki, cross-linked from incidents.</span></div></div>
+        <div class="mod"><span class="mi">M4</span><div><b>Incident Console</b><span>Ranked incidents: signals, root cause, runbook, timeline, push-out.</span></div></div>
+        <div class="mod"><span class="mi">M5</span><div><b>Assistant (ChatOps)</b><span>Streaming chat that shows the tools &amp; queries the agent ran.</span></div></div>
+        <div class="mod"><span class="mi">M6</span><div><b>Insights</b><span>Anomaly feed, forecasts, threshold recommendations.</span></div></div>
+        <div class="mod"><span class="mi">M7</span><div><b>Knowledge Base</b><span>Upload &amp; curate runbooks; chunked and embedded for RAG.</span></div></div>
+        <div class="mod"><span class="mi">M8</span><div><b>Admin &amp; Governance</b><span>Tenants, roles/SSO, cost &amp; quotas, model config, audit log.</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="sechead">
+        <p class="kicker">06 · Under the hood</p>
+        <h2>How the AI analyst works</h2>
+        <p class="sectionsub">One pluggable LLM abstraction (<span style="font-family:var(--font-mono);font-size:.85em">ClaudeApiProvider</span> or a local model, with routing &amp; fallback). Every call is redacted, audited, and metered.</p>
+      </div>
+      <div class="split">
+        <div class="toolbox">
+          <p class="kicker" style="margin-bottom:.9rem">Read-only tool registry</p>
+          <div class="tool"><span class="tn">promql_query</span><span class="td">metric queries</span></div>
+          <div class="tool"><span class="tn">loki_query</span><span class="td">log search (LogQL)</span></div>
+          <div class="tool"><span class="tn">ibmi_sql</span><span class="td">SELECT-only DB2 / QSYS2</span></div>
+          <div class="tool"><span class="tn">service_status</span><span class="td">monitor &amp; service state</span></div>
+          <div class="tool"><span class="tn">read_config</span><span class="td">config, secrets redacted</span></div>
+          <div class="tool"><span class="tn">kb_search</span><span class="td">RAG over runbooks &amp; incidents</span></div>
+        </div>
+        <div>
+          <p class="kicker" style="margin-bottom:.9rem">Triage loop, per incident</p>
+          <ul class="flow">
+            <li><b>Detect &amp; correlate</b><br><span>Group simultaneous breaches across monitors, platforms &amp; tenants.</span></li>
+            <li><b>Gather context</b><br><span>Pull the metrics, logs &amp; IBM&nbsp;i state around the event via tools.</span></li>
+            <li><b>Retrieve memory</b><br><span>Fetch the matching runbook &amp; most-similar past incidents (pgvector).</span></li>
+            <li><b>Reason</b><br><span>LLM produces root cause, evidence, severity &amp; suggested checks.</span></li>
+            <li><b>Notify</b><br><span>One enriched incident to console + configured channels. No actions taken.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="sechead">
+        <p class="kicker">07 · The agents</p>
+        <h2>The agent roster</h2>
+        <p class="sectionsub">A small set of specialized, read-only agents coordinated by an orchestrator — all sharing one LLM abstraction, tool registry, and memory. Every call is redacted, audited, and cost-metered.</p>
+      </div>
+      <div class="agentgrid">
+        <div class="agent">
+          <div class="ah"><h3>Correlation Agent</h3><span class="trig">On breach</span></div>
+          <p>Groups simultaneous breaches across monitors, platforms &amp; tenants into a single incident.</p>
+          <div class="tools"><span class="tchip">promql_query</span><span class="tchip">service_status</span></div>
+        </div>
+        <div class="agent star">
+          <div class="ah"><h3><span class="st">★</span>Triage / Root-Cause Agent</h3><span class="trig">Per incident</span></div>
+          <p>Gathers context, retrieves the matching runbook &amp; similar past incidents, and produces a root-cause hypothesis with evidence, severity &amp; suggested checks.</p>
+          <div class="tools"><span class="tchip">all read-only tools</span><span class="tchip">kb_search</span></div>
+        </div>
+        <div class="agent">
+          <div class="ah"><h3>Assistant (ChatOps)</h3><span class="trig">Interactive</span></div>
+          <p>Answers plain-English questions on demand — in the app or Teams/Slack — citing the exact queries it ran.</p>
+          <div class="tools"><span class="tchip">promql_query</span><span class="tchip">loki_query</span><span class="tchip">ibmi_sql</span><span class="tchip">kb_search</span></div>
+        </div>
+        <div class="agent">
+          <div class="ah"><h3>Anomaly / Baseline</h3><span class="trig">Scheduled</span></div>
+          <p>Learns baselines &amp; seasonality, flags anomalies static thresholds miss, and recommends thresholds for human approval.</p>
+          <div class="tools"><span class="tchip">promql_query · history</span></div>
+        </div>
+        <div class="agent">
+          <div class="ah"><h3>Forecasting / Capacity</h3><span class="trig">Scheduled</span></div>
+          <p>Projects disk/ASP fill dates, cert-expiry runway and job-duration drift — warning before a breach.</p>
+          <div class="tools"><span class="tchip">promql_query · history</span></div>
+        </div>
+        <div class="agent">
+          <div class="ah"><h3>Knowledge Curator</h3><span class="trig">On resolve / upload</span></div>
+          <p>Turns resolved incidents &amp; uploaded runbooks into searchable memory (chunk → embed → store), so the next diagnosis is faster.</p>
+          <div class="tools"><span class="tchip">kb_search</span><span class="tchip">embeddings</span></div>
+        </div>
+      </div>
+
+      <div class="support">
+        <p class="kicker">Supporting — not LLM agents</p>
+        <div class="support-list">
+          <div><b>Orchestrator</b>Routes work between agents; retries &amp; Claude↔local fallback.</div>
+          <div><b>Notification Router</b>Channel selection, dedupe &amp; per-channel formatting.</div>
+          <div><b>Governance guard</b>PII redaction, audit &amp; cost metering on every call.</div>
+        </div>
+      </div>
+
+      <p class="collab"><b>On one incident:</b> Correlation assembles → Triage explains, grounded by the Knowledge Curator's memory → Notification Router dispatches. Anomaly &amp; Forecasting run in the background. All read-only — a human takes every action.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="sechead">
+        <p class="kicker">08 · In practice</p>
+        <h2>Three scenarios</h2>
+      </div>
+      <div class="scenario">
+        <div class="stitle"><span class="snum">SCN-1</span><h3>IBM i subsystem outage — the correlation win</h3></div>
+        <p>QINTER stops. Within seconds the subsystem, job-queue-count, and QSYSOPR monitors breach, and a dependent Windows sync service goes down. IP&nbsp;Sentinel correlates all four into <b>one incident</b>, surfaces the QSYSOPR message that names the cause, retrieves the "QINTER restart" runbook and two similar past incidents, scores it Critical, pages on-call and opens a ServiceNow ticket.</p>
+        <p class="out">→ one actionable incident instead of 4+ disconnected emails</p>
+      </div>
+      <div class="scenario">
+        <div class="stitle"><span class="snum">SCN-2</span><h3>Slow-building capacity risk — predictive</h3></div>
+        <p>ASP usage trends upward over two weeks. No static threshold has fired, but the forecast projects 95% in six days. IP&nbsp;Sentinel raises a proactive Insight with the projected date and growth driver.</p>
+        <p class="out">→ warned six days early, before any outage</p>
+      </div>
+      <div class="scenario">
+        <div class="stitle"><span class="snum">SCN-3</span><h3>Plain-English investigation — ChatOps</h3></div>
+        <p>An engineer asks in Teams: "Which clients had job-queue backups over the last 24h, and what was running?" The agent runs PromQL across tenants plus an IBM&nbsp;i SQL lookup and replies with a ranked list and the top jobs — citing the queries it ran.</p>
+        <p class="out">→ an answer in seconds, fully traceable</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="sechead">
+        <p class="kicker">09 · Architecture</p>
+        <h2>Same sensors, new brain &amp; UI</h2>
+        <p class="sectionsub">The 21 monitors are untouched. Grafana is removed; Prometheus/Thanos + Loki remain as storage engines behind the platform API.</p>
+      </div>
+      <div class="diagram-wrap">
+        <div class="diagram">
+          <div class="layer sensors"><b>21 per-box monitors × N clients</b>IBM i (jt400) · Windows (OSHI) · IFS · FTPS — unchanged</div>
+          <div class="arrow">↓ &nbsp;metrics + logs</div>
+          <div class="layer"><b>Central data plane (storage only)</b>Prometheus remote-write / Thanos · central Loki · tenant = ClientInstanceId</div>
+          <div class="arrow">↓ &nbsp;queried only via the platform API</div>
+          <div class="layer brain"><b>AIOps Platform Service — Java 17 · Spring Boot</b>Query gateway · correlation engine · agent orchestrator (LLM + tools + RAG) · governance spine · integration adapters · REST / WebSocket</div>
+          <div class="arrow">↓</div>
+          <div class="layer two">
+            <div class="layer"><b>React / TypeScript SPA</b>The only UI — dashboards, incidents, ChatOps, admin</div>
+            <div class="layer"><b>PostgreSQL 18 + pgvector</b>Incidents · audit · cost · knowledge / embeddings</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="sechead">
+        <p class="kicker">10 · Roadmap</p>
+        <h2>Phased delivery</h2>
+        <p class="sectionsub">Governance and the UI shell are foundational — built first, not bolted on.</p>
+      </div>
+      <ul class="timeline">
+        <li class="phase mvp">
+          <span class="marker"></span>
+          <div class="phhead"><span class="pcode">Phase 0</span><h3>Foundation + governance + UI shell</h3><span class="mvp-badge">MVP</span></div>
+          <p>Central data plane (remove Grafana); Postgres schema + pgvector; Spring Boot query gateway, LLM abstraction, tool registry, agent loop; governance day one (audit, PII redaction, Azure AD SSO + RBAC, cost metering); React shell with dashboards at parity for the two pilot monitors.</p>
+        </li>
+        <li class="phase mvp">
+          <span class="marker"></span>
+          <div class="phhead"><span class="pcode">Phase 1</span><h3>Correlation &amp; triage + integrations</h3><span class="mvp-badge">MVP slice</span></div>
+          <p>Correlation engine producing RAG-grounded incidents in the console; ServiceNow/Jira, PagerDuty/Opsgenie, Teams/Slack, SIEM/webhook. Existing per-monitor email retained as fallback.</p>
+        </li>
+        <li class="phase">
+          <span class="marker"></span>
+          <div class="phhead"><span class="pcode">Phase 2</span><h3>Natural-language ChatOps</h3></div>
+          <p>Conversational interface in the SPA (WebSocket streaming) and in Teams/Slack, running the agent over the read-only tools + RAG, scoped by role.</p>
+        </li>
+        <li class="phase">
+          <span class="marker"></span>
+          <div class="phhead"><span class="pcode">Phase 3</span><h3>Adaptive thresholds &amp; learning</h3></div>
+          <p>Baselines, forecasts and anomaly detection surfaced in Insights, plus threshold recommendations; learn from analyst feedback stored in Postgres to reduce noise over time.</p>
+        </li>
+      </ul>
+      <div class="callout" style="margin-top:1.6rem">
+        <span class="bang">◆</span>
+        <div><b>Recommended MVP.</b><p>Phase 0 plus a thin Phase 1 slice — correlation → incident console + Teams + ServiceNow for one pilot tenant — proves the whole pattern end-to-end before broadening integrations, ChatOps, and adaptive thresholds.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="sechead">
+        <p class="kicker">11 · Guardrails</p>
+        <h2>Governance &amp; scope</h2>
+        <p class="sectionsub">First-release governance controls — and the hard line on what the AI will not do.</p>
+      </div>
+      <div class="chips" style="margin-bottom:1.4rem">
+        <span class="chip"><span class="g"></span>Audit logging</span>
+        <span class="chip"><span class="g"></span>PII / secret redaction</span>
+        <span class="chip"><span class="g"></span>RBAC + Azure AD SSO</span>
+        <span class="chip"><span class="g"></span>Cost &amp; model governance</span>
+        <span class="chip"><span class="g"></span>Per-tenant isolation</span>
+      </div>
+      <div class="callout">
+        <span class="bang" style="color:var(--warn)">▲</span>
+        <div><b>Read-only by design.</b><p>No remediation, no auto-restart, no auto threshold edits, no writes to IBM&nbsp;i or Windows. The AI observes, correlates, explains, and recommends — a human takes every action. Closed-loop remediation (a natural future phase via the existing ServiceScheduler) is deliberately deferred.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="border-bottom:0">
+    <div class="wrap">
+      <div class="sechead">
+        <p class="kicker">12 · How we'll prove it</p>
+        <h2>Verification</h2>
+      </div>
+      <div class="twocol verify">
+        <div>
+          <h3>Backend &amp; agent</h3>
+          <ul>
+            <li>Triage yields one correlated incident from many mocked breaches</li>
+            <li><span style="font-family:var(--font-mono);font-size:.9em">ibmi_sql</span> rejects any non-SELECT statement</li>
+            <li>Redaction strips seeded secrets before any provider call</li>
+            <li>An audit row is written for every agent run</li>
+            <li>Query gateway denies cross-tenant access</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Platform &amp; UI</h3>
+          <ul>
+            <li>Forced breach across two tenants → one incident + ServiceNow/PagerDuty/Teams/SIEM fire, isolation intact</li>
+            <li>SPA dashboards reach parity with the pilot Grafana panels</li>
+            <li>Incident console &amp; ChatOps stream over WebSocket</li>
+            <li>Identical triage on Claude vs local — same tool flow, correct cost ledger &amp; fallback</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>IP Sentinel · Project Enhancement Plan</span>
+    <span>Island Pacific — Operations Monitoring · 2026-07-31 · Proposed for review</span>
+  </div>
+</footer>
