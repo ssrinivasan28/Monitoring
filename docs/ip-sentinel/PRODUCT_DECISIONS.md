@@ -32,6 +32,7 @@ Product-direction decisions captured with the stakeholder (SSrinivasan). These r
 | 23 | First integration | **Microsoft Teams** — lowest friction (Graph/Azure AD), covers delivery + ChatOps |
 | 24 | Compliance target | **SOC 2 Type II** — start controls/evidence early |
 | 25 | Flagship demo | **Cross-platform correlation** — IBM i outage + Windows fallout → one incident with root cause |
+| 26 | SLA definition | **Composite health** (reachable + SLA-critical components running), **24×7**, **no maintenance exclusions**, **99.9% default with per-tenant override**. Per-system, rolled up per tenant. See [`REPORTING.md`](REPORTING.md) |
 
 ## Key implications for the build
 
@@ -60,5 +61,6 @@ Product-direction decisions captured with the stakeholder (SSrinivasan). These r
 
 ## Open questions (not yet decided)
 - Pricing model for the Basic/Pro tiers (split itself is decided — see #20).
-- Customer SLA targets and DR RTO/RPO (see [`ENTERPRISE_READINESS.md`](ENTERPRISE_READINESS.md)).
+- DR RTO/RPO targets (see [`ENTERPRISE_READINESS.md`](ENTERPRISE_READINESS.md)).
+- Report export format (PDF?) and the default SLA-critical component set (see [`REPORTING.md`](REPORTING.md)).
 - Time-to-value target for IP-managed onboarding.

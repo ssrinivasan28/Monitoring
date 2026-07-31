@@ -9,8 +9,10 @@ during Phase 0 implementation and operations, not on paper.
 
 ---
 
-## 1. Availability & SLAs  ⬜
-- Define target availability (e.g. 99.9%) for the platform per hosting topology.
+## 1. Availability & SLAs  🟡
+- **Customer SLA defined** (see [`REPORTING.md`](REPORTING.md) / decision #26): composite health,
+  24×7, no maintenance exclusions, **99.9% default with per-tenant override**. Still to define: the
+  *platform's own* availability target per hosting topology (distinct from the monitored-system SLA).
 - Stateless app tier behind a load balancer; ≥2 instances in prod. ✅ (design)
 - Define maintenance windows and graceful-degradation behavior (metrics/logs read-only if the LLM
   or an integration is down — the platform must still show dashboards & incidents without AI).

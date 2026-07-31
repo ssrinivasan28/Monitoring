@@ -25,7 +25,8 @@ so no new collection is required.
 - Notable events summary
 
 ### Monthly SLA report — formal (QBRs / contracts)
-- **Uptime / availability %** per system vs. SLA target, with breach windows + durations
+- **Uptime / availability %** per system vs. SLA target (composite health, 24×7, 99.9% default —
+  see *SLA definition* below), with breach windows + durations
 - Incident summary: counts by severity + resolution stats
 - **Alert-noise reduction KPI** for the month
 - Capacity trend over the month + forward outlook (fill dates, cert runway)
@@ -40,8 +41,26 @@ so no new collection is required.
 - **Scope & isolation:** strictly one tenant's data; no cross-tenant aggregation.
 - **Branding:** Island Pacific (blue `#0057B8` / amber `#F5A300`).
 
-## Open questions (decide before the monthly SLA report is built)
-- **SLA definition:** 99.x% *of what* — monitor/endpoint reachability, system availability, or a
-  composite? Per system or per tenant? Business hours vs 24×7? Excused maintenance windows?
+## SLA definition (settled)
+
+The monthly SLA report measures availability as follows:
+
+- **Measure = composite health.** A system is "up" for an interval when it is **reachable** (probes
+  succeed) **AND** its **SLA-critical components are running** (e.g. designated IBM i subsystems up,
+  designated Windows services running). If either fails, the interval counts as downtime.
+- **Coverage = 24×7.** Availability is measured around the clock.
+- **Maintenance = counted.** No maintenance-window exclusions — all downtime counts, planned or not.
+  (No maintenance-window feature needed for v1; revisit if customers push back.)
+- **Target = 99.9% default, per-tenant override.** ~43 min/month allowance; a contract value per
+  tenant overrides the default. Stored as tenant SLA config.
+- **Granularity:** computed **per system**, rolled up **per tenant** in the report.
+- **Formula:** `availability % = up-intervals / total-intervals` over the period (13-mo history
+  supports MoM/YoY).
+
+**One config item this introduces:** a per-tenant/per-system list of **SLA-critical components**
+(which subsystems/services define "composite up"). Ships with sensible defaults from the existing
+monitors; adjustable per tenant.
+
+## Open questions (smaller)
 - **Export format:** PDF required, or HTML/in-portal sufficient for v1?
-- **SLA target source:** fixed global default, or per-tenant/contract value stored in config?
+- **Default SLA-critical component set:** confirm the out-of-the-box list per platform.
