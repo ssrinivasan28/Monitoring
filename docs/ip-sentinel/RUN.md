@@ -12,6 +12,23 @@ build that ticket. There are **28 tickets total** (about 9 are the ⭐ MVP).
 | Phase 3 — Adaptive + reporting | `3.1`–`3.5` | 5 |
 | **Total** | | **28** |
 
+## What's in the MVP (build these first)
+The MVP is **not** a clean `0.1`–`0.9` range. The ⭐ MVP-defining features depend on the whole
+foundation, so the buildable MVP = **all of Phase 0 + the 5 starred Phase 1 chunks** (~16 chunks):
+
+```
+Phase 0 (all 11):  0.1  0.2  0.3  0.4  0.5  0.6  0.7  0.8  0.9  0.10  0.11
+Phase 1 (starred): 1.1  1.2       1.4       1.6       1.8
+```
+- ⭐ features: `0.9` Fleet Overview, `0.10` Dashboards, `1.1` Correlation, `1.2` Triage,
+  `1.4` Incident Console, `1.6` Teams, `1.8` KPI + demo.
+- The rest of Phase 1 (`1.3`, `1.5`, `1.7`) and all of Phase 2 & 3 come **after** the MVP.
+
+**What the MVP demo shows (one pilot tenant):** the fleet view + a single IBM i + Windows incident
+with AI root cause + the alert-noise-reduction KPI, delivered to Teams.
+
+**Rule of thumb:** build all of Phase 0 in order, then the ⭐ chunks in Phase 1 → you have the MVP.
+
 ## Run ONE ticket — pick one way
 
 **Way 1 — Slash command (simplest).** In Claude Code, on the `IPSentinel` branch, type:
