@@ -53,5 +53,6 @@ architecture). Write the individual ADR files as each is formalized; this table 
 | 0016 | **SLA = composite health, 24×7, no maintenance exclusions, 99.9% default/override** | Accepted | #26 |
 | 0017 | **SOC 2 Type II** compliance target | Accepted | #24 |
 | 0018 | Primary KPI = **alert-noise reduction** | Accepted | #22 |
+| 0019 | **Per-tenant data-source resolution** (`tenant_datasource` + gateway fallback to central) | Accepted | #27 |
 
 > "#N" refers to the numbered entry in [PRODUCT_DECISIONS.md](../ip-sentinel/PRODUCT_DECISIONS.md).

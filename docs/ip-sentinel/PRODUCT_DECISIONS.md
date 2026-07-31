@@ -33,6 +33,7 @@ Product-direction decisions captured with the stakeholder (SSrinivasan). These r
 | 24 | Compliance target | **SOC 2 Type II** — start controls/evidence early |
 | 25 | Flagship demo | **Cross-platform correlation** — IBM i outage + Windows fallout → one incident with root cause |
 | 26 | SLA definition | **Composite health** (reachable + SLA-critical components running), **24×7**, **no maintenance exclusions**, **99.9% default with per-tenant override**. Per-system, rolled up per tenant. See [`REPORTING.md`](REPORTING.md) |
+| 27 | Data-source config | Support **both** a **central** Prometheus/Loki (label-based, URL in `application.yml`) **and per-tenant endpoints** via a `tenant_datasource` table; the query gateway resolves per tenant with central fallback (central, per-tenant, hybrid) |
 
 ## Key implications for the build
 

@@ -56,6 +56,9 @@ Existing monitors ──metrics/logs──▶ Central data plane (Prometheus/Tha
 - Isolation is enforced **centrally** (gateway + repository filters), deny-by-default — not per-query opt-in.
 - Staff may span tenants (RBAC); customers are pinned to their own. **No cross-tenant learning.**
 - Scale target: **< 25 tenants** → single central Prometheus with federation (no sharding).
+- **Data-source resolution:** default is one **central** Prometheus/Loki (tenants separated by label,
+  URL in `application.yml`). For **per-tenant / hybrid** setups, a `tenant_datasource` row overrides the
+  endpoint per tenant; the query gateway resolves per request and falls back to central when absent.
 
 ## 6. Security architecture
 - **AuthN:** staff via Azure AD **OIDC SSO**; customers via **invite + MFA**, optional federated per-tenant SSO.
