@@ -60,7 +60,10 @@ during Phase 0 implementation and operations, not on paper.
 - **Data residency** guarantees per topology (on-prem/local model = no egress). 🟡
 - **PII handling:** redaction before any LLM call ✅; document what is stored vs. transient; data
   subject / deletion handling if applicable.
-- Map to required frameworks (SOC 2 / ISO 27001 / GDPR) as the customer base demands.
+- **Target: SOC 2 Type II** (decided — see [`PRODUCT_DECISIONS.md`](PRODUCT_DECISIONS.md) #24). Start
+  control design + evidence collection in Phase 0: audit-log immutability/retention, access reviews,
+  change management, vendor/subprocessor list (incl. Anthropic on the Claude path), and a defined
+  audit period. Map GDPR/ISO 27001 later as the customer base demands.
 
 ## 8. Reliability & resilience  🟡
 - **Fallback** between Claude ↔ local, and graceful degradation when the LLM is unavailable. ✅ (design)

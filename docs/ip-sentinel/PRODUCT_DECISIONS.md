@@ -29,6 +29,9 @@ Product-direction decisions captured with the stakeholder (SSrinivasan). These r
 | 20 | Basic vs Pro split | **Pro = AI Assistant only.** Basic gets dashboards, incidents, reports, history, alerts; Pro unlocks the Assistant |
 | 21 | Core differentiator | **AI correlation + root cause** — compete on the AI intelligence layer (across IBM i + Windows) |
 | 22 | Primary success metric | **Alert-noise reduction** (raw alerts → correlated incidents ratio) — headline KPI, provable day one |
+| 23 | First integration | **Microsoft Teams** — lowest friction (Graph/Azure AD), covers delivery + ChatOps |
+| 24 | Compliance target | **SOC 2 Type II** — start controls/evidence early |
+| 25 | Flagship demo | **Cross-platform correlation** — IBM i outage + Windows fallout → one incident with root cause |
 
 ## Key implications for the build
 
@@ -49,6 +52,11 @@ Product-direction decisions captured with the stakeholder (SSrinivasan). These r
   cause as the differentiator.
 - **Instrument the noise-reduction KPI from day one:** track raw-alert count vs correlated-incident
   count; surface the ratio on dashboards and in reports as the primary success metric.
+- **MVP must nail cross-platform correlation:** even with fleet-view-first, the demo showcase is one
+  incident assembled from an IBM i outage + its Windows fallout — build a seed scenario for it.
+- **SOC 2 Type II front-loads controls:** audit-log immutability/retention, access reviews, change
+  management, and evidence collection start in Phase 0 (see ENTERPRISE_READINESS §6–7).
+- **Teams-first integration:** build the Graph/Teams adapter before ServiceNow/PagerDuty.
 
 ## Open questions (not yet decided)
 - Pricing model for the Basic/Pro tiers (split itself is decided — see #20).
