@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 > **IP Sentinel (AIOps enhancement):** the plan to add a central, read-only AI operations layer on
 > top of these monitors lives in [`docs/ip-sentinel/`](docs/ip-sentinel/README.md) (on the
