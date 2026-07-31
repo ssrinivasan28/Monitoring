@@ -25,6 +25,10 @@ Product-direction decisions captured with the stakeholder (SSrinivasan). These r
 | 16 | Customer packaging | **Tiered Basic / Pro** — entitlement/feature-gating layer |
 | 17 | Device experience | **Responsive web** (one adaptive React app; no native app) |
 | 18 | Customer authentication | **Both/configurable** — invite-based accounts + MFA by default; optional federated per-tenant SSO (SAML/OIDC). Staff stay on Azure AD SSO |
+| 19 | New-client onboarding | **IP-managed provisioning** — staff provision each tenant (fits <25 tenants, on-prem installs) |
+| 20 | Basic vs Pro split | **Pro = AI Assistant only.** Basic gets dashboards, incidents, reports, history, alerts; Pro unlocks the Assistant |
+| 21 | Core differentiator | **AI correlation + root cause** — compete on the AI intelligence layer (across IBM i + Windows) |
+| 22 | Primary success metric | **Alert-noise reduction** (raw alerts → correlated incidents ratio) — headline KPI, provable day one |
 
 ## Key implications for the build
 
@@ -40,8 +44,13 @@ Product-direction decisions captured with the stakeholder (SSrinivasan). These r
 - **ITSM two-way sync:** incident status flows both directions with ServiceNow/Jira.
 - **Customer-facing = productized:** hardened tenant isolation, customer SLAs, Basic/Pro tiers, and a
   data-only customer Assistant with disclaimers.
+- **AI Assistant is the paid unlock (Pro):** entitlement gate is a single clean line — Assistant on/off.
+- **Positioning vs build:** *build* fleet view first (foundation), *market* the AI correlation + root
+  cause as the differentiator.
+- **Instrument the noise-reduction KPI from day one:** track raw-alert count vs correlated-incident
+  count; surface the ratio on dashboards and in reports as the primary success metric.
 
 ## Open questions (not yet decided)
-- Exact Basic vs Pro feature split and pricing model.
-- New-client onboarding flow (managed vs guided wizard) and time-to-value target.
+- Pricing model for the Basic/Pro tiers (split itself is decided — see #20).
 - Customer SLA targets and DR RTO/RPO (see [`ENTERPRISE_READINESS.md`](ENTERPRISE_READINESS.md)).
+- Time-to-value target for IP-managed onboarding.
