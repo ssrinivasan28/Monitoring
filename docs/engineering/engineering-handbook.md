@@ -3,6 +3,9 @@
 How we build IP Sentinel. Pairs with the [enterprise architecture](../architecture/enterprise-architecture.md),
 [task catalog](../planning/task-catalog.md), and [build prompts](../ip-sentinel/prompts/README.md).
 
+> **Adding a new monitor later?** See [adding-a-monitor.md](adding-a-monitor.md) — it's mostly config
+> (point it at Prometheus + a dashboard definition), not code.
+
 ## 1. Golden rules (non-negotiable)
 1. **Never modify the 21 monitors.** They are the sensor layer. Changes are limited to new modules +
    `prometheus.yml` (remote-write) + installer role.
