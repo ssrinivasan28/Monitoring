@@ -57,8 +57,10 @@ Existing monitors ──metrics/logs──▶ Central data plane (Prometheus/Tha
 - Staff may span tenants (RBAC); customers are pinned to their own. **No cross-tenant learning.**
 - Scale target: **< 25 tenants** → single central Prometheus with federation (no sharding).
 - **Data-source resolution:** default is one **central** Prometheus/Loki (tenants separated by label,
-  URL in `application.yml`). For **per-tenant / hybrid** setups, a `tenant_datasource` row overrides the
-  endpoint per tenant; the query gateway resolves per request and falls back to central when absent.
+  URL in `application.yml`). Each tenant may also register **one or more** `tenant_datasource` endpoints
+  (managed in the Admin UI) — added over time as monitoring grows. The query gateway **fans out** across
+  a tenant's enabled sources of the needed kind, merges results, and **falls back to central** when none
+  exist; one unreachable source degrades gracefully.
 
 ## 6. Security architecture
 - **AuthN:** staff via Azure AD **OIDC SSO**; customers via **invite + MFA**, optional federated per-tenant SSO.
