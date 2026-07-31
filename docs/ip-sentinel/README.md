@@ -15,6 +15,7 @@ with an AI operations analyst built in.
 | [`ENHANCEMENT_PLAN.md`](ENHANCEMENT_PLAN.md) | The full plan — vision, capabilities, UI modules, agent roster, architecture, roadmap, governance, verification. |
 | [`enhancement-plan.html`](enhancement-plan.html) | The same plan as a branded, self-contained web page for sharing (open in a browser). |
 | [`DEPLOYMENT.md`](DEPLOYMENT.md) | How it's packaged (Windows/WinSW-led, containers for scale) and the three hosting topologies with a recommendation. |
+| [`ENTERPRISE_READINESS.md`](ENTERPRISE_READINESS.md) | Non-functional requirements — SLAs, DR/backup, AI safety, security, compliance, self-monitoring — with status and first-release priorities. |
 | [`prompts/phase-0-foundation.md`](prompts/phase-0-foundation.md) | Foundation + governance spine + UI shell. |
 | [`prompts/phase-1-correlation-triage.md`](prompts/phase-1-correlation-triage.md) | Correlation & triage engine + integrations. |
 | [`prompts/phase-2-chatops.md`](prompts/phase-2-chatops.md) | Natural-language ChatOps. |
