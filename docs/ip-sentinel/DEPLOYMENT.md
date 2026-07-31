@@ -54,6 +54,59 @@ One central stack (per hosting boundary — see topologies):
 
 ---
 
+## Configuration
+
+All runtime settings live in a single **`application.yml`** deployed **next to `aiops-platform.jar`**,
+read automatically by Spring Boot from the service working directory. The installer writes it per
+client with `onlyifdoesntexist` (upgrades never overwrite it), exactly like the monitors' `.properties`.
+Change a value → restart the service; **no recompile**.
+
+| Layer | Role |
+|---|---|
+| `application.yml` (beside the JAR) | Port, DB, data-source URLs, LLM, SSO, integrations, tenant id |
+| WinSW service XML (`IPMonitoring_AIOpsPlatform.xml`) | Service definition, working dir, `java -jar` args |
+| Installer (Inno Setup) | Writes `application.yml` per client (`onlyifdoesntexist`) |
+
+Because Spring Boot's embedded Tomcat serves **both** the REST/WebSocket API **and** the bundled React
+UI, `server.port` is the single port for the whole app.
+
+```yaml
+# application.yml  — sits beside aiops-platform.jar
+server:
+  port: 8443                         # UI + API on one port (embedded Tomcat)
+
+spring:
+  datasource:                        # PostgreSQL 18 + pgvector
+    url: jdbc:postgresql://localhost:5432/ipsentinel
+    username: ipsentinel
+    password: DPAPI(...)             # reuse CredentialProtector — no plaintext secrets
+
+aisentinel:
+  tenant: ACME                       # = ClientInstanceId
+  prometheus:
+    url: http://localhost:9090       # metrics source (behind the query gateway)
+  loki:
+    url: http://localhost:3100       # logs source
+  llm:
+    provider: claude                 # 'claude' | 'local' (with routing + fallback)
+    endpoint: https://api.anthropic.com
+    model: claude-opus-4-8
+    api-key: DPAPI(...)
+    local-endpoint: http://localhost:11434/v1   # Ollama/vLLM when provider=local
+  azure-ad:                          # OIDC SSO
+    tenant-id: ...
+    client-id: ...
+    client-secret: DPAPI(...)
+```
+
+Notes:
+- **Credentials** use the existing **DPAPI** pattern (`CredentialProtector.resolve()`) — same as the monitors.
+- The platform is a **single central service**, so it needs just one port (e.g. `8443`). If you run
+  multiple instances on one box, apply the same per-client **+100 offset** scheme the monitors use.
+- TLS: terminate in Spring Boot (`server.ssl.*`) or front with **IIS** — no nginx on Windows.
+
+---
+
 ## Hosting topologies (all three — with a recommendation)
 
 ### 1. On-prem per-customer  ⭐ recommended default
