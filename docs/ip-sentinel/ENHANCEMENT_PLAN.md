@@ -215,6 +215,11 @@ never queries them directly. Stateless app tier scales horizontally; Postgres pr
   RBAC-scoped.
 - **Phase 3 — Adaptive thresholds & learning.** Baselines/forecasts/anomalies + threshold
   recommendations in Insights; learn from analyst feedback in Postgres.
+- **Phase 4 — Production hardening.** DR/backup, self-monitoring, secrets rotation, resilience,
+  performance + security testing, AI-safety eval/red-team, SOC 2 + accessibility. Required for
+  production-ready; see the Definition of Done in [ENTERPRISE_READINESS.md](ENTERPRISE_READINESS.md).
+
+**Frozen scope:** 36 build chunks across Phases 0–4 (see [prompts/README.md](prompts/README.md)).
 
 **Recommended MVP:** Phase 0 + a thin Phase 1 slice (correlation → incident console + Teams +
 ServiceNow for one pilot tenant), then expand.

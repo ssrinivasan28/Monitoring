@@ -1,16 +1,21 @@
 # IP Sentinel — How to Run (simple guide)
 
 Think of each **chunk** (like `0.1`, `0.9`) as a **to-do ticket**. "Running" one = telling Claude to
-build that ticket. There are **28 tickets total** (about 9 are the ⭐ MVP).
+build that ticket. There are **36 tickets total** (~16 for the MVP; all 36 for production-ready).
 
-## How many chunks
+## How many chunks  (scope FROZEN)
 | Phase | Chunks | Count |
 |---|---|---|
 | Phase 0 — Foundation + fleet view | `0.1`–`0.11` | 11 |
 | Phase 1 — Correlation + integrations | `1.1`–`1.8` | 8 |
 | Phase 2 — ChatOps (Pro) | `2.1`–`2.4` | 4 |
 | Phase 3 — Adaptive + reporting | `3.1`–`3.5` | 5 |
-| **Total** | | **28** |
+| Phase 4 — Production hardening | `4.1`–`4.8` | 8 |
+| **Total** | | **36** |
+
+- **MVP** (demoable): all of Phase 0 + the 5 ⭐ Phase 1 chunks (~16).
+- **Production-ready:** all **36** + the Definition of Done in
+  [`ENTERPRISE_READINESS.md`](ENTERPRISE_READINESS.md).
 
 ## What's in the MVP (build these first)
 The MVP is **not** a clean `0.1`–`0.9` range. The ⭐ MVP-defining features depend on the whole

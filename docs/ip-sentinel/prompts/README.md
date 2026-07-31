@@ -59,5 +59,19 @@ Build in order within a phase. Phases are sequential (1 assumes 0, etc.). The **
 | 3.4 | [Reporting / Digest agent (daily/weekly/monthly)](phase-3/3.4-reporting-digest.md) | |
 | 3.5 | [Insights (SPA)](phase-3/3.5-insights-spa.md) | |
 
+## Phase 4 — Production hardening (required for production-ready)
+| # | Chunk | |
+|---|---|---|
+| 4.1 | [DR / Backup & Restore](phase-4/4.1-dr-backup-restore.md) | |
+| 4.2 | [Platform self-monitoring & observability](phase-4/4.2-self-monitoring.md) | |
+| 4.3 | [Secrets management & rotation](phase-4/4.3-secrets-rotation.md) | |
+| 4.4 | [Reliability & resilience hardening](phase-4/4.4-reliability-resilience.md) | |
+| 4.5 | [Performance & load testing](phase-4/4.5-performance-load-testing.md) | |
+| 4.6 | [Security testing & hardening](phase-4/4.6-security-testing-hardening.md) | |
+| 4.7 | [AI safety evaluation & red-team](phase-4/4.7-ai-safety-eval-redteam.md) | |
+| 4.8 | [Compliance (SOC 2) & accessibility](phase-4/4.8-compliance-accessibility.md) | |
+
+> **Scope frozen: 36 chunks total** (Phase 0:11 · 1:8 · 2:4 · 3:5 · 4:8).
 > ⭐ = MVP: fleet view + pilot dashboards (Phase 0) and the cross-platform correlation showcase
-> (Phase 1) for one pilot tenant.
+> (Phase 1) for one pilot tenant. **Production-ready = all 36 + the Definition of Done in
+> [ENTERPRISE_READINESS.md](../ENTERPRISE_READINESS.md).**

@@ -98,3 +98,22 @@ Close these before calling it enterprise-ready:
 
 Everything else can harden iteratively, but these five are what auditors and enterprise security
 reviews will ask for on day one.
+
+---
+
+## Definition of Done: Production-Ready
+The product is **production-ready** when **all 36 chunks (Phases 0–4)** are complete **and** every
+box below is green. Phase 4 chunks deliver most of these.
+
+- [ ] **Functional:** all Phase 0–3 chunks merged; MVP demo passes end-to-end.
+- [ ] **DR:** automated backups + a **passed restore drill**; RTO/RPO met (`4.1`).
+- [ ] **Self-monitoring:** health probes + platform metrics + self-alerting live (`4.2`).
+- [ ] **Secrets:** Key Vault/Vault + rotation without redeploy; no plaintext at rest (`4.3`).
+- [ ] **Resilience:** rate limiting, circuit breakers, idempotent delivery; LLM-down system test passes (`4.4`).
+- [ ] **Performance:** meets latency/throughput budgets at target scale; stable soak; capacity documented (`4.5`).
+- [ ] **Security:** CI SAST/DAST/dep-scan gates green; SPA headers/CSRF/session; **pen-test remediated** (`4.6`).
+- [ ] **AI safety:** eval thresholds in CI; prompt-injection can't alter actions or cross tenants; no uncited root cause (`4.7`).
+- [ ] **Compliance:** audit immutability proven; evidence exportable; **SPA WCAG 2.1 AA**; subprocessor + access-review docs (`4.8`).
+- [ ] **SOC 2 Type II:** controls **operating** over the audit period (process — begins once the above are in place).
+
+> Frozen scope: **36 chunks (Phases 0–4)**. MVP = the ⭐ set; production-ready = this checklist all green.

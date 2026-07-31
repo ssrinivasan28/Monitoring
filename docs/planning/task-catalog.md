@@ -1,6 +1,10 @@
 # IP Sentinel — Task Catalog
 
-The full backlog: 28 ticket-sized build chunks derived from the [build prompts](../ip-sentinel/prompts/README.md).
+> **Scope: FROZEN — v1 = 36 chunks (Phases 0–4).** Phase 0:11 · 1:8 · 2:4 · 3:5 · 4:8.
+> MVP = ⭐ set. **Production-ready = all 36 + the Definition of Done in
+> [ENTERPRISE_READINESS.md](../ip-sentinel/ENTERPRISE_READINESS.md).**
+
+The full backlog: 36 ticket-sized build chunks derived from the [build prompts](../ip-sentinel/prompts/README.md).
 Each row is one build session / PR. ⭐ = MVP. Paste
 [`00-shared-preamble.md`](../ip-sentinel/prompts/00-shared-preamble.md) + the chunk to build.
 
@@ -48,4 +52,16 @@ Each row is one build session / PR. ⭐ = MVP. Paste
 | 3.4 | [Reporting / Digest agent](../ip-sentinel/prompts/phase-3/3.4-reporting-digest.md) | | 1.8, 3.2 | Daily/weekly/monthly reports per [REPORTING.md](../ip-sentinel/REPORTING.md); templated fallback LLM-off |
 | 3.5 | [Insights (SPA)](../ip-sentinel/prompts/phase-3/3.5-insights-spa.md) | | 3.1, 3.2, 0.8 | Lists anomalies/forecasts/recs; accept/dismiss writes feedback only |
 
-**28 tasks · MVP = the ⭐ set (Phase 0 fleet view + Phase 1 correlation showcase).**
+## Phase 4 — Production hardening (required for production-ready)
+| ID | Task | MVP | Depends on | Acceptance (summary) |
+|---|---|---|---|---|
+| 4.1 | [DR / Backup & Restore](../ip-sentinel/prompts/phase-4/4.1-dr-backup-restore.md) | | 0.1 | Point-in-time restore drill passes; RTO/RPO met; backups self-monitored |
+| 4.2 | [Self-monitoring & observability](../ip-sentinel/prompts/phase-4/4.2-self-monitoring.md) | | 0.7 | Health probes + platform metrics; synthetic failure self-alerts |
+| 4.3 | [Secrets management & rotation](../ip-sentinel/prompts/phase-4/4.3-secrets-rotation.md) | | 0.5 | Key Vault/Vault + rotation without redeploy; no plaintext at rest |
+| 4.4 | [Reliability & resilience](../ip-sentinel/prompts/phase-4/4.4-reliability-resilience.md) | | 1.6, 1.7 | Rate limit/backpressure; breakers + dead-letter; idempotent; LLM-down stays up |
+| 4.5 | [Performance & load testing](../ip-sentinel/prompts/phase-4/4.5-performance-load-testing.md) | | most of P0–P3 | Meets latency/throughput budgets at target scale; stable soak; capacity doc |
+| 4.6 | [Security testing & hardening](../ip-sentinel/prompts/phase-4/4.6-security-testing-hardening.md) | | 0.2–0.7 | CI security gates pass; headers/CSRF/session; pen-test remediated |
+| 4.7 | [AI safety eval & red-team](../ip-sentinel/prompts/phase-4/4.7-ai-safety-eval-redteam.md) | | 1.2, 2.1 | Eval thresholds in CI; injection can't alter actions/cross tenants |
+| 4.8 | [Compliance (SOC 2) & accessibility](../ip-sentinel/prompts/phase-4/4.8-compliance-accessibility.md) | | 0.7, 0.8 | Audit immutability proven; evidence exportable; SPA WCAG 2.1 AA |
+
+**36 tasks total · MVP = the ⭐ set · Production-ready = all 36 + the Definition of Done.**

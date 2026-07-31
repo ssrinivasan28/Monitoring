@@ -9,7 +9,11 @@ adjust velocity to your team.
 - **M2 — MVP (end Sprint 4):** ⭐ Fleet Overview + pilot dashboards + cross-platform correlation demo
   for one pilot tenant (fleet-view-first + the flagship demo).
 - **M3 — Product (end Sprint 6):** integrations, incident lifecycle, ChatOps (Pro).
-- **M4 — Intelligence (end Sprint 8):** adaptive/forecasting/reporting + enterprise-readiness gates.
+- **M4 — Intelligence (end Sprint 8):** adaptive/forecasting/reporting.
+- **M5 — Production-ready (end Sprint 11):** Phase 4 hardening complete + Definition of Done green
+  (see [ENTERPRISE_READINESS.md](../ip-sentinel/ENTERPRISE_READINESS.md)). SOC 2 evidence then accrues over the audit period.
+
+> **Frozen scope: 36 chunks (Phases 0–4).**
 
 ## Sprint 0 — Inception (setup)
 Repo scaffolding for `aiops-platform/` + `aiops-web/`, CI pipeline, Postgres 18 + pgvector env,
@@ -55,11 +59,24 @@ Testcontainers harness, coding standards wired. No feature chunks.
 - 3.2 Forecasting / capacity (feeds fleet view)
 - 3.3 Knowledge Curator (RAG ingestion)
 
-## Sprint 8 — Reporting & readiness  → **M4**
+## Sprint 8 — Reporting & intelligence  → **M4**
 - 3.4 Reporting / Digest agent
 - 3.5 Insights (SPA)
-- Enterprise-readiness gates: DR/backup + restore test, platform self-monitoring, secrets rotation,
-  audit immutability, security/pen-test pass (see [ENTERPRISE_READINESS.md](../ip-sentinel/ENTERPRISE_READINESS.md)).
+
+## Sprint 9 — Hardening I (resilience & ops)
+- 4.1 DR / Backup & Restore
+- 4.2 Platform self-monitoring & observability
+- 4.3 Secrets management & rotation
+- 4.4 Reliability & resilience hardening
+
+## Sprint 10 — Hardening II (quality & security)
+- 4.5 Performance & load testing
+- 4.6 Security testing & hardening
+- 4.7 AI safety evaluation & red-team
+
+## Sprint 11 — Compliance & sign-off  → **M5 (Production-ready)**
+- 4.8 Compliance (SOC 2) & accessibility
+- Run the **Definition of Done: Production-Ready** checklist ([ENTERPRISE_READINESS.md](../ip-sentinel/ENTERPRISE_READINESS.md)); remediate gaps; sign off.
 
 ## Notes
 - **MVP demo** is deliverable at end of Sprint 4: one pilot tenant, fleet view + a single
