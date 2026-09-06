@@ -13,6 +13,7 @@ import java.util.UUID;
 public interface IncidentRepository extends JpaRepository<Incident, UUID> {
     List<Incident> findByTenantId(UUID tenantId);
     Optional<Incident> findByTenantIdAndId(UUID tenantId, UUID id);
+    Optional<Incident> findByIdAndTenantId(UUID id, UUID tenantId);
     List<Incident> findByTenantIdAndStatus(UUID tenantId, String status);
     List<Incident> findByTenantIdAndOpenedAtBetween(UUID tenantId, Instant start, Instant end);
 }

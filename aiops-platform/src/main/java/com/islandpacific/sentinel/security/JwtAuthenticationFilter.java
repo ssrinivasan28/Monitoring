@@ -91,7 +91,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             for (UserTenantRole utr : utrList) {
                 String roleKey = utr.getRole().getKey();
-                authorities.add(new SimpleGrantedAuthority("ROLE_" + roleKey.toUpperCase()));
+                authorities.add(RoleMapper.toAuthority(roleKey));
 
                 String tier = "basic";
                 Optional<Entitlement> entOpt = entitlementRepository.findByTenantId(utr.getTenant().getId());
