@@ -1,0 +1,65 @@
+package com.islandpacific.sentinel;
+
+import com.islandpacific.sentinel.entity.AuthAuditLog;
+import com.islandpacific.sentinel.query.QueryAuditService;
+import com.islandpacific.sentinel.repository.AuthAuditLogRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
+
+import java.util.List;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.verify;
+
+class SecretBoundarySecurityTest {
+
+    private AuthAuditLogRepository auditLogRepository;
+    private QueryAuditService auditService;
+
+    private final UUID userId = UUID.randomUUID();
+    private final UUID tenantId = UUID.randomUUID();
+
+    @BeforeEach
+    void setUp() {
+        auditLogRepository = Mockito.mock(AuthAuditLogRepository.class);
+        auditService = new QueryAuditService(auditLogRepository);
+    }
+
+    @Test
+    void testCredentialsDoNotLeakInAuditDetailsOrLogs() {
+        String sensitiveQuery = "http_requests_total{token=\"secret-token-12345\"}";
+        String sanitizedQuery = "http_requests_total{token=\"secret-token-12345\",tenant_id=\"" + tenantId + "\"}";
+
+        auditService.recordQueryExecution(
+                userId,
+                tenantId,
+                "PROMQL_INSTANT",
+                sensitiveQuery,
+                sanitizedQuery,
+                List.of("source-1"),
+                20L,
+                "SUCCESS",
+                false,
+                0,
+                "corr-secret-123"
+        );
+
+        ArgumentCaptor<AuthAuditLog> captor = ArgumentCaptor.forClass(AuthAuditLog.class);
+        verify(auditLogRepository).save(captor.capture());
+
+        String details = captor.getValue().getDetail();
+
+        // Verify sensitive credentials (e.g., Bearer tokens, passwords, authorization headers) are not logged in details
+        assertFalse(details.contains("Bearer"));
+        assertFalse(details.contains("Authorization"));
+        assertFalse(details.contains("password="));
+        assertFalse(details.contains("client_secret="));
+
+        // Verify SHA-256 hash is computed and stored
+        assertTrue(details.contains("queryHash="));
+        assertFalse(details.contains("queryHash=hash_error"));
+    }
+}

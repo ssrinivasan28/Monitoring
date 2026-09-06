@@ -47,4 +47,41 @@ public class GlobalExceptionHandler {
                 "message", ex.getMessage()
         ));
     }
+
+    @ExceptionHandler(com.islandpacific.sentinel.query.InvalidTenantQueryException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidTenantQuery(com.islandpacific.sentinel.query.InvalidTenantQueryException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                "status", 400,
+                "error", "Bad Request",
+                "message", ex.getMessage()
+        ));
+    }
+
+    @ExceptionHandler(com.islandpacific.sentinel.query.QueryPolicyException.class)
+    public ResponseEntity<Map<String, Object>> handleQueryPolicy(com.islandpacific.sentinel.query.QueryPolicyException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                "status", 400,
+                "error", "Bad Request",
+                "message", ex.getMessage()
+        ));
+    }
+
+    @ExceptionHandler(com.islandpacific.sentinel.query.QueryAuditException.class)
+    public ResponseEntity<Map<String, Object>> handleQueryAudit(com.islandpacific.sentinel.query.QueryAuditException ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                "status", 500,
+                "error", "Internal Server Error",
+                "message", "Audit failure: mandatory compliance trace persistence failed"
+        ));
+    }
+
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<Map<String, Object>> handleSecurityException(SecurityException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                "status", 400,
+                "error", "Bad Request",
+                "message", ex.getMessage()
+        ));
+    }
+
 }
