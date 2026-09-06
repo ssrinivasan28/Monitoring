@@ -15,29 +15,29 @@ import java.util.logging.Logger;
  */
 public class MainFileSystemErrorMonitor {
     
-    private static final Logger LOGGER = Logger.getLogger(MainFileSystemErrorMonitor.class.getName());
+    private static Logger LOGGER = Logger.getLogger(MainFileSystemErrorMonitor.class.getName());
     private static final int DEFAULT_METRICS_PORT = 8085;
+    private static final String DEFAULT_EMAIL_FILE = "email.properties";
     private static final String DEFAULT_CONFIG_FILE = "fserrormonitor.properties";
-    
+
     private final Properties configProps;
     private final Properties emailProps;
     private final FileSystemErrorConfig monitorConfig;
     private final String clientName;
     private final int checkIntervalMinutes;
     private final int metricsPort;
-    
+
     private ScheduledExecutorService scheduler;
     private FileSystemErrorMonitorServer metricsServer;
-    
-    public MainFileSystemErrorMonitor(String configFilePath) throws IOException {
+
+    public MainFileSystemErrorMonitor(String configFilePath, String emailConfigPath) throws IOException {
         // Load main configuration
         configProps = new Properties();
         try (FileInputStream fis = new FileInputStream(configFilePath)) {
             configProps.load(fis);
         }
-        
+
         // Load email configuration from separate file
-        String emailConfigPath = configProps.getProperty("email.config.path", "email.properties");
         emailProps = new Properties();
         try (FileInputStream fis = new FileInputStream(emailConfigPath)) {
             emailProps.load(fis);
@@ -108,7 +108,8 @@ public class MainFileSystemErrorMonitor {
         LOGGER.info("Log purge scheduled: retaining " + retentionDays + " days, checking every " + purgeIntervalHours + " hours");
         
         // Create email service
-        EmailService emailService = new EmailService(emailProps, clientName, LOGGER);
+        String logoPath = configProps.getProperty("logo.path", "");
+        EmailService emailService = new EmailService(emailProps, clientName, LOGGER, logoPath);
         FileSystemErrorService monitorService = new FileSystemErrorService(
             LOGGER, 
             monitorConfig.getMonitoringConfigs(), 
@@ -119,7 +120,7 @@ public class MainFileSystemErrorMonitor {
         );
         
         // Schedule monitoring task
-        scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler = Executors.newSingleThreadScheduledExecutor(r -> { Thread t = new Thread(r); t.setDaemon(true); return t; });
         scheduler.scheduleAtFixedRate(() -> {
             try {
                 LOGGER.fine("Running scheduled error file check...");
@@ -167,32 +168,30 @@ public class MainFileSystemErrorMonitor {
     public static void main(String[] args) {
         printBanner();
         
-        String configFile = DEFAULT_CONFIG_FILE;
-        if (args.length > 0) {
-            configFile = args[0];
-        }
-        
+        String emailConfigPath = args.length > 0 ? args[0] : DEFAULT_EMAIL_FILE;
+        String configFile = args.length > 1 ? args[1] : DEFAULT_CONFIG_FILE;
+
         try {
             // Load properties first to get logger configuration
             Properties tempProps = new Properties();
             try (FileInputStream fis = new FileInputStream(configFile)) {
                 tempProps.load(fis);
             }
-            
-            String emailConfigPath = tempProps.getProperty("email.config.path", "email.properties");
+
             Properties emailProps = new Properties();
             try (FileInputStream fis = new FileInputStream(emailConfigPath)) {
                 emailProps.load(fis);
             }
-            
+
             // Initialize AppLogger before any other operations
             String logLevel = tempProps.getProperty("log.level", emailProps.getProperty("log.level", "INFO"));
             String logFolder = tempProps.getProperty("log.folder", emailProps.getProperty("log.folder", "logs"));
             com.islandpacific.monitoring.common.AppLogger.setupLogger("filesystemerrormonitoring", logLevel, logFolder);
-            
+            LOGGER = com.islandpacific.monitoring.common.AppLogger.getLogger();
+
             LOGGER.info("Using configuration file: " + configFile);
-            
-            MainFileSystemErrorMonitor monitor = new MainFileSystemErrorMonitor(configFile);
+
+            MainFileSystemErrorMonitor monitor = new MainFileSystemErrorMonitor(configFile, emailConfigPath);
             monitor.start();
             
             // Keep main thread alive

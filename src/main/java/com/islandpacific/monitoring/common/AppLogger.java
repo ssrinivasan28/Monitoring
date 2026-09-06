@@ -28,7 +28,7 @@ public class AppLogger {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
     
     private static Logger sharedLogger;
-    private static FileHandler fileHandler;
+    private static DailyRollingFileHandler fileHandler;
     private static String currentModuleName;
     private static String currentLogFolder;
     private static boolean isInitialized = false;
@@ -104,9 +104,8 @@ public class AppLogger {
             String logFileName = effectiveLogFolder + File.separator + moduleName + "_" + dateStr + ".log";
             File logFile = new File(logFileName);
             String absoluteLogPath = logFile.getAbsolutePath();
-            
-            fileHandler = new FileHandler(logFileName, true); // true for append mode
-            fileHandler.setFormatter(new LogFormatter());
+
+            fileHandler = new DailyRollingFileHandler(effectiveLogFolder, moduleName);
             sharedLogger.addHandler(fileHandler);
             
             // Console Handler for real-time console output
@@ -227,6 +226,56 @@ public class AppLogger {
         isInitialized = false;
     }
     
+    /**
+     * File handler that rolls to a new {module}_{YYYY-MM-DD}.log file when the date changes,
+     * so daily log files are created without requiring a service restart.
+     */
+    private static class DailyRollingFileHandler extends java.util.logging.Handler {
+        private final String logFolder;
+        private final String moduleName;
+        private FileHandler delegate;
+        private LocalDate currentDate;
+
+        DailyRollingFileHandler(String logFolder, String moduleName) throws IOException {
+            this.logFolder = logFolder;
+            this.moduleName = moduleName;
+            roll(LocalDate.now());
+        }
+
+        private void roll(LocalDate date) throws IOException {
+            if (delegate != null) {
+                delegate.close();
+            }
+            String logFileName = logFolder + File.separator + moduleName + "_" + date.format(DATE_FORMATTER) + ".log";
+            delegate = new FileHandler(logFileName, true);
+            delegate.setFormatter(new LogFormatter());
+            currentDate = date;
+        }
+
+        @Override
+        public synchronized void publish(LogRecord record) {
+            LocalDate today = LocalDate.now();
+            if (!today.equals(currentDate)) {
+                try {
+                    roll(today);
+                } catch (IOException e) {
+                    reportError("Could not roll log file to new date", e, java.util.logging.ErrorManager.OPEN_FAILURE);
+                }
+            }
+            delegate.publish(record);
+        }
+
+        @Override
+        public synchronized void flush() {
+            delegate.flush();
+        }
+
+        @Override
+        public synchronized void close() {
+            delegate.close();
+        }
+    }
+
     /**
      * Custom log formatter with consistent timestamp and level formatting.
      */

@@ -3,39 +3,46 @@ package com.islandpacific.monitoring.ibmiifsmonitoring;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import java.time.Instant;
-import java.util.concurrent.ConcurrentHashMap; // Added import for ConcurrentHashMap
-import java.util.logging.Logger; // Added import for Logger
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 
 
 public class IFSMonitorMetrics {
 
-    // Gauge for application uptime, calculated from process start time
     private static final Gauge UPTIME_SECONDS = Gauge.build()
             .name("ifs_monitor_uptime_seconds")
             .help("Uptime of the IFS monitor application in seconds.")
             .register();
 
-    // Gauge for the timestamp of the last completed scan
     private static final Gauge LAST_SCAN_TIMESTAMP_SECONDS = Gauge.build()
             .name("ifs_monitor_last_scan_timestamp_seconds")
             .help("Last time an IFS folder scan was completed in epoch seconds.")
             .register();
 
-    // Gauge for the current file count in a specific IFS folder
     private static final Gauge IFS_FILE_COUNT_CURRENT = Gauge.build()
             .name("ifs_folder_file_count_current")
             .help("Current number of files in a monitored IFS folder.")
-            .labelNames("location") // Label by location name
+            .labelNames("location")
             .register();
 
-    // Counter for alerts sent due to too few files
+    private static final Gauge IFS_TOTAL_FILE_COUNT = Gauge.build()
+            .name("ifs_folder_total_file_count")
+            .help("Total file count per location and file type.")
+            .labelNames("location", "type")
+            .register();
+
+    private static final Gauge IFS_NEW_FILE_COUNT = Gauge.build()
+            .name("ifs_folder_new_file_count")
+            .help("New files detected per location and file type since last scan.")
+            .labelNames("location", "type")
+            .register();
+
     private static final Counter IFS_TOO_FEW_FILES_ALERTS_TOTAL = Counter.build()
             .name("ifs_too_few_files_alerts_total")
             .help("Total number of alerts sent due to file count being below minimum threshold.")
             .labelNames("location")
             .register();
 
-    // Counter for alerts sent due to too many files
     private static final Counter IFS_TOO_MANY_FILES_ALERTS_TOTAL = Counter.build()
             .name("ifs_too_many_files_alerts_total")
             .help("Total number of alerts sent due to file count exceeding maximum threshold.")
@@ -43,8 +50,19 @@ public class IFSMonitorMetrics {
             .register();
 
     public IFSMonitorMetrics(Logger logger,
-                                  ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> totalFileCounts,
-                                  ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> newFileCounts) {
+                             ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> totalFileCounts,
+                             ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> newFileCounts) {
+    }
+
+    public static void updateCountMetrics(
+            ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> totalFileCounts,
+            ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> newFileCounts) {
+        totalFileCounts.forEach((location, typeCounts) ->
+            typeCounts.forEach((type, count) ->
+                IFS_TOTAL_FILE_COUNT.labels(location, type).set(count)));
+        newFileCounts.forEach((location, typeCounts) ->
+            typeCounts.forEach((type, count) ->
+                IFS_NEW_FILE_COUNT.labels(location, type).set(count)));
     }
 
     public void setLastScanTimestamp(long timestamp) {

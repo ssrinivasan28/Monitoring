@@ -22,21 +22,24 @@ public class FolderKeywordMonitorMetrics extends Collector {
     @Override
     public List<MetricFamilySamples> collect() {
         List<MetricFamilySamples> mfs = new ArrayList<>();
+        List<String> labelNames = Collections.singletonList("folder");
 
         GaugeMetricFamily matched = new GaugeMetricFamily(
                 "folder_keyword_files_matched_total",
                 "Total files where a keyword was found",
-                Collections.emptyList());
-        matched.addMetric(Collections.emptyList(),
-                totalFilesMatched.getOrDefault("total", 0L));
+                labelNames);
+        for (Map.Entry<String, Long> entry : totalFilesMatched.entrySet()) {
+            matched.addMetric(Collections.singletonList(entry.getKey()), entry.getValue());
+        }
         mfs.add(matched);
 
         GaugeMetricFamily scanned = new GaugeMetricFamily(
                 "folder_keyword_files_scanned_total",
                 "Total files scanned",
-                Collections.emptyList());
-        scanned.addMetric(Collections.emptyList(),
-                totalFilesScanned.getOrDefault("total", 0L));
+                labelNames);
+        for (Map.Entry<String, Long> entry : totalFilesScanned.entrySet()) {
+            scanned.addMetric(Collections.singletonList(entry.getKey()), entry.getValue());
+        }
         mfs.add(scanned);
 
         return mfs;

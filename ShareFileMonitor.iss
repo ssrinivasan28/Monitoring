@@ -54,6 +54,9 @@ Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "{
 ; JAR
 Source: "installer\resources\monitoring-services\{#MonitorDir}\{#JarFile}"; DestDir: "{app}\monitoring-services\{#MonitorDir}"; Flags: ignoreversion
 
+; DPAPI credential encryption tool (always installed; run on this machine to encrypt property values)
+Source: "installer\resources\monitoring-services\CredTool\CredTool.jar"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+
 ; Properties files — preserved on upgrade
 Source: "installer\resources\monitoring-services\{#MonitorDir}\sharefilemonitor.properties"; DestDir: "{app}\monitoring-services\{#MonitorDir}"; Flags: onlyifdoesntexist skipifsourcedoesntexist
 Source: "installer\resources\monitoring-services\{#MonitorDir}\email.properties"; DestDir: "{app}\monitoring-services\{#MonitorDir}"; Flags: onlyifdoesntexist skipifsourcedoesntexist

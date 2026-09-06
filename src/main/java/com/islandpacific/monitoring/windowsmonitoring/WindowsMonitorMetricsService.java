@@ -152,12 +152,12 @@ public class WindowsMonitorMetricsService {
         try {
             // CPU
             info.setCpuUtilization(parseDoubleOrZero(executePowerShell(host,
-                    "(Get-WmiObject Win32_Processor | Measure-Object -Property LoadPercentage -Average).Average",
+                    "[string](Get-WmiObject Win32_Processor | Measure-Object -Property LoadPercentage -Average).Average",
                     creds)));
 
             // Memory — compute utilization from raw KB values before any rounding occurs
             String memInfo = executePowerShell(host,
-                    "Get-WmiObject Win32_OperatingSystem | Select-Object TotalVisibleMemorySize, FreePhysicalMemory | ConvertTo-Json",
+                    "Get-WmiObject Win32_OperatingSystem | Select-Object TotalVisibleMemorySize, FreePhysicalMemory | ConvertTo-Json -Compress",
                     creds);
             double totalKb = extractDouble(memInfo, "TotalVisibleMemorySize");
             double freeKb  = extractDouble(memInfo, "FreePhysicalMemory");
@@ -169,12 +169,12 @@ public class WindowsMonitorMetricsService {
 
             // Uptime
             info.setSystemUptimeHours(parseDoubleOrZero(executePowerShell(host,
-                    "(Get-Date) - (Get-WmiObject Win32_OperatingSystem).ConverttoDateTime((Get-WmiObject Win32_OperatingSystem).LastBootUpTime) | Select-Object -ExpandProperty TotalHours",
+                    "[string]((Get-Date) - (Get-WmiObject Win32_OperatingSystem).ConverttoDateTime((Get-WmiObject Win32_OperatingSystem).LastBootUpTime)).TotalHours",
                     creds)));
 
             // Remote Disks
             String diskInfo = executePowerShell(host,
-                    "Get-WmiObject Win32_LogicalDisk -Filter \"DriveType=3\" | Select-Object DeviceID, Size, FreeSpace | ConvertTo-Json",
+                    "@(Get-WmiObject Win32_LogicalDisk -Filter \"DriveType=3\" | Select-Object DeviceID, Size, FreeSpace) | ConvertTo-Json -Compress",
                     creds);
             parseRemoteDisks(diskInfo, info);
 

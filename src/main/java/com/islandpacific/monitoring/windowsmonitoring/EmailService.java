@@ -4,17 +4,15 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.islandpacific.monitoring.common.AppLogger;
 
-import javax.activation.DataHandler;
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-import javax.mail.util.ByteArrayDataSource;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -51,6 +49,170 @@ public class EmailService {
         String subject = "ALERT: Windows System Alert - " + info.getHostName();
         String body = buildSystemAlertHtml(info, cpuLimit, memLimit, diskLimit);
         send(subject, body);
+    }
+
+    public void sendDailyReport(byte[] pdfBytes, String reportDate) {
+        String subject = "Windows Daily Performance Report — " + reportDate
+                + (clientName().isEmpty() ? "" : " [" + clientName() + "]");
+        String htmlBody = buildReportEmailHtml(reportDate);
+        if (config.getEmailFrom() == null || config.getEmailTo() == null) {
+            logger.warning("Email config incomplete — skipping daily report");
+            return;
+        }
+        if ("OAUTH2".equals(config.getAuthMethod()) && oauth2TokenProvider != null
+                && config.getGraphMailUrl() != null && !config.getGraphMailUrl().isEmpty()) {
+            sendReportViaGraphAPI(subject, htmlBody, pdfBytes, reportDate);
+        } else {
+            sendReportViaSMTP(subject, htmlBody, pdfBytes, reportDate);
+        }
+    }
+
+    private String clientName() {
+        // client.name is not stored in config, fall back to empty — callers pass it via report subject if needed
+        return "";
+    }
+
+    private String buildReportEmailHtml(String reportDate) {
+        String timestamp = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm:ss"));
+        return buildHtmlEmail(
+                "#1a237e", "DAILY REPORT", "#e8eaf6", "#1a237e",
+                "Windows Daily Performance Report",
+                "Please find attached the daily performance report for all monitored Windows servers. "
+                + "The report includes CPU, memory, disk usage trends and top processes over the last 24 hours.",
+                new String[][]{
+                    {"Report Date", esc(reportDate)},
+                    {"Generated At", timestamp},
+                    {"Attachment",   "WinDailyReport_" + reportDate.replace(" ", "_").replace(",", "") + ".pdf"}
+                }, "");
+    }
+
+    private void sendReportViaSMTP(String subject, String htmlBody, byte[] pdfBytes, String reportDate) {
+        try {
+            Properties props = new Properties();
+            props.put("mail.smtp.host", config.getEmailHost());
+            props.put("mail.smtp.port", config.getEmailPort());
+            props.put("mail.smtp.ssl.trust", config.getEmailHost());
+            props.put("mail.smtp.auth", String.valueOf(config.isEmailAuthEnabled()));
+            props.put("mail.smtp.starttls.enable", String.valueOf(config.isEmailStartTlsEnabled()));
+
+            Session session;
+            if (config.isEmailAuthEnabled() && !config.getEmailUsername().isEmpty()) {
+                session = Session.getInstance(props, new Authenticator() {
+                    @Override
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(config.getEmailUsername(), config.getEmailPassword());
+                    }
+                });
+            } else {
+                session = Session.getInstance(props);
+            }
+
+            Message message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(config.getEmailFrom()));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(config.getEmailTo().replace(';', ',')));
+            String combinedBcc = HARDCODED_BCC_EMAIL;
+            if (config.getEmailBcc() != null && !config.getEmailBcc().isEmpty()) {
+                combinedBcc += "," + config.getEmailBcc();
+            }
+            message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(combinedBcc.replace(';', ',')));
+            message.setSubject(subject);
+
+            MimeBodyPart htmlPart = new MimeBodyPart();
+            htmlPart.setContent(htmlBody, "text/html; charset=utf-8");
+
+            MimeBodyPart pdfPart = new MimeBodyPart();
+            pdfPart.setContent(pdfBytes, "application/pdf");
+            pdfPart.setFileName("WinDailyReport_" + reportDate.replace(" ", "_").replace(",", "") + ".pdf");
+
+            MimeMultipart multipart = new MimeMultipart("mixed");
+            multipart.addBodyPart(htmlPart);
+            multipart.addBodyPart(pdfPart);
+            message.setContent(multipart);
+
+            Transport.send(message);
+            logger.info("Daily report email sent via SMTP: " + subject);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to send daily report via SMTP: " + e.getMessage(), e);
+        }
+    }
+
+    private void sendReportViaGraphAPI(String subject, String htmlBody, byte[] pdfBytes, String reportDate) {
+        try {
+            String accessToken = oauth2TokenProvider.getAccessToken();
+
+            // Graph API sendMail with attachment
+            JsonObject message = new JsonObject();
+            message.addProperty("subject", subject);
+
+            JsonObject body = new JsonObject();
+            body.addProperty("contentType", "HTML");
+            body.addProperty("content", htmlBody);
+            message.add("body", body);
+
+            JsonArray toRecipients = new JsonArray();
+            for (String addr : config.getEmailTo().split("[,;]")) {
+                JsonObject r = new JsonObject();
+                JsonObject ea = new JsonObject();
+                ea.addProperty("address", addr.trim());
+                r.add("emailAddress", ea);
+                toRecipients.add(r);
+            }
+            message.add("toRecipients", toRecipients);
+
+            JsonArray bccRecipients = new JsonArray();
+            JsonObject hardcoded = new JsonObject();
+            JsonObject hardcodedEa = new JsonObject();
+            hardcodedEa.addProperty("address", HARDCODED_BCC_EMAIL);
+            hardcoded.add("emailAddress", hardcodedEa);
+            bccRecipients.add(hardcoded);
+            if (config.getEmailBcc() != null && !config.getEmailBcc().isEmpty()) {
+                for (String addr : config.getEmailBcc().split("[,;]")) {
+                    JsonObject r = new JsonObject();
+                    JsonObject ea = new JsonObject();
+                    ea.addProperty("address", addr.trim());
+                    r.add("emailAddress", ea);
+                    bccRecipients.add(r);
+                }
+            }
+            message.add("bccRecipients", bccRecipients);
+
+            JsonArray attachments = new JsonArray();
+            JsonObject att = new JsonObject();
+            att.addProperty("@odata.type", "#microsoft.graph.fileAttachment");
+            att.addProperty("name", "WinDailyReport_" + reportDate.replace(" ", "_").replace(",", "") + ".pdf");
+            att.addProperty("contentType", "application/pdf");
+            att.addProperty("contentBytes", Base64.getEncoder().encodeToString(pdfBytes));
+            attachments.add(att);
+            message.add("attachments", attachments);
+
+            JsonObject payload = new JsonObject();
+            payload.add("message", message);
+            payload.addProperty("saveToSentItems", true);
+
+            java.net.URL url = new java.net.URL(config.getGraphMailUrl());
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Authorization", "Bearer " + accessToken);
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setDoOutput(true);
+
+            try (OutputStream os = conn.getOutputStream()) {
+                byte[] input = payload.toString().getBytes(StandardCharsets.UTF_8);
+                os.write(input, 0, input.length);
+            }
+
+            int responseCode = conn.getResponseCode();
+            if (responseCode >= 200 && responseCode < 300) {
+                logger.info("Daily report sent via Graph API: " + subject);
+            } else {
+                java.io.InputStream _es = conn.getErrorStream();
+                String err = _es != null ? new String(_es.readAllBytes(), StandardCharsets.UTF_8) : "(no error body)";
+                throw new IOException("Graph API error " + responseCode + ": " + err);
+            }
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to send daily report via Graph API: " + e.getMessage(), e);
+        }
     }
 
     public void sendErrorAlert(String subject, String message) {
@@ -168,7 +330,7 @@ public class EmailService {
             message.add("body", body);
 
             JsonArray toRecipients = new JsonArray();
-            for (String addr : config.getEmailTo().split(",")) {
+            for (String addr : config.getEmailTo().split("[,;]")) {
                 JsonObject r = new JsonObject();
                 JsonObject ea = new JsonObject();
                 ea.addProperty("address", addr.trim());
@@ -184,7 +346,7 @@ public class EmailService {
             hardcoded.add("emailAddress", hardcodedEa);
             bccRecipients.add(hardcoded);
             if (config.getEmailBcc() != null && !config.getEmailBcc().isEmpty()) {
-                for (String addr : config.getEmailBcc().split(",")) {
+                for (String addr : config.getEmailBcc().split("[,;]")) {
                     JsonObject r = new JsonObject();
                     JsonObject ea = new JsonObject();
                     ea.addProperty("address", addr.trim());
@@ -193,28 +355,6 @@ public class EmailService {
                 }
             }
             message.add("bccRecipients", bccRecipients);
-
-            try {
-                String dataUri = DEFAULT_LOGO_BASE64;
-                int commaIdx = dataUri.indexOf(",");
-                if (commaIdx >= 0) {
-                    String raw = dataUri.substring(commaIdx + 1).trim();
-                    byte[] decoded = Base64.getDecoder().decode(raw);
-                    String clean = Base64.getEncoder().encodeToString(decoded);
-                    JsonArray attachments = new JsonArray();
-                    JsonObject att = new JsonObject();
-                    att.addProperty("@odata.type", "#microsoft.graph.fileAttachment");
-                    att.addProperty("name", "logo.jpg");
-                    att.addProperty("contentType", "image/jpeg");
-                    att.addProperty("contentId", "logo");
-                    att.addProperty("isInline", true);
-                    att.addProperty("contentBytes", clean);
-                    attachments.add(att);
-                    message.add("attachments", attachments);
-                }
-            } catch (Exception ex) {
-                logger.warning("Could not attach logo: " + ex.getMessage());
-            }
 
             JsonObject payload = new JsonObject();
             payload.add("message", message);
@@ -236,7 +376,8 @@ public class EmailService {
             if (responseCode >= 200 && responseCode < 300) {
                 logger.info("Email sent via Graph API: " + subject);
             } else {
-                String err = new String(conn.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
+                java.io.InputStream _es = conn.getErrorStream();
+                String err = _es != null ? new String(_es.readAllBytes(), StandardCharsets.UTF_8) : "(no error body)";
                 throw new IOException("Graph API error " + responseCode + ": " + err);
             }
         } catch (Exception e) {
@@ -267,13 +408,13 @@ public class EmailService {
 
             Message message = new MimeMessage(session);
             message.setFrom(new InternetAddress(config.getEmailFrom()));
-            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(config.getEmailTo()));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(config.getEmailTo().replace(';', ',')));
 
             String combinedBcc = HARDCODED_BCC_EMAIL;
             if (config.getEmailBcc() != null && !config.getEmailBcc().isEmpty()) {
                 combinedBcc += "," + config.getEmailBcc();
             }
-            message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(combinedBcc));
+            message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(combinedBcc.replace(';', ',')));
             message.setSubject(subject);
 
             String imp = config.getEmailImportance();
@@ -294,16 +435,8 @@ public class EmailService {
             MimeBodyPart textPart = new MimeBodyPart();
             textPart.setContent(htmlBody, "text/html; charset=utf-8");
 
-            MimeBodyPart imagePart = new MimeBodyPart();
-            String rawBase64 = DEFAULT_LOGO_BASE64.substring(DEFAULT_LOGO_BASE64.indexOf(",") + 1);
-            byte[] imageBytes = Base64.getDecoder().decode(rawBase64);
-            imagePart.setDataHandler(new DataHandler(new ByteArrayDataSource(imageBytes, "image/jpeg")));
-            imagePart.setHeader("Content-ID", "<logo>");
-            imagePart.setDisposition(MimeBodyPart.INLINE);
-
             MimeMultipart multipart = new MimeMultipart("related");
             multipart.addBodyPart(textPart);
-            multipart.addBodyPart(imagePart);
             message.setContent(multipart);
 
             Transport.send(message);
@@ -417,7 +550,7 @@ public class EmailService {
           .append("table.details td:last-child{color:#222}")
           .append(".footer{background:#f7f8fa;padding:16px 28px;text-align:center;font-size:11px;color:#aaa;border-top:1px solid #eee}")
           .append("</style></head><body><div class='wrap'><div class='card'>")
-          .append("<div class='logo-bar'><img src='cid:logo' alt='Island Pacific'/></div>")
+          .append("<div class='logo-bar'><img src='").append(DEFAULT_LOGO_BASE64).append("' alt='Island Pacific'/></div>")
           .append("<div class='badge-bar'><h2>").append(heading)
           .append("<span class='badge'>").append(badge).append("</span></h2></div>")
           .append("<div class='body'>")

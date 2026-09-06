@@ -144,6 +144,30 @@ Curator's memory) → Notification Router dispatches; Anomaly + Forecasting run 
 
 ---
 
+## Increasing agent autonomy (still read-only)
+
+Three ways to make the agents more agentic without crossing into remediation:
+
+1. **Multi-step investigation.** Today's Triage Agent runs a fixed tool sequence. Let it plan and
+   chain tool calls itself — check subsystem status, decide from the result whether to pull job
+   duration history or QSYSOPR messages next, keep going until it has enough evidence or hits a
+   step/cost budget. Same read-only tool registry; the difference is the agent choosing its own next
+   step instead of following a script.
+2. **Proactive, unprompted runs.** Anomaly and Forecasting agents already run on a schedule — extend
+   this so they can also self-trigger a deeper Triage-style investigation when they spot something
+   worth a closer look (e.g. a forecast crossing a risk threshold), surfacing a ready-made Insight
+   before any monitor breach fires.
+3. **Workflow actions on external systems.** Agents write to ServiceNow/Jira, PagerDuty/Opsgenie,
+   and Teams/Slack on the incident's behalf (ticket creation, paging, posting) — writes to
+   *integration* systems, never to IBM i or Windows. Each action is still auditable and reversible
+   by a human in the target tool.
+
+**Out of scope:** auto-remediation (restarting services, editing thresholds/config, or any write to
+a monitored IBM i/Windows system) stays locked out per the Governance & scope section below — a bad
+automated fix is a worse outage than a missed alert.
+
+---
+
 ## Concrete scenarios
 
 **1. IBM i subsystem outage (correlation win).** QINTER stops; the subsystem, job-queue-count, and
@@ -219,7 +243,8 @@ never queries them directly. Stateless app tier scales horizontally; Postgres pr
   performance + security testing, AI-safety eval/red-team, SOC 2 + accessibility. Required for
   production-ready; see the Definition of Done in [ENTERPRISE_READINESS.md](ENTERPRISE_READINESS.md).
 
-**Frozen scope:** 37 build chunks across Phases 0–4 (see [prompts/README.md](prompts/README.md)).
+**Scope:** 40 build chunks across Phases 0–4 (see [prompts/README.md](prompts/README.md)) — includes
+the 3 agent-autonomy chunks (1.9, 1.10, 3.6) above.
 
 **Recommended MVP:** Phase 0 + a thin Phase 1 slice (correlation → incident console + Teams +
 ServiceNow for one pilot tenant), then expand.

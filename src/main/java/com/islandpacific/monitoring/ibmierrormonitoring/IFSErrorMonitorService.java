@@ -16,6 +16,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +33,7 @@ public class IFSErrorMonitorService {
 
     private final Logger mainLogger;
     private final List<IFSErrorMonitorConfig.MonitoringConfig> monitoringConfigs;
+    private final Map<String, IFSErrorMonitorConfig.MonitoringConfig> monitoringConfigsByName;
     private final ConcurrentHashMap<String, IFSErrorMonitorConfig.SmbCredentials> globalSmbCredentials;
     private final EmailService emailService;
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> totalFileCounts;
@@ -51,6 +53,8 @@ public class IFSErrorMonitorService {
                                   IFSErrorMonitorMetrics metricsService) {
         this.mainLogger = mainLogger;
         this.monitoringConfigs = monitoringConfigs;
+        this.monitoringConfigsByName = new HashMap<>();
+        monitoringConfigs.forEach(c -> this.monitoringConfigsByName.put(c.getName(), c));
         this.globalSmbCredentials = globalSmbCredentials;
         this.emailService = emailService;
         this.totalFileCounts = totalFileCounts;
@@ -81,27 +85,27 @@ public class IFSErrorMonitorService {
             
             try {
                 if (config.isSmbPath()) {
-                    // SMB path handling using smbj
                     String server = config.getServerIp();
                     String share = config.getShareName();
                     String pathInShare = config.getSharePath();
 
+                    IFSErrorMonitorConfig.SmbCredentials creds = globalSmbCredentials.get(server);
+                    if (creds == null) {
+                        currentLogger.severe(String.format("No SMB credentials for server %s (location '%s'). Skipping.", server, locationName));
+                        config.getFileExtensions().forEach(ext -> {
+                            totalFileCounts.get(locationName).put(ext, 0);
+                            newFileCounts.get(locationName).put(ext, 0);
+                        });
+                        continue;
+                    }
+
                     SMBClient client = new SMBClient();
                     try (Connection connection = client.connect(server)) {
-                        AuthenticationContext ac = null;
-                        IFSErrorMonitorConfig.SmbCredentials creds = globalSmbCredentials.get(server);
-                        if (creds != null) {
-                            ac = creds.toAuthenticationContext();
-                            currentLogger.info(String.format("Using provided SMB credentials for server %s for location '%s'.", server, locationName));
-                        } else {
-                            currentLogger.warning(String.format("SMB path '%s' for location '%s' has no global credentials defined for server %s. Attempting anonymous access, which may fail.", config.getPathString(), locationName, server));
-                        }
-
+                        AuthenticationContext ac = creds.toAuthenticationContext();
                         com.hierynomus.smbj.session.Session smbjSession = connection.authenticate(ac);
                         try (DiskShare diskShare = (DiskShare) smbjSession.connectShare(share)) {
                             for (FileIdBothDirectoryInformation fileInfo : diskShare.list(pathInShare)) {
-                                // FILE_ATTRIBUTE_DIRECTORY has a value of 16 (0x10)
-                                if ((fileInfo.getFileAttributes() & 16L) == 0) { // If the directory bit is NOT set, it's a file
+                                if ((fileInfo.getFileAttributes() & 16L) == 0) {
                                     String fileName = fileInfo.getFileName();
                                     Matcher matcher = FILE_EXTENSION_PATTERN.matcher(fileName.toLowerCase());
                                     if (matcher.find()) {
@@ -114,14 +118,14 @@ public class IFSErrorMonitorService {
                             }
                         }
                     } catch (SMBException e) {
-                        currentLogger.log(Level.SEVERE, String.format("SMB access denied or error for location '%s' (%s): %s. Please check credentials and network access.", locationName, config.getPathString(), e.getMessage()), e);
+                        currentLogger.log(Level.SEVERE, String.format("SMB access error for location '%s' (%s): %s", locationName, config.getPathString(), e.getMessage()), e);
                         config.getFileExtensions().forEach(ext -> {
                             totalFileCounts.get(locationName).put(ext, 0);
                             newFileCounts.get(locationName).put(ext, 0);
                         });
                         continue;
                     } catch (IOException e) {
-                        currentLogger.log(Level.SEVERE, String.format("Error during SMB client operation for location '%s' (%s): %s", locationName, config.getPathString(), e.getMessage()), e);
+                        currentLogger.log(Level.SEVERE, String.format("SMB I/O error for location '%s' (%s): %s", locationName, config.getPathString(), e.getMessage()), e);
                         config.getFileExtensions().forEach(ext -> {
                             totalFileCounts.get(locationName).put(ext, 0);
                             newFileCounts.get(locationName).put(ext, 0);
@@ -241,11 +245,7 @@ public class IFSErrorMonitorService {
                 String locationName = locationEntry.getKey();
                 Map<String, List<String>> newFilesForThisLocation = locationEntry.getValue();
 
-                IFSErrorMonitorConfig.MonitoringConfig currentConfig = monitoringConfigs.stream()
-                                                                  .filter(cfg -> cfg.getName().equals(locationName))
-                                                                  .findFirst()
-                                                                  .orElse(null);
-
+                IFSErrorMonitorConfig.MonitoringConfig currentConfig = monitoringConfigsByName.get(locationName);
                 if (currentConfig != null) {
                     emailService.sendEmail(currentConfig, newFilesForThisLocation);
                 } else {

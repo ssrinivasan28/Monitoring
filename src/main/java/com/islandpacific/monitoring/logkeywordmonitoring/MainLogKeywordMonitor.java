@@ -16,8 +16,9 @@ import java.util.logging.Logger;
  */
 public class MainLogKeywordMonitor {
 
-    private static final Logger LOGGER = Logger.getLogger(MainLogKeywordMonitor.class.getName());
+    private static Logger LOGGER = Logger.getLogger(MainLogKeywordMonitor.class.getName());
     private static final int DEFAULT_METRICS_PORT = 3023;
+    private static final String DEFAULT_EMAIL_FILE = "email.properties";
     private static final String DEFAULT_CONFIG_FILE = "logkeywordmonitor.properties";
 
     private final Properties configProps;
@@ -30,7 +31,7 @@ public class MainLogKeywordMonitor {
     private ScheduledExecutorService scheduler;
     private LogKeywordMonitorServer metricsServer;
 
-    public MainLogKeywordMonitor(String configFilePath) throws IOException {
+    public MainLogKeywordMonitor(String configFilePath, String emailConfigPath) throws IOException {
         // Load main configuration
         configProps = new Properties();
         try (FileInputStream fis = new FileInputStream(configFilePath)) {
@@ -38,7 +39,6 @@ public class MainLogKeywordMonitor {
         }
 
         // Load email configuration from separate file
-        String emailConfigPath = configProps.getProperty("email.config.path", "email.properties");
         emailProps = new Properties();
         try (FileInputStream fis = new FileInputStream(emailConfigPath)) {
             emailProps.load(fis);
@@ -115,7 +115,8 @@ public class MainLogKeywordMonitor {
                 + " hours");
 
         // Create email service
-        EmailService emailService = new EmailService(emailProps, clientName, LOGGER);
+        EmailService emailService = new EmailService(emailProps, clientName, LOGGER,
+                configProps.getProperty("logo.path", ""));
         LogKeywordMonitorService monitorService = new LogKeywordMonitorService(
                 LOGGER,
                 monitorConfig.getLogFileConfigs(),
@@ -127,7 +128,7 @@ public class MainLogKeywordMonitor {
                 metrics);
 
         // Schedule monitoring task
-        scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler = Executors.newSingleThreadScheduledExecutor(r -> { Thread t = new Thread(r); t.setDaemon(true); return t; });
         scheduler.scheduleAtFixedRate(() -> {
             try {
                 LOGGER.fine("Running scheduled log keyword check...");
@@ -175,10 +176,8 @@ public class MainLogKeywordMonitor {
     public static void main(String[] args) {
         printBanner();
 
-        String configFile = DEFAULT_CONFIG_FILE;
-        if (args.length > 0) {
-            configFile = args[0];
-        }
+        String emailConfigPath = args.length > 0 ? args[0] : DEFAULT_EMAIL_FILE;
+        String configFile = args.length > 1 ? args[1] : DEFAULT_CONFIG_FILE;
 
         try {
             // Load properties first to get logger configuration
@@ -187,7 +186,6 @@ public class MainLogKeywordMonitor {
                 tempProps.load(fis);
             }
 
-            String emailConfigPath = tempProps.getProperty("email.config.path", "email.properties");
             Properties emailProps = new Properties();
             try (FileInputStream fis = new FileInputStream(emailConfigPath)) {
                 emailProps.load(fis);
@@ -197,10 +195,11 @@ public class MainLogKeywordMonitor {
             String logLevel = tempProps.getProperty("log.level", emailProps.getProperty("log.level", "INFO"));
             String logFolder = tempProps.getProperty("log.folder", emailProps.getProperty("log.folder", "logs"));
             com.islandpacific.monitoring.common.AppLogger.setupLogger("logkeywordmonitoring", logLevel, logFolder);
+            LOGGER = com.islandpacific.monitoring.common.AppLogger.getLogger();
 
             LOGGER.info("Using configuration file: " + configFile);
 
-            MainLogKeywordMonitor monitor = new MainLogKeywordMonitor(configFile);
+            MainLogKeywordMonitor monitor = new MainLogKeywordMonitor(configFile, emailConfigPath);
             monitor.start();
 
             // Keep main thread alive

@@ -1,6 +1,7 @@
 package com.islandpacific.monitoring.userprofilechecker;
 
 import com.islandpacific.monitoring.common.AppLogger;
+import com.islandpacific.monitoring.common.CredentialProtector;
 import java.io.*;
 import java.sql.*;
 import java.text.SimpleDateFormat;
@@ -12,85 +13,100 @@ import java.util.logging.Logger;
 
 public class MainUserProfileChecker {
 
-    private static final String USER_PROPS = "userprofilecheck.properties";
-    private static final String EMAIL_PROPS = "email.properties";
     private static final String SNAPSHOT_FILE = "disabled_snapshot.txt";
     private static final SimpleDateFormat TS_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     private static Properties userCfg;
     private static Properties emailCfg;
 
-    private static final Logger logger = AppLogger.getLogger();
+    private static final Logger logger = Logger.getLogger(MainUserProfileChecker.class.getName());
 
     public static void main(String[] args) throws Exception {
-        // Initialize logger with module name and configurable log level
-        String logLevel = System.getProperty("log.level", "INFO");
-        String logFolder = System.getProperty("log.folder", "logs");
-        AppLogger.setupLogger("userprofilechecker", logLevel, logFolder);
-        
-        // Add shutdown hook for cleanup
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            logger.info("Shutting down User Profile Checker...");
-            AppLogger.closeLogger();
-        }));
-        
-        loadProperties();
-        
-        // Start automatic log purge
+        String emailPropsFile = args.length >= 1 ? args[0] : "email.properties";
+        String userPropsFile = args.length >= 2 ? args[1] : "ibmuserprofilechecker.properties";
+
+        loadProperties(emailPropsFile, userPropsFile);
+
+        String logLevel = emailCfg.getProperty("log.level", "INFO");
+        String logFolder = emailCfg.getProperty("log.folder", "logs");
         int retentionDays = Integer.parseInt(emailCfg.getProperty("log.retention.days", "30"));
         int purgeIntervalHours = Integer.parseInt(emailCfg.getProperty("log.purge.interval.hours", "24"));
+        AppLogger.setupLogger("userprofilechecker", logLevel, logFolder);
         AppLogger.startScheduledLogPurge(retentionDays, purgeIntervalHours);
 
-        int intervalSec = Integer.parseInt(userCfg.getProperty("monitor.interval.seconds", "300"));
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        String clientName = userCfg.getProperty("client.name", emailCfg.getProperty("mail.clientName", ""));
+        String logoPath = userCfg.getProperty("logo.path", "");
+        EmailService emailService = new EmailService(emailCfg, clientName, logoPath);
+
+        int intervalMs = Integer.parseInt(userCfg.getProperty("monitor.interval.ms", "300000"));
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "userprofile-checker");
+            t.setDaemon(true);
+            return t;
+        });
 
         scheduler.scheduleAtFixedRate(() -> {
             try {
-                checkProfiles();
+                checkProfiles(emailService);
             } catch (Exception e) {
                 logger.log(Level.SEVERE, "Error during scheduled profile check", e);
             }
-        }, 0, intervalSec, TimeUnit.SECONDS);
+        }, 0, intervalMs, TimeUnit.MILLISECONDS);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            logger.info("Shutting down User Profile Checker...");
+            scheduler.shutdown();
+            try {
+                if (!scheduler.awaitTermination(10, TimeUnit.SECONDS)) {
+                    scheduler.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                scheduler.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }));
+
+        logger.info("User Profile Checker started. Interval: " + intervalMs + " ms.");
+        Thread.currentThread().join();
     }
 
-    private static void loadProperties() throws IOException {
-        userCfg = new Properties();
-        try (FileInputStream fis = new FileInputStream(USER_PROPS)) {
-            userCfg.load(fis);
-        }
-
+    private static void loadProperties(String emailPropsFile, String userPropsFile) throws IOException {
         emailCfg = new Properties();
-        try (FileInputStream fis = new FileInputStream(EMAIL_PROPS)) {
+        try (FileInputStream fis = new FileInputStream(emailPropsFile)) {
             emailCfg.load(fis);
         }
-
-        logger.info("Loaded configuration from properties files.");
+        userCfg = new Properties();
+        try (FileInputStream fis = new FileInputStream(userPropsFile)) {
+            userCfg.load(fis);
+        }
+        logger.info("Configuration loaded.");
     }
 
-    private static void checkProfiles() throws Exception {
-        // Load previous snapshot
+    private static void checkProfiles(EmailService emailService) throws Exception {
         Map<String, String> prevDisabled = loadSnapshot();
 
-        // Get current disabled profiles
+        String system = userCfg.getProperty("ibmi.host");
+        String user = userCfg.getProperty("ibmi.user");
+        String pass = CredentialProtector.resolve(userCfg.getProperty("ibmi.password"));
+
+        if (system == null || system.trim().isEmpty()
+                || user == null || user.trim().isEmpty()
+                || pass == null || pass.trim().isEmpty()) {
+            throw new IllegalStateException("Required property ibmi.host, ibmi.user, or ibmi.password missing.");
+        }
+
         Map<String, String> currDisabled = new HashMap<>();
-
-        String system = userCfg.getProperty("system.name");
-        String user = userCfg.getProperty("username");
-        String pass = userCfg.getProperty("password");
-        String url = "jdbc:as400://" + system;
-
         Class.forName("com.ibm.as400.access.AS400JDBCDriver");
-        try (Connection conn = DriverManager.getConnection(url, user, pass)) {
-            String sql = "SELECT AUTHORIZATION_NAME, TEXT_DESCRIPTION " +
-                         "FROM QSYS2.USER_INFO WHERE STATUS = '*DISABLED'";
-            try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
-                while (rs.next()) {
-                    currDisabled.put(rs.getString("AUTHORIZATION_NAME"), rs.getString("TEXT_DESCRIPTION"));
-                }
+        String url = "jdbc:as400://" + system;
+        try (Connection conn = DriverManager.getConnection(url, user, pass);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(
+                     "SELECT AUTHORIZATION_NAME, TEXT_DESCRIPTION FROM QSYS2.USER_INFO WHERE STATUS = '*DISABLED'")) {
+            while (rs.next()) {
+                currDisabled.put(rs.getString("AUTHORIZATION_NAME"), rs.getString("TEXT_DESCRIPTION"));
             }
         }
 
-        // Compare snapshots
         Map<String, String> newlyDisabled = new HashMap<>();
         for (Map.Entry<String, String> entry : currDisabled.entrySet()) {
             if (!prevDisabled.containsKey(entry.getKey())) {
@@ -99,44 +115,12 @@ public class MainUserProfileChecker {
         }
 
         if (!newlyDisabled.isEmpty()) {
-            logger.info("Newly disabled profiles: " + newlyDisabled);
-
-            // Initialize OAuth2 if needed
-            String authMethod = emailCfg.getProperty("mail.auth.method", "SMTP").toUpperCase();
-            OAuth2TokenProvider oauth2Provider = null;
-            String graphMailUrl = null;
-            String fromUser = null;
-            
-            if ("OAUTH2".equals(authMethod)) {
-                String tenantId = emailCfg.getProperty("mail.oauth2.tenant.id");
-                String clientId = emailCfg.getProperty("mail.oauth2.client.id");
-                String clientSecret = emailCfg.getProperty("mail.oauth2.client.secret");
-                String scope = emailCfg.getProperty("mail.oauth2.scope", "https://graph.microsoft.com/.default");
-                String tokenUrl = emailCfg.getProperty("mail.oauth2.token.url", "");
-                
-                if (tenantId != null && clientId != null && clientSecret != null) {
-                    oauth2Provider = new OAuth2TokenProvider(tenantId, clientId, clientSecret, scope, tokenUrl);
-                    String configuredFrom = emailCfg.getProperty("mail.from", "");
-                    fromUser = emailCfg.getProperty("mail.oauth2.from.user",
-                            configuredFrom.replaceAll(".*<([^>]+)>.*", "$1").trim());
-                    String providedGraphUrl = emailCfg.getProperty("mail.oauth2.graph.mail.url", "");
-                    if (providedGraphUrl != null && !providedGraphUrl.trim().isEmpty()) {
-                        graphMailUrl = providedGraphUrl.trim();
-                    } else {
-                        graphMailUrl = "https://graph.microsoft.com/v1.0/users/" + fromUser + "/sendMail";
-                    }
-                    logger.info("OAuth2 authentication configured for email service.");
-                }
-            }
-
-            EmailService email = new EmailService(emailCfg, authMethod, oauth2Provider, graphMailUrl, fromUser);
-            email.sendUserDisabledAlert(newlyDisabled,
-                    TS_FORMAT.format(new Date()), system);
+            logger.info("Newly disabled profiles: " + newlyDisabled.keySet());
+            emailService.sendUserDisabledAlert(newlyDisabled, TS_FORMAT.format(new Date()), system);
         } else {
             logger.info("[" + TS_FORMAT.format(new Date()) + "] No new disabled profiles found.");
         }
 
-        // Save current snapshot for next run
         saveSnapshot(currDisabled);
     }
 
@@ -151,7 +135,12 @@ public class MainUserProfileChecker {
                 if (line.startsWith("b64|")) {
                     String[] parts = line.split("\\|", 3);
                     if (parts.length == 3) {
-                        snapshot.put(decodeSnapshotPart(parts[1]), decodeSnapshotPart(parts[2]));
+                        try {
+                            snapshot.put(decodeSnapshotPart(parts[1]), decodeSnapshotPart(parts[2]));
+                        } catch (java.io.UncheckedIOException e) {
+                            logger.warning("Skipping corrupted snapshot line: " + e.getMessage());
+                            return new HashMap<>();
+                        }
                     }
                 } else {
                     String[] parts = line.split("\\|", 2);
@@ -183,7 +172,11 @@ public class MainUserProfileChecker {
     }
 
     private static String decodeSnapshotPart(String value) {
-        return new String(Base64.getDecoder().decode(value), java.nio.charset.StandardCharsets.UTF_8);
+        try {
+            return new String(Base64.getDecoder().decode(value), java.nio.charset.StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            throw new java.io.UncheckedIOException(new java.io.IOException("Corrupted snapshot entry: " + value, e));
+        }
     }
 
     private static File getSnapshotFile() {

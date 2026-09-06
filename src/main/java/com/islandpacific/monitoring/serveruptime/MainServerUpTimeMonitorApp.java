@@ -1,5 +1,6 @@
 package com.islandpacific.monitoring.serveruptime; // New package for this app
 
+import com.islandpacific.monitoring.common.CredentialProtector;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.exporter.HTTPServer;
 import java.io.FileInputStream;
@@ -128,7 +129,7 @@ public class MainServerUpTimeMonitorApp {
             throw new IllegalArgumentException("Missing email properties file: " + e.getMessage());
         }
 
-        exporterPort = Integer.parseInt(serverInfoProperties.getProperty("exporter.port", "9091"));
+        exporterPort = Integer.parseInt(serverInfoProperties.getProperty("metrics.port", "9091"));
         pingIntervalSeconds = Integer.parseInt(serverInfoProperties.getProperty("ping.interval.seconds", "10"));
         
         String serversListString = serverInfoProperties.getProperty("servers.list");
@@ -155,7 +156,7 @@ public class MainServerUpTimeMonitorApp {
         String mailTo = getRequiredProperty(emailProperties, "mail.to");
         String mailBcc = emailProperties.getProperty("mail.bcc", "");
         String mailUsername = emailProperties.getProperty("mail.smtp.username", "");
-        String mailPassword = emailProperties.getProperty("mail.smtp.password", "");
+        String mailPassword = CredentialProtector.resolve(emailProperties.getProperty("mail.smtp.password", ""));
         boolean mailAuthEnabled = Boolean.parseBoolean(emailProperties.getProperty("mail.smtp.auth", "false"));
         boolean mailStartTlsEnabled = Boolean.parseBoolean(emailProperties.getProperty("mail.smtp.starttls.enable", "false"));
         String mailImportance = emailProperties.getProperty("mail.importance", "Normal");
@@ -168,7 +169,7 @@ public class MainServerUpTimeMonitorApp {
         if ("OAUTH2".equals(authMethod)) {
             String tenantId = getRequiredProperty(emailProperties, "mail.oauth2.tenant.id");
             String clientId = getRequiredProperty(emailProperties, "mail.oauth2.client.id");
-            String clientSecret = getRequiredProperty(emailProperties, "mail.oauth2.client.secret");
+            String clientSecret = CredentialProtector.resolve(getRequiredProperty(emailProperties, "mail.oauth2.client.secret"));
             String scope = emailProperties.getProperty("mail.oauth2.scope", "https://graph.microsoft.com/.default");
             String tokenUrl = emailProperties.getProperty("mail.oauth2.token.url", "");
             
@@ -213,7 +214,7 @@ public class MainServerUpTimeMonitorApp {
     }
 
     private static void schedulePingMonitoring() {
-        scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler = Executors.newSingleThreadScheduledExecutor(r -> { Thread t = new Thread(r); t.setDaemon(true); return t; });
         scheduler.scheduleAtFixedRate(uptimeService::checkAndAlert, 0, pingIntervalSeconds, TimeUnit.SECONDS);
     }
 }

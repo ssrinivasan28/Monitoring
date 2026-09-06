@@ -61,9 +61,9 @@ public class OAuth2TokenProvider {
                 return cachedToken;
             }
         } else {
-            try (Scanner s = new Scanner(conn.getErrorStream(), StandardCharsets.UTF_8.name())) {
-                throw new IOException("Token request failed " + code + ": " + s.useDelimiter("\\A").next());
-            }
+            java.io.InputStream _es = conn.getErrorStream();
+            String errBody = _es != null ? new String(_es.readAllBytes(), StandardCharsets.UTF_8) : "(no error body)";
+            throw new IOException("Token request failed " + code + ": " + errBody);
         }
     }
 }

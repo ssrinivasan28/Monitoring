@@ -9,8 +9,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.FileHandler;
-import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -20,7 +18,7 @@ public class MainIFSErrorMonitor {
     private static final Logger logger = Logger.getLogger(MainIFSErrorMonitor.class.getName());
 
     private static String emailPropertiesFilePath = "email.properties";
-    private static String monitorPropertiesFilePath = "monitor.properties";
+    private static String monitorPropertiesFilePath = "ibmrealtimeifsmonitor.properties";
     private static final String LAST_RUN_LOG = "logs/last_run_timestamp.txt";
 
     private static int monitorInterval;
@@ -35,23 +33,19 @@ public class MainIFSErrorMonitor {
         }
 
         try {
-            setupLogger();
-
-            // Initialize configuration
             IFSErrorMonitorConfig config = new IFSErrorMonitorConfig(emailPropertiesFilePath, monitorPropertiesFilePath, logger);
+            String logLevel = config.getEmailProps().getProperty("log.level", "INFO");
+            String logFolder = config.getEmailProps().getProperty("log.folder", "logs");
+            com.islandpacific.monitoring.common.AppLogger.setupLogger("ibmierrormonitoring", logLevel, logFolder);
+
             monitorInterval = Integer.parseInt(config.getMonitorProps().getProperty("monitor.interval.ms", "30000"));
             metricsPort = Integer.parseInt(config.getMonitorProps().getProperty("metrics.port", "8080"));
-            
-            // Start automatic log purge
-            int retentionDays = Integer.parseInt(config.getMonitorProps().getProperty("log.retention.days",
-                config.getEmailProps().getProperty("log.retention.days", "30")));
-            int purgeIntervalHours = Integer.parseInt(config.getMonitorProps().getProperty("log.purge.interval.hours",
-                config.getEmailProps().getProperty("log.purge.interval.hours", "24")));
+
+            int retentionDays = Integer.parseInt(config.getEmailProps().getProperty("log.retention.days", "30"));
+            int purgeIntervalHours = Integer.parseInt(config.getEmailProps().getProperty("log.purge.interval.hours", "24"));
             com.islandpacific.monitoring.common.AppLogger.startScheduledLogPurge(retentionDays, purgeIntervalHours);
 
-            // Initialize services
-            // Pass the client name to EmailService
-            EmailService emailService = new EmailService(config.getEmailProps(), config.getClientName(), logger); // Modified line
+            EmailService emailService = new EmailService(config.getEmailProps(), config.getClientName(), config.getLogoPath(), logger);
             ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> totalFileCounts = new ConcurrentHashMap<>();
             ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> newFileCounts = new ConcurrentHashMap<>();
             IFSErrorMonitorMetrics metricsService = new IFSErrorMonitorMetrics(logger, totalFileCounts, newFileCounts);
@@ -79,11 +73,13 @@ public class MainIFSErrorMonitor {
                 logger.info("No previous run timestamp found (first run or " + LAST_RUN_LOG + " missing).");
             }
 
-            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> { Thread t = new Thread(r); t.setDaemon(true); return t; });
             scheduler.scheduleAtFixedRate(() -> {
                 try {
                     logger.info("Starting new scan for files across all configured monitoring locations...");
+                    IFSErrorMonitorMetrics.updateUptime();
                     monitorService.checkNewFilesAndSendEmail();
+                    IFSErrorMonitorMetrics.updateCountMetrics(totalFileCounts, newFileCounts);
                     logger.info("Scan completed.");
                 } catch (Exception e) {
                     logger.log(Level.SEVERE, "Error during file monitoring cycle: " + e.getMessage(), e);
@@ -103,11 +99,9 @@ public class MainIFSErrorMonitor {
                     logger.warning("Shutdown interrupted.");
                     scheduler.shutdownNow();
                 } finally {
-                    for (Logger locLogger : config.getLocationLoggers().values()) {
-                        for (Handler handler : locLogger.getHandlers()) {
-                            if (handler instanceof FileHandler) {
-                                handler.close();
-                            }
+                    for (java.util.logging.Logger locLogger : config.getLocationLoggers().values()) {
+                        for (java.util.logging.Handler handler : locLogger.getHandlers()) {
+                            handler.close();
                         }
                     }
                     logger.info("File monitor shutdown complete.");
@@ -124,13 +118,12 @@ public class MainIFSErrorMonitor {
             logger.log(Level.SEVERE, "An unexpected error occurred during application startup: " + e.getMessage(), e);
             System.exit(1);
         }
+
+        try {
+            Thread.currentThread().join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
-    private static String logLevel = "INFO"; // Default
-    private static String logFolder = "logs"; // Default
-    
-    private static void setupLogger() throws IOException {
-        // Use standardized AppLogger with values set in main()
-        com.islandpacific.monitoring.common.AppLogger.setupLogger("ibmierrormonitoring", logLevel, logFolder);
-    }
 }

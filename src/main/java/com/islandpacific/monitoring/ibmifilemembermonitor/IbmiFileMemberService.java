@@ -18,12 +18,14 @@ public class IbmiFileMemberService {
     private static final Logger logger = Logger.getLogger(IbmiFileMemberService.class.getName());
 
     private final String connectionUrl;
+    private final String user;
+    private final String password;
 
     public IbmiFileMemberService(String host, String user, String password) {
-        // The connection URL for IBM i using JTOpen JDBC driver
-        this.connectionUrl = "jdbc:as400://" + host + ";user=" + user + ";password=" + password;
+        this.connectionUrl = "jdbc:as400://" + host;
+        this.user = user;
+        this.password = password;
 
-        // Ensure the AS400 JDBC driver is loaded
         try {
             Class.forName("com.ibm.as400.access.AS400JDBCDriver");
         } catch (ClassNotFoundException e) {
@@ -32,14 +34,8 @@ public class IbmiFileMemberService {
         }
     }
 
-    /**
-     * Establishes a connection to the IBM i system.
-     *
-     * @return A SQL Connection object.
-     * @throws SQLException If a database access error occurs.
-     */
     private Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(connectionUrl);
+        return DriverManager.getConnection(connectionUrl, user, password);
     }
 
     /**

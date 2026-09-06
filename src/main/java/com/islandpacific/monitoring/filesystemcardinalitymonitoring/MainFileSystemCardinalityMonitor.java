@@ -61,7 +61,8 @@ public class MainFileSystemCardinalityMonitor {
             com.islandpacific.monitoring.common.AppLogger.startScheduledLogPurge(retentionDays, purgeIntervalHours);
 
             // Initialize core services
-            EmailService emailService = new EmailService(config.getEmailProps(), config.getClientName());
+            String logoPath = config.getMonitorProps().getProperty("logo.path", "");
+            EmailService emailService = new EmailService(config.getEmailProps(), config.getClientName(), logoPath);
             
             // These maps are shared between MonitorService and MetricsService
             ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> totalFileCounts = new ConcurrentHashMap<>();
@@ -93,7 +94,7 @@ public class MainFileSystemCardinalityMonitor {
             }
 
             // Schedule the periodic folder monitoring task
-            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> { Thread t = new Thread(r); t.setDaemon(true); return t; });
             logger.info("Starting Windows File System Cardinality monitoring service. Checking every " + monitorIntervalMinutes + " minutes.");
 
             scheduler.scheduleAtFixedRate(() -> {

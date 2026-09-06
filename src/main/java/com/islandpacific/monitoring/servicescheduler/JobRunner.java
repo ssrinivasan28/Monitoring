@@ -19,7 +19,8 @@ public class JobRunner implements Runnable {
     public JobRunner(JobDefinition job, ScreenshotService screenshotService, Properties emailProps) {
         this.job = job;
         this.screenshotService = screenshotService;
-        this.emailService = new EmailService(emailProps);
+        String logoPath = emailProps.getProperty("logo.path", "");
+        this.emailService = new EmailService(emailProps, logoPath);
     }
 
     @Override

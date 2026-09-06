@@ -9,6 +9,8 @@ import java.util.function.BiFunction;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
+import com.islandpacific.monitoring.common.CredentialProtector;
+
 
 public class SubsystemMonitorConfig {
 
@@ -85,7 +87,11 @@ public class SubsystemMonitorConfig {
         // IBM i connection properties (from appProps)
         String ibmiHost = getRequiredProperty.apply(appProps, "ibmi.host");
         String ibmiUser = getRequiredProperty.apply(appProps, "ibmi.user");
-        String ibmiPassword = appProps.getProperty("ibmi.password", ""); // Optional password
+        String ibmiPasswordRaw = appProps.getProperty("ibmi.password");
+        if (ibmiPasswordRaw == null || ibmiPasswordRaw.trim().isEmpty()) {
+            throw new IllegalArgumentException("Required property 'ibmi.password' is missing or empty.");
+        }
+        String ibmiPassword = CredentialProtector.resolve(ibmiPasswordRaw);
         String clientName = appProps.getProperty("client.name", ""); // Get client.name
 
         // Critical Subsystem Names (descriptions only)
@@ -105,13 +111,16 @@ public class SubsystemMonitorConfig {
 
 
         // Email properties (from emailProps)
-        String emailHost = getRequiredProperty.apply(emailProps, "mail.smtp.host");
+        String authMethod = emailProps.getProperty("mail.auth.method", "SMTP");
+        String emailHost = "SMTP".equalsIgnoreCase(authMethod)
+            ? getRequiredProperty.apply(emailProps, "mail.smtp.host")
+            : emailProps.getProperty("mail.smtp.host", "");
         String emailPort = emailProps.getProperty("mail.smtp.port", "25");
         String emailFrom = getRequiredProperty.apply(emailProps, "mail.from");
         String emailTo = getRequiredProperty.apply(emailProps, "mail.to"); // This is required
         String emailBcc = emailProps.getProperty("mail.bcc", "");
         String emailUsername = emailProps.getProperty("mail.smtp.username", "");
-        String emailPassword = emailProps.getProperty("mail.smtp.password", "");
+        String emailPassword = CredentialProtector.resolve(emailProps.getProperty("mail.smtp.password", ""));
         boolean emailAuth = Boolean.parseBoolean(emailProps.getProperty("mail.smtp.auth", "false"));
         boolean emailStartTlsEnable = Boolean.parseBoolean(emailProps.getProperty("mail.smtp.starttls.enable", "false"));
         String emailImportance = emailProps.getProperty("mail.importance", "Normal");

@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import com.islandpacific.monitoring.common.CredentialProtector;
+
 public class ServiceSchedulerConfig {
 
     public final String screenshotFolder;
@@ -49,7 +51,7 @@ public class ServiceSchedulerConfig {
 
             String server = require(props, prefix + "server", label);
             String username = require(props, prefix + "username", label);
-            String password = require(props, prefix + "password", label);
+            String password = CredentialProtector.resolve(require(props, prefix + "password", label));
             String serviceName = require(props, prefix + "service.name", label);
             String url = require(props, prefix + "url", label);
             LocalTime stopTime = parseTime(require(props, prefix + "stop.time", label), prefix + "stop.time");

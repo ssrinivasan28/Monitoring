@@ -41,33 +41,15 @@ public class FileMemberMonitor {
         this.ibmiFileMemberService = ibmiFileMemberService;
         this.emailService = emailService;
         this.config = config;
-        this.scheduler = Executors.newSingleThreadScheduledExecutor();
+        this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> { Thread t = new Thread(r); t.setDaemon(true); return t; });
         this.lastKnownRecordCounts = new HashMap<>();
         this.isBreached = new HashMap<>();
     }
 
     public void start() {
-        long interval;
-        TimeUnit timeUnit;
-
-        try {
-            long seconds = config.getFileMemberPollingIntervalSeconds();
-            if (seconds > 0) {
-                interval = seconds;
-                timeUnit = TimeUnit.SECONDS;
-                logger.info("Starting file member monitoring. Interval: " + interval + " seconds.");
-            } else {
-                interval = config.getMonitoringIntervalMinutes();
-                timeUnit = TimeUnit.MINUTES;
-                logger.info("Starting file member monitoring. Interval: " + interval + " minutes (seconds config invalid or not positive).");
-            }
-        } catch (NumberFormatException e) {
-            interval = config.getMonitoringIntervalMinutes();
-            timeUnit = TimeUnit.MINUTES;
-            logger.warning("Configuration 'file.member.pollingIntervalSeconds' is not a valid number. Falling back to monitoring.interval.minutes: " + interval + " minutes.");
-        }
-
-        scheduler.scheduleAtFixedRate(this::monitorFileMembers, 0, interval, timeUnit);
+        long intervalMs = config.getMonitorIntervalMs();
+        logger.info("Starting file member monitoring. Interval: " + intervalMs + " ms.");
+        scheduler.scheduleAtFixedRate(this::monitorFileMembers, 0, intervalMs, TimeUnit.MILLISECONDS);
     }
 
     public void stop() {
@@ -168,8 +150,7 @@ public class FileMemberMonitor {
                                        config.getClientName(), breachType);
             }
 
-            String emailContent = emailService.buildEmailHtmlContent(breaches, breachType);
-            emailService.sendEmail(subject, emailContent);
+            emailService.sendEmail(subject, breaches, breachType);
             logger.info("Email sent for " + breachType + " with " + breaches.size() + " members.");
         } catch (MessagingException e) {
             logger.log(Level.SEVERE, "Failed to send email for " + breachType + ": " + e.getMessage(), e);

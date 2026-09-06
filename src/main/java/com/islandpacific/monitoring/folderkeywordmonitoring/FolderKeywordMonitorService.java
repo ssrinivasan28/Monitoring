@@ -3,11 +3,12 @@ package com.islandpacific.monitoring.folderkeywordmonitoring;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.time.LocalDate;
+import java.nio.file.attribute.FileTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 public class FolderKeywordMonitorService {
 
@@ -17,8 +18,8 @@ public class FolderKeywordMonitorService {
     private final ConcurrentHashMap<String, Long> totalFilesMatched;
     private final ConcurrentHashMap<String, Long> totalFilesScanned;
 
-    // file path -> date already alerted, so we alert once per file per day
-    private final Map<String, LocalDate> alertedToday;
+    // file path -> last modified time already alerted; re-alerts if the file is overwritten with a newer mtime
+    private final Map<String, FileTime> alertedFiles;
 
     public FolderKeywordMonitorService(Logger logger, FolderKeywordMonitorConfig config,
             EmailService emailService,
@@ -29,43 +30,19 @@ public class FolderKeywordMonitorService {
         this.emailService = emailService;
         this.totalFilesMatched = totalFilesMatched;
         this.totalFilesScanned = totalFilesScanned;
-        this.alertedToday = new HashMap<>();
+        this.alertedFiles = new HashMap<>();
     }
 
     public void checkAndAlert() {
-        Path root = Paths.get(config.getFolderPath());
-        if (!Files.exists(root) || !Files.isDirectory(root)) {
-            logger.warning("Monitor folder does not exist or is not a directory: " + root);
-            return;
-        }
+        Map<Path, List<String>> matched = new LinkedHashMap<>();
 
-        LocalDate today = LocalDate.now();
-        // Clear stale entries from previous days
-        alertedToday.entrySet().removeIf(e -> !e.getValue().equals(today));
-
-        List<Path> matched = new ArrayList<>();
-
-        try {
-            Files.walk(root)
-                .filter(Files::isRegularFile)
-                .forEach(file -> {
-                    totalFilesScanned.compute("total", (k, v) -> (v == null ? 0L : v) + 1L);
-                    try {
-                        if (containsKeyword(file)) {
-                            String pathStr = file.toAbsolutePath().toString();
-                            if (!alertedToday.containsKey(pathStr)) {
-                                matched.add(file);
-                                alertedToday.put(pathStr, today);
-                                totalFilesMatched.compute("total", (k, v) -> (v == null ? 0L : v) + 1L);
-                                logger.info("Keyword match found: " + pathStr);
-                            }
-                        }
-                    } catch (IOException e) {
-                        logger.log(Level.WARNING, "Error reading file: " + file, e);
-                    }
-                });
-        } catch (IOException e) {
-            logger.log(Level.WARNING, "Error walking folder: " + root, e);
+        for (String folderPath : config.getFolderPaths()) {
+            Path root = Paths.get(folderPath);
+            if (!Files.exists(root) || !Files.isDirectory(root)) {
+                logger.warning("Monitor folder does not exist or is not a directory: " + root);
+                continue;
+            }
+            scanFolder(root, folderPath, matched);
         }
 
         if (!matched.isEmpty()) {
@@ -75,7 +52,35 @@ public class FolderKeywordMonitorService {
         }
     }
 
-    private boolean containsKeyword(Path file) throws IOException {
+    private void scanFolder(Path root, String folderKey, Map<Path, List<String>> matched) {
+        try (Stream<Path> paths = config.isRecursive() ? Files.walk(root) : Files.list(root)) {
+            paths.filter(Files::isRegularFile)
+                .forEach(file -> {
+                    totalFilesScanned.compute(folderKey, (k, v) -> (v == null ? 0L : v) + 1L);
+                    try {
+                        List<String> foundKeywords = findMatchedKeywords(file);
+                        if (!foundKeywords.isEmpty()) {
+                            String pathStr = file.toAbsolutePath().toString();
+                            FileTime mtime = Files.getLastModifiedTime(file);
+                            FileTime alertedMtime = alertedFiles.get(pathStr);
+                            if (alertedMtime == null || mtime.compareTo(alertedMtime) > 0) {
+                                matched.put(file, foundKeywords);
+                                alertedFiles.put(pathStr, mtime);
+                                totalFilesMatched.compute(folderKey, (k, v) -> (v == null ? 0L : v) + 1L);
+                                logger.info("Keyword match found: " + pathStr + " [" + String.join(", ", foundKeywords) + "]");
+                            }
+                        }
+                    } catch (IOException e) {
+                        logger.log(Level.WARNING, "Error reading file: " + file, e);
+                    }
+                });
+        } catch (IOException e) {
+            logger.log(Level.WARNING, "Error scanning folder: " + root, e);
+        }
+    }
+
+    private List<String> findMatchedKeywords(Path file) throws IOException {
+        Set<String> found = new LinkedHashSet<>();
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(new FileInputStream(file.toFile()), StandardCharsets.UTF_8))) {
             String line;
@@ -84,15 +89,15 @@ public class FolderKeywordMonitorService {
                 for (String keyword : config.getKeywords()) {
                     String searchKeyword = config.isCaseSensitive() ? keyword : keyword.toLowerCase();
                     if (searchLine.contains(searchKeyword)) {
-                        return true;
+                        found.add(keyword);
                     }
                 }
             }
         }
-        return false;
+        return new ArrayList<>(found);
     }
 
-    private void sendAlert(List<Path> matchedFiles) {
+    private void sendAlert(Map<Path, List<String>> matchedFiles) {
         StringBuilder body = new StringBuilder();
         body.append("<h4 style='color:#2c3e50;margin-bottom:15px;'>Keyword Detection Summary</h4>");
         body.append("<p>The following files contained one or more monitored keywords:</p>");
@@ -100,10 +105,12 @@ public class FolderKeywordMonitorService {
         body.append("<thead><tr style='background-color:#34495e;color:white;'>");
         body.append("<th style='padding:10px;text-align:left;border:1px solid #ddd;'>File Name</th>");
         body.append("<th style='padding:10px;text-align:left;border:1px solid #ddd;'>Folder</th>");
+        body.append("<th style='padding:10px;text-align:left;border:1px solid #ddd;'>Keywords Found</th>");
         body.append("</tr></thead><tbody>");
 
         int row = 0;
-        for (Path file : matchedFiles) {
+        for (Map.Entry<Path, List<String>> entry : matchedFiles.entrySet()) {
+            Path file = entry.getKey();
             String rowColor = (row++ % 2 == 0) ? "#f9f9f9" : "#ffffff";
             String fileName = file.getFileName().toString();
             String folder = file.getParent() != null ? file.getParent().toAbsolutePath().toString() : "";
@@ -112,6 +119,8 @@ public class FolderKeywordMonitorService {
                .append(escapeHtml(fileName)).append("</td>");
             body.append("<td style='padding:10px;border:1px solid #ddd;font-family:monospace;font-size:12px;'>")
                .append(escapeHtml(folder)).append("</td>");
+            body.append("<td style='padding:10px;border:1px solid #ddd;font-family:monospace;font-size:12px;'>")
+               .append(escapeHtml(String.join(", ", entry.getValue()))).append("</td>");
             body.append("</tr>");
         }
 

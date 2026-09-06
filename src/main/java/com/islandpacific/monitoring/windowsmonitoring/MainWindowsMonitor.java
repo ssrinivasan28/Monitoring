@@ -23,6 +23,8 @@ public class MainWindowsMonitor {
     private static WindowsMonitorMetricsService metricsService;
     private static EmailService emailService;
     private static WindowsMonitorMetricsExporter metricsExporter;
+    private static WinDailyMetricStore metricStore;
+    private static WinDailyReportService reportService;
 
     // Alert Windowing: Map<Host, Map<MetricType, ConsecutiveBreachCount>>
     private static final Map<String, Map<String, Integer>> alertCounters = new ConcurrentHashMap<>();
@@ -53,7 +55,12 @@ public class MainWindowsMonitor {
             metricsExporter = new WindowsMonitorMetricsExporter(config.getMetricsPort());
             metricsExporter.start();
 
-            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+            metricStore = new WinDailyMetricStore(config.getReportDataFolder());
+            reportService = new WinDailyReportService(metricStore,
+                    appProps.getProperty("client.name", ""),
+                    config.getReportLogoPath());
+
+            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> { Thread t = new Thread(r); t.setDaemon(true); return t; });
             ExecutorService pollPool = Executors.newFixedThreadPool(config.getPollThreads());
 
             logger.info("Starting Windows Monitoring service.");
@@ -75,6 +82,10 @@ public class MainWindowsMonitor {
                             "An error occurred during the monitoring cycle: " + e.getMessage());
                 }
             }, 5000, config.getMonitorIntervalMs(), TimeUnit.MILLISECONDS);
+
+            if (config.isReportEnabled()) {
+                scheduleDailyReport(scheduler);
+            }
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 if (logger != null)
@@ -115,6 +126,61 @@ public class MainWindowsMonitor {
         config = WindowsMonitorConfig.fromProperties(appProps, emailProps);
     }
 
+    private static void scheduleDailyReport(ScheduledExecutorService scheduler) {
+        String[] parts = config.getReportSendTime().split(":");
+        int targetHour   = Integer.parseInt(parts[0].trim());
+        int targetMinute = parts.length > 1 ? Integer.parseInt(parts[1].trim()) : 0;
+
+        java.time.LocalDateTime now  = java.time.LocalDateTime.now();
+        java.time.LocalDateTime next = now.toLocalDate().atTime(targetHour, targetMinute);
+        if (!next.isAfter(now)) next = next.plusDays(1);
+
+        long initialDelayMs = java.time.Duration.between(now, next).toMillis();
+        long oneDayMs = 24L * 60 * 60 * 1000;
+
+        scheduler.scheduleAtFixedRate(() -> {
+            try {
+                metricStore.pruneOlderThan(config.getReportRetentionDays());
+                byte[] pdf = reportService.generatePdfReport();
+                String reportDate = java.time.LocalDate.now()
+                        .format(java.time.format.DateTimeFormatter.ofPattern("MMMM d, yyyy"));
+                emailService.sendDailyReport(pdf, reportDate);
+                logger.info("Windows daily report sent for " + reportDate);
+            } catch (Exception e) {
+                logger.log(Level.SEVERE, "Failed to generate/send daily Windows report: " + e.getMessage(), e);
+            }
+        }, initialDelayMs, oneDayMs, TimeUnit.MILLISECONDS);
+
+        logger.info("Daily Windows report scheduled at " + config.getReportSendTime());
+    }
+
+    private static void appendMetrics(WindowsMonitorInfo info) {
+        if (metricStore == null) return;
+        java.util.Map<String, WinMetricRecord.DiskSnapshot> diskMap = new java.util.LinkedHashMap<>();
+        if (info.getDisks() != null) {
+            info.getDisks().forEach((drive, d) -> diskMap.put(drive,
+                    new WinMetricRecord.DiskSnapshot(d.getUsagePercent(), d.getTotalGB(), d.getUsedGB(), d.getFreeGB())));
+        }
+        java.util.Map<String, Long> rxMap = new java.util.LinkedHashMap<>();
+        java.util.Map<String, Long> txMap = new java.util.LinkedHashMap<>();
+        if (info.getNetworkAdapters() != null) {
+            info.getNetworkAdapters().forEach((adapter, n) -> {
+                rxMap.put(adapter, n.bytesReceived);
+                txMap.put(adapter, n.bytesSent);
+            });
+        }
+        WinMetricRecord rec = new WinMetricRecord(
+                java.time.Instant.now(),
+                info.getHostName(),
+                info.getCpuUtilization(),
+                info.getMemoryUtilization(),
+                diskMap, rxMap, txMap,
+                info.getSystemUptimeHours(),
+                info.getTopProcesses() != null ? info.getTopProcesses() : new java.util.LinkedHashMap<>()
+        );
+        metricStore.append(rec);
+    }
+
     private static void checkAllServerMetrics(ExecutorService pollPool) {
         List<Future<WindowsMonitorInfo>> futures = new ArrayList<>();
 
@@ -138,13 +204,14 @@ public class MainWindowsMonitor {
         List<WindowsMonitorInfo> currentInfos = new ArrayList<>();
         for (Future<WindowsMonitorInfo> future : futures) {
             try {
-                WindowsMonitorInfo info = future.get(30, TimeUnit.SECONDS);
+                WindowsMonitorInfo info = future.get(config.getPollTimeoutSeconds(), TimeUnit.SECONDS);
                 if (info != null) {
                     currentInfos.add(info);
                     processAlerts(info);
+                    if (config.isReportEnabled()) appendMetrics(info);
                 }
             } catch (java.util.concurrent.TimeoutException e) {
-                logger.warning("Poll timed out for a host after 30s — skipping this cycle's result");
+                logger.warning("Poll timed out for a host after " + config.getPollTimeoutSeconds() + "s — skipping this cycle's result");
                 future.cancel(true);
             } catch (Exception e) {
                 logger.log(Level.SEVERE, "Error retrieving task result: " + e.getMessage(), e);

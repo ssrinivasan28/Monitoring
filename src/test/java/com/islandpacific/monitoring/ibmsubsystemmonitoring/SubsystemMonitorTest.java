@@ -50,8 +50,14 @@ public class SubsystemMonitorTest {
 
     @Test
     public void emailHtml_escapesSubsystemValues() throws Exception {
-        EmailService service = new EmailService("smtp.example.com", "25", "from@example.com", "to@example.com", "",
-                "", "", false, false, "Normal", "SYS&1", "Client<script>", "SMTP", null, null, null);
+        java.util.Properties emailProps = new java.util.Properties();
+        emailProps.setProperty("mail.smtp.host", "smtp.example.com");
+        emailProps.setProperty("mail.smtp.port", "25");
+        emailProps.setProperty("mail.from", "from@example.com");
+        emailProps.setProperty("mail.to", "to@example.com");
+        emailProps.setProperty("mail.importance", "Normal");
+        emailProps.setProperty("mail.auth.method", "SMTP");
+        EmailService service = new EmailService(emailProps, "SYS&1", "Client<script>", "");
         SubsystemInfo info = new SubsystemInfo("Q<script>", "A&B <desc>", "END<ING>", "QSYS\"LIB");
 
         String html = invokeBuildSubsystemAlertHtmlContent(service, info, false);
@@ -66,14 +72,15 @@ public class SubsystemMonitorTest {
     }
 
     private String invokeGenerateMetrics(SubsystemMetricsExporter exporter) throws Exception {
-        Method method = SubsystemMetricsExporter.class.getDeclaredMethod("generateMetrics");
-        method.setAccessible(true);
-        return (String) method.invoke(exporter);
+        java.io.StringWriter sw = new java.io.StringWriter();
+        io.prometheus.client.exporter.common.TextFormat.write004(sw,
+                io.prometheus.client.CollectorRegistry.defaultRegistry.metricFamilySamples());
+        return sw.toString();
     }
 
     private String invokeBuildSubsystemAlertHtmlContent(EmailService service, SubsystemInfo info,
             boolean embedLogoAsDataUri) throws Exception {
-        Method method = EmailService.class.getDeclaredMethod("buildSubsystemAlertHtmlContent",
+        Method method = EmailService.class.getDeclaredMethod("buildHtmlContent",
                 SubsystemInfo.class, boolean.class);
         method.setAccessible(true);
         return (String) method.invoke(service, info, embedLogoAsDataUri);

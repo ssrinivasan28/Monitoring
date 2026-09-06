@@ -2,6 +2,8 @@ package com.islandpacific.monitoring.winservicemonitor;
 
 import java.util.*;
 
+import com.islandpacific.monitoring.common.CredentialProtector;
+
 public class WinServiceMonitorConfig {
 
     private List<String> servers;
@@ -79,7 +81,7 @@ public class WinServiceMonitorConfig {
         // Per-server credentials and per-server service overrides
         for (String server : cfg.servers) {
             String user = appProps.getProperty("monitor.server." + server + ".username");
-            String pass = appProps.getProperty("monitor.server." + server + ".password");
+            String pass = CredentialProtector.resolve(appProps.getProperty("monitor.server." + server + ".password"));
             if (user != null && pass != null) {
                 cfg.serverCredentials.put(server, new Credentials(user.trim(), pass.trim()));
             }
@@ -103,13 +105,13 @@ public class WinServiceMonitorConfig {
         cfg.emailTo = emailProps.getProperty("mail.to");
         cfg.emailBcc = emailProps.getProperty("mail.bcc", "");
         cfg.emailUsername = emailProps.getProperty("mail.smtp.username", "");
-        cfg.emailPassword = emailProps.getProperty("mail.smtp.password", "");
+        cfg.emailPassword = CredentialProtector.resolve(emailProps.getProperty("mail.smtp.password", ""));
         cfg.emailAuthEnabled = Boolean.parseBoolean(emailProps.getProperty("mail.smtp.auth", "false"));
         cfg.emailStartTlsEnabled = Boolean.parseBoolean(emailProps.getProperty("mail.smtp.starttls.enable", "false"));
         cfg.emailImportance = emailProps.getProperty("mail.importance", "High");
         cfg.oauth2TenantId = emailProps.getProperty("mail.oauth2.tenant.id", "");
         cfg.oauth2ClientId = emailProps.getProperty("mail.oauth2.client.id", "");
-        cfg.oauth2ClientSecret = emailProps.getProperty("mail.oauth2.client.secret", "");
+        cfg.oauth2ClientSecret = CredentialProtector.resolve(emailProps.getProperty("mail.oauth2.client.secret", ""));
         cfg.oauth2TokenUrl = emailProps.getProperty("mail.oauth2.token.url", "");
         cfg.graphMailUrl = emailProps.getProperty("mail.oauth2.graph.mail.url", "");
 

@@ -65,6 +65,7 @@ public class WinServiceMetricsExporter {
                 String service = entry.getKey();
                 String value = entry.getValue();
                 if (service == null || value == null) continue;
+                if ("NotFound".equalsIgnoreCase(value) || "Unknown".equalsIgnoreCase(value)) continue;
                 boolean running = "Running".equalsIgnoreCase(value);
                 SERVICE_STATUS.labels(serverLabel, service).set(running ? 1 : 0);
 

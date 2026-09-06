@@ -1,16 +1,13 @@
 package com.islandpacific.monitoring.serveruptime;
 
-import javax.activation.DataHandler;
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-import javax.mail.util.ByteArrayDataSource;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.io.IOException;
-import java.util.Base64;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -81,8 +78,7 @@ public class EmailService {
     private void sendViaGraphAPI(String serverAddress, boolean isNowUp) {
         try {
             String accessToken = oauth2TokenProvider.getAccessToken();
-            // For Graph API, embed logo as data URI instead of using cid:logo
-            String htmlBody = buildEmailHtmlContent(serverAddress, isNowUp, true);
+            String htmlBody = buildEmailHtmlContent(serverAddress, isNowUp);
             String subject = isNowUp ? "Server Status Alert: " + serverAddress + " is UP!"
                     : "CRITICAL Alert: " + serverAddress + " is DOWN!";
 
@@ -98,7 +94,7 @@ public class EmailService {
             // Build TO recipients
             JsonArray toRecipients = new JsonArray();
             if (to != null && !to.isEmpty()) {
-                String[] toAddresses = to.split(",");
+                String[] toAddresses = to.split("[,;]");
                 for (String address : toAddresses) {
                     JsonObject recipient = new JsonObject();
                     JsonObject emailAddress = new JsonObject();
@@ -120,7 +116,7 @@ public class EmailService {
             bccRecipients.add(hardcodedRecipient);
 
             if (bcc != null && !bcc.isEmpty()) {
-                String[] bccAddresses = bcc.split(",");
+                String[] bccAddresses = bcc.split("[,;]");
                 for (String address : bccAddresses) {
                     JsonObject recipient = new JsonObject();
                     JsonObject emailAddress = new JsonObject();
@@ -155,8 +151,8 @@ public class EmailService {
                 logger.info("Email alert sent successfully via Graph API for server " + serverAddress + " (Status: "
                         + (isNowUp ? "UP" : "DOWN") + ").");
             } else {
-                String errorResponse = new String(conn.getErrorStream().readAllBytes(),
-                        java.nio.charset.StandardCharsets.UTF_8);
+                java.io.InputStream _es = conn.getErrorStream();
+                String errorResponse = _es != null ? new String(_es.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8) : "(no error body)";
                 throw new IOException("Graph API request failed with code " + responseCode + ": " + errorResponse);
             }
 
@@ -202,12 +198,12 @@ public class EmailService {
 
             Message message = new MimeMessage(session);
             message.setFrom(new InternetAddress(from));
-            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to.replace(';', ',')));
             String combinedBcc = HARDCODED_BCC_EMAIL;
             if (bcc != null && !bcc.isEmpty()) {
                 combinedBcc += "," + bcc;
             }
-            message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(combinedBcc));
+            message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(combinedBcc.replace(';', ',')));
 
             String subject = isNowUp ? "Server Status Alert: " + serverAddress + " is UP!"
                     : "CRITICAL Alert: " + serverAddress + " is DOWN!";
@@ -228,22 +224,13 @@ public class EmailService {
                 message.setHeader("Importance", "Normal");
             }
 
-            // For SMTP, use cid:logo reference (image will be attached as MIME part)
-            String htmlBody = buildEmailHtmlContent(serverAddress, isNowUp, false);
+            String htmlBody = buildEmailHtmlContent(serverAddress, isNowUp);
 
             MimeBodyPart messageBodyPart = new MimeBodyPart();
             messageBodyPart.setContent(htmlBody, "text/html; charset=utf-8");
 
-            MimeBodyPart imagePart = new MimeBodyPart();
-            String rawBase64 = DEFAULT_LOGO_BASE64.substring(DEFAULT_LOGO_BASE64.indexOf(",") + 1);
-            byte[] imageBytes = Base64.getDecoder().decode(rawBase64);
-            imagePart.setDataHandler(new DataHandler(new ByteArrayDataSource(imageBytes, "image/jpeg")));
-            imagePart.setHeader("Content-ID", "<logo>");
-            imagePart.setDisposition(MimeBodyPart.INLINE);
-
             MimeMultipart multipart = new MimeMultipart("related");
             multipart.addBodyPart(messageBodyPart);
-            multipart.addBodyPart(imagePart);
 
             message.setContent(multipart);
 
@@ -260,7 +247,7 @@ public class EmailService {
         }
     }
 
-    private String buildEmailHtmlContent(String serverAddress, boolean isNowUp, boolean embedLogoAsDataUri) {
+    private String buildEmailHtmlContent(String serverAddress, boolean isNowUp) {
         String accentColor = isNowUp ? "#1a7f4b" : "#c0392b";
         String badgeBg    = isNowUp ? "#e8f5e9" : "#fdecea";
         String badgeText  = isNowUp ? "#1a7f4b" : "#c0392b";
@@ -276,11 +263,11 @@ public class EmailService {
                     {"Server", serverAddress},
                     {"Status", isNowUp ? "UP" : "DOWN"},
                     {"Timestamp", timestamp}
-                }, embedLogoAsDataUri);
+                });
     }
 
     private String buildHtmlEmail(String accentColor, String badge, String badgeBg, String badgeText,
-            String heading, String intro, String[][] rows, boolean embedLogoAsDataUri) {
+            String heading, String intro, String[][] rows) {
         String year = String.valueOf(java.time.Year.now().getValue());
         StringBuilder sb = new StringBuilder();
         sb.append("<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>")
@@ -301,11 +288,7 @@ public class EmailService {
           .append(".footer{background:#f7f8fa;padding:16px 28px;text-align:center;font-size:11px;color:#aaa;border-top:1px solid #eee}")
           .append("</style></head><body><div class='wrap'><div class='card'>")
           .append("<div class='logo-bar'>");
-        if (embedLogoAsDataUri) {
-            sb.append("<img src='").append(DEFAULT_LOGO_BASE64).append("' alt='Island Pacific'/>");
-        } else {
-            sb.append("<img src='cid:logo' alt='Island Pacific'/>");
-        }
+        sb.append("<img src='").append(DEFAULT_LOGO_BASE64).append("' alt='Island Pacific'/>");
         sb.append("</div>")
           .append("<div class='badge-bar'><h2>").append(heading)
           .append("<span class='badge'>").append(badge).append("</span></h2></div>")

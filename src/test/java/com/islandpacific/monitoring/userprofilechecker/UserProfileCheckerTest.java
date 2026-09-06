@@ -59,7 +59,7 @@ public class UserProfileCheckerTest {
 
     @Test
     public void emailHtml_escapesDisabledProfileData() throws Exception {
-        EmailService service = new EmailService(new Properties(), "SMTP", null, null, null);
+        EmailService service = new EmailService(new Properties(), "", "");
         Map<String, String> disabledUsers = Map.of("USR<script>", "A&B <Owner>");
 
         String html = invokeBuildDisabledAlertHtml(service, disabledUsers, "2026-04-27 <now>", "SYS&1", false);

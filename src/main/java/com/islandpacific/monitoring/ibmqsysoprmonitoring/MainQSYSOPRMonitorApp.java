@@ -1,86 +1,95 @@
 package com.islandpacific.monitoring.ibmqsysoprmonitoring;
 
 import com.islandpacific.monitoring.common.AppLogger;
-import java.sql.SQLException;
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-import java.util.logging.Logger; // Import the JUL Logger
-
+import java.util.logging.Logger;
 
 public class MainQSYSOPRMonitorApp {
 
-    private static final Logger LOGGER = AppLogger.getLogger(); // Get logger instance
+    private static final Logger LOGGER = AppLogger.getLogger();
 
     public static void main(String[] args) {
-        // 1. Load Configurations (needed for logger setup)
-        QSYSOPRMonitorConfig config = new QSYSOPRMonitorConfig();
+        String emailPropertiesFile = args.length >= 1 ? args[0] : "email.properties";
+        String jobFailurePropertiesFile = args.length >= 2 ? args[1] : "ibmqsysoprmonitor.properties";
+
+        QSYSOPRMonitorConfig config = new QSYSOPRMonitorConfig(emailPropertiesFile, jobFailurePropertiesFile);
         if (!config.loadConfigurations()) {
-            // Error logged by QSYSOPRMonitorConfig already, just exit.
-            System.err.println("Failed to load configurations. Application will exit."); // Fallback print
+            System.err.println("Failed to load configurations. Application will exit.");
             return;
         }
 
-        // 2. Initialize Logger (now that config is loaded)
-        AppLogger.setupLogger("ibmqsysoprmonitoring", config.getLogLevel(), config.getLogFolder());
-        
-        // Start automatic log purge
         Properties mailProps = config.getMailProperties();
+        String logLevel = mailProps.getProperty("log.level", "INFO");
+        String logFolder = mailProps.getProperty("log.folder", "logs");
+        AppLogger.setupLogger("ibmqsysoprmonitoring", logLevel, logFolder);
+
         int retentionDays = Integer.parseInt(mailProps.getProperty("log.retention.days", "30"));
         int purgeIntervalHours = Integer.parseInt(mailProps.getProperty("log.purge.interval.hours", "24"));
         AppLogger.startScheduledLogPurge(retentionDays, purgeIntervalHours);
-        
-        LOGGER.info("Starting QSYSOPR Monitor Application...");
-        LOGGER.info("Configurations loaded successfully.");
 
-        // 3. Initialize Metrics (must be called early to set initial status)
+        LOGGER.info("Starting QSYSOPR Monitor Application...");
+
         QSYSOPRMonitorMetrics.initializeMetrics();
 
-        // 4. Initialize Services
-        EmailService emailService = new EmailService(config.getMailProperties());
+        String logoPath = config.getMonitorProperties().getProperty("logo.path", "");
+        EmailService emailService = new EmailService(mailProps, logoPath);
         QSYSOPRMonitorService monitorService = new QSYSOPRMonitorService(config, emailService);
 
-        // 5. Start Metrics Server (for Prometheus scraping)
         QSYSOPRMetricsServer metricsServer = new QSYSOPRMetricsServer(config.getMetricsPort());
         metricsServer.startServer();
         LOGGER.info("Prometheus Metrics Server started on port " + config.getMetricsPort());
 
-        // 6. Load Last Checked Timestamp
-        String lastCheckedTimestamp = monitorService.loadLastCheckedTimestamp();
-        if (lastCheckedTimestamp != null) {
-            LOGGER.info("Resuming from last checked timestamp: " + lastCheckedTimestamp);
+        final String[] lastCheckedTimestamp = { monitorService.loadLastCheckedTimestamp() };
+        if (lastCheckedTimestamp[0] != null) {
+            LOGGER.info("Resuming from last checked timestamp: " + lastCheckedTimestamp[0]);
         } else {
             LOGGER.info("No previous state found. Will process all current messages and save state.");
         }
 
-        // 7. Start the Monitoring Loop
-        try {
-            while (true) {
-                // Scan and Alert, updating the last checked timestamp
-                String newLastCheckedTimestamp = monitorService.scanAndAlert(lastCheckedTimestamp);
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r);
+            t.setDaemon(true);
+            return t;
+        });
 
-                if (newLastCheckedTimestamp != null) {
-                    lastCheckedTimestamp = newLastCheckedTimestamp;
-                    // Save the updated timestamp after each scan
-                    monitorService.saveLastCheckedTimestamp(lastCheckedTimestamp);
+        scheduler.scheduleAtFixedRate(() -> {
+            try {
+                String newTimestamp = monitorService.scanAndAlert(lastCheckedTimestamp[0]);
+                if (newTimestamp != null) {
+                    lastCheckedTimestamp[0] = newTimestamp;
+                    monitorService.saveLastCheckedTimestamp(lastCheckedTimestamp[0]);
                 }
-
                 LOGGER.info("Next scan in " + (config.getMonitorIntervalMillis() / 1000) + " seconds...");
-                Thread.sleep(config.getMonitorIntervalMillis());
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "Error during monitoring cycle: " + e.getMessage(), e);
             }
-        } catch (InterruptedException e) {
-            LOGGER.log(Level.INFO, "Monitoring stopped by user.", e);
-            Thread.currentThread().interrupt(); // Restore the interrupted status
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Database error during monitoring loop: " + e.getMessage(), e);
-        } finally {
-            // Clean up resources
-            if (metricsServer != null) {
+        }, 0, config.getMonitorIntervalMillis(), TimeUnit.MILLISECONDS);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            LOGGER.info("Shutting down QSYSOPR Monitor...");
+            scheduler.shutdown();
+            try {
+                if (!scheduler.awaitTermination(10, TimeUnit.SECONDS)) {
+                    scheduler.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                scheduler.shutdownNow();
+            } finally {
                 metricsServer.stopServer();
-                LOGGER.info("Prometheus Metrics Server stopped.");
+                QSYSOPRMonitorMetrics.setMonitorStopped();
+                AppLogger.closeLogger();
+                LOGGER.info("QSYSOPR Monitor shutdown complete.");
             }
-            QSYSOPRMonitorMetrics.setMonitorStopped(); // Indicate graceful shutdown or error
-            LOGGER.info("QSYSOPR Monitor Application stopped.");
-            AppLogger.closeLogger(); // Close the logger file handler
+        }));
+
+        try {
+            Thread.currentThread().join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 }

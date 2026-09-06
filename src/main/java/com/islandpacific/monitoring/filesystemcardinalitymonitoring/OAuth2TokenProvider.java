@@ -78,10 +78,9 @@ public class OAuth2TokenProvider {
                 return cachedAccessToken;
             }
         } else {
-            String errorResponse;
-            try (Scanner scanner = new Scanner(conn.getErrorStream(), StandardCharsets.UTF_8.name())) {
-                errorResponse = scanner.useDelimiter("\\A").next();
-            }
+            java.io.InputStream _es = conn.getErrorStream();
+            String errorResponse = _es != null
+                ? new String(_es.readAllBytes(), StandardCharsets.UTF_8) : "(no error body)";
             throw new IOException("Failed to acquire OAuth2 token. Response code: " + responseCode + ", Error: " + errorResponse);
         }
     }

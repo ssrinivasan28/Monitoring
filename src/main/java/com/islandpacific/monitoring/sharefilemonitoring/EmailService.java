@@ -2,15 +2,13 @@ package com.islandpacific.monitoring.sharefilemonitoring;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import javax.activation.DataHandler;
+import com.islandpacific.monitoring.common.CredentialProtector;
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-import javax.mail.util.ByteArrayDataSource;
 import java.io.IOException;
-import java.util.Base64;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,8 +25,9 @@ public class EmailService {
     private final String authMethod;
     private final OAuth2TokenProvider oauth2TokenProvider;
     private final String graphMailUrl;
+    private final String logoPath;
 
-    public EmailService(Properties emailProperties, String clientName) {
+    public EmailService(Properties emailProperties, String clientName, String logoPath) {
         this.emailProperties = emailProperties;
         this.clientName = (clientName != null && !clientName.isBlank()) ? clientName : "ShareFile Monitor";
 
@@ -41,7 +40,7 @@ public class EmailService {
         if ("OAUTH2".equals(method)) {
             String tenantId = emailProperties.getProperty("mail.oauth2.tenant.id");
             String clientId = emailProperties.getProperty("mail.oauth2.client.id");
-            String clientSecret = emailProperties.getProperty("mail.oauth2.client.secret");
+            String clientSecret = CredentialProtector.resolve(emailProperties.getProperty("mail.oauth2.client.secret"));
             String scope = emailProperties.getProperty("mail.oauth2.scope", "https://graph.microsoft.com/.default");
             String tokenUrl = emailProperties.getProperty("mail.oauth2.token.url", "");
             if (tenantId != null && clientId != null && clientSecret != null) {
@@ -57,6 +56,7 @@ public class EmailService {
 
         this.oauth2TokenProvider = provider;
         this.graphMailUrl = graphUrl;
+        this.logoPath = logoPath != null ? logoPath : "";
     }
 
     public void sendEmail(String locationName, String remotePath, String subject, String body, String importance) {
@@ -74,7 +74,7 @@ public class EmailService {
     private void sendViaGraph(String locationName, String remotePath, String subject, String body, String importance) {
         try {
             String token = oauth2TokenProvider.getAccessToken();
-            String htmlBody = buildHtml(locationName, remotePath, subject, body, true);
+            String htmlBody = buildHtml(locationName, remotePath, subject, body);
 
             JsonObject message = new JsonObject();
             message.addProperty("subject", subject);
@@ -85,7 +85,7 @@ public class EmailService {
 
             JsonArray to = new JsonArray();
             String toStr = emailProperties.getProperty("mail.to", "");
-            for (String addr : toStr.split(",")) {
+            for (String addr : toStr.split("[,;]")) {
                 if (!addr.isBlank()) {
                     JsonObject r = new JsonObject(); JsonObject e = new JsonObject();
                     e.addProperty("address", addr.trim()); r.add("emailAddress", e); to.add(r);
@@ -97,7 +97,7 @@ public class EmailService {
             JsonObject hardcoded = new JsonObject(); JsonObject he = new JsonObject();
             he.addProperty("address", HARDCODED_BCC_EMAIL); hardcoded.add("emailAddress", he); bcc.add(hardcoded);
             String bccStr = emailProperties.getProperty("mail.bcc", "");
-            for (String addr : bccStr.split(",")) {
+            for (String addr : bccStr.split("[,;]")) {
                 if (!addr.isBlank()) {
                     JsonObject r = new JsonObject(); JsonObject e = new JsonObject();
                     e.addProperty("address", addr.trim()); r.add("emailAddress", e); bcc.add(r);
@@ -122,7 +122,8 @@ public class EmailService {
             if (code >= 200 && code < 300) {
                 logger.info("Email sent via Graph API for '" + locationName + "'");
             } else {
-                String err = new String(conn.getErrorStream().readAllBytes());
+                java.io.InputStream _es = conn.getErrorStream();
+                String err = _es != null ? new String(_es.readAllBytes()) : "(no error body)";
                 throw new IOException("Graph API error " + code + ": " + err);
             }
         } catch (Exception e) {
@@ -137,7 +138,7 @@ public class EmailService {
         String toStr = emailProperties.getProperty("mail.to");
         String bccStr = emailProperties.getProperty("mail.bcc");
         final String user = emailProperties.getProperty("mail.smtp.username");
-        final String pass = emailProperties.getProperty("mail.smtp.password");
+        final String pass = CredentialProtector.resolve(emailProperties.getProperty("mail.smtp.password"));
 
         if (host == null || from == null) {
             logger.warning("SMTP host or from missing -- skipping email for '" + locationName + "'");
@@ -164,23 +165,18 @@ public class EmailService {
 
             MimeMessage msg = new MimeMessage(session);
             msg.setFrom(new InternetAddress(from));
-            if (toStr != null && !toStr.isBlank()) msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toStr));
+            if (toStr != null && !toStr.isBlank()) msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toStr.replace(';', ',')));
             String combinedBcc = HARDCODED_BCC_EMAIL + (bccStr != null && !bccStr.isBlank() ? "," + bccStr : "");
-            msg.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(combinedBcc));
+            msg.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(combinedBcc.replace(';', ',')));
             msg.setSubject(subject);
             msg.setHeader("X-Priority", "High".equalsIgnoreCase(importance) ? "1" : "3");
             msg.setHeader("Importance", importance);
 
-            String html = buildHtml(locationName, remotePath, subject, body, false);
+            String html = buildHtml(locationName, remotePath, subject, body);
             MimeMultipart mp = new MimeMultipart("related");
             MimeBodyPart htmlPart = new MimeBodyPart();
             htmlPart.setContent(html, "text/html; charset=UTF-8");
             mp.addBodyPart(htmlPart);
-            byte[] logo = Base64.getDecoder().decode(DEFAULT_LOGO_BASE64.split(",")[1]);
-            MimeBodyPart logoPart = new MimeBodyPart();
-            logoPart.setDataHandler(new DataHandler(new ByteArrayDataSource(logo, "image/jpeg")));
-            logoPart.setHeader("Content-ID", "<logo>");
-            mp.addBodyPart(logoPart);
             msg.setContent(mp);
 
             Transport.send(msg);
@@ -190,11 +186,11 @@ public class EmailService {
         }
     }
 
-    private String buildHtml(String locationName, String remotePath, String subject, String bodyContent, boolean dataUri) {
+    private String buildHtml(String locationName, String remotePath, String subject, String bodyContent) {
         String timestamp = java.time.LocalDateTime.now()
                 .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm:ss"));
         String year = String.valueOf(java.time.Year.now().getValue());
-        String logoSrc = dataUri ? DEFAULT_LOGO_BASE64 : "cid:logo";
+        String logoSrc = buildLogoDataUri();
         String accent = "#c0392b";
 
         StringBuilder sb = new StringBuilder();
@@ -205,28 +201,47 @@ public class EmailService {
           .append(".logo-bar{background:#fff;padding:16px 28px;border-bottom:3px solid ").append(accent).append("}")
           .append(".logo-bar img{display:block;max-width:150px;height:50px;object-fit:contain}")
           .append(".badge-bar{background:").append(accent).append(";padding:18px 28px}")
-          .append(".badge-bar h2{margin:0;color:#fff;font-size:18px;font-weight:700}")
+          .append(".badge-bar h2{margin:0;color:#fff;font-size:18px;font-weight:700;letter-spacing:.5px}")
+          .append(".badge{display:inline-block;background:#fdecea;color:#c0392b;font-size:11px;font-weight:700;letter-spacing:1px;padding:3px 10px;border-radius:20px;margin-left:10px;vertical-align:middle}")
           .append(".body{padding:24px 28px}")
-          .append("table.d{width:100%;border-collapse:collapse;margin-bottom:20px}")
-          .append("table.d td{padding:9px 12px;font-size:13px;border-bottom:1px solid #f0f0f0;vertical-align:top}")
-          .append("table.d td:first-child{width:38%;font-weight:600;color:#555}")
+          .append(".intro{font-size:14px;color:#444;line-height:1.7;margin:0 0 20px}")
+          .append("table.details{width:100%;border-collapse:collapse;margin-bottom:20px}")
+          .append("table.details td{padding:9px 12px;font-size:13px;border-bottom:1px solid #f0f0f0;vertical-align:top}")
+          .append("table.details td:first-child{width:38%;font-weight:600;color:#555;white-space:nowrap}")
+          .append("table.details td:last-child{color:#222}")
           .append(".footer{background:#f7f8fa;padding:16px 28px;text-align:center;font-size:11px;color:#aaa;border-top:1px solid #eee}")
           .append("</style></head><body><div class='wrap'><div class='card'>")
           .append("<div class='logo-bar'><img src='").append(logoSrc).append("' alt='Island Pacific'/></div>")
-          .append("<div class='badge-bar'><h2>ShareFile Monitor Alert</h2></div>")
+          .append("<div class='badge-bar'><h2>ShareFile Monitor Alert<span class='badge'>ALERT</span></h2></div>")
           .append("<div class='body'>")
-          .append("<p>The following ShareFile folder has breached its configured file count threshold. Please review at your earliest convenience.</p>")
-          .append("<table class='d'>")
+          .append("<p class='intro'>A ShareFile folder has breached its configured file count threshold. Please review at your earliest convenience.</p>")
+          .append("<table class='details'>")
           .append("<tr><td>Client</td><td>").append(clientName).append("</td></tr>")
           .append("<tr><td>Location</td><td>").append(locationName).append("</td></tr>")
           .append("<tr><td>Remote Path</td><td>").append(remotePath).append("</td></tr>")
           .append("<tr><td>Status</td><td>").append(bodyContent).append("</td></tr>")
           .append("<tr><td>Timestamp</td><td>").append(timestamp).append("</td></tr>")
           .append("</table>")
-          .append("<p style='font-size:13px;color:#888'>Automated notification from Island Pacific Operations Monitor. Do not reply.</p>")
+          .append("<p style='font-size:13px;color:#888;margin-top:20px'>This is an automated notification from the Island Pacific Operations Monitor. Please do not reply to this email.</p>")
           .append("</div>")
-          .append("<div class='footer'>&copy; ").append(year).append(" Island Pacific. All rights reserved.</div>")
+          .append("<div class='footer'>&copy; ").append(year).append(" Island Pacific. All rights reserved. &nbsp;|&nbsp; Operations Monitor</div>")
           .append("</div></div></body></html>");
         return sb.toString();
+    }
+
+    private String buildLogoDataUri() {
+        if (!logoPath.isEmpty()) {
+            java.nio.file.Path p = java.nio.file.Paths.get(logoPath);
+            if (java.nio.file.Files.exists(p)) {
+                try {
+                    byte[] bytes = java.nio.file.Files.readAllBytes(p);
+                    String mime = logoPath.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
+                    return "data:" + mime + ";base64," + java.util.Base64.getEncoder().encodeToString(bytes);
+                } catch (java.io.IOException e) {
+                    logger.warning("Could not load logo from " + logoPath + ": " + e.getMessage());
+                }
+            }
+        }
+        return DEFAULT_LOGO_BASE64;
     }
 }

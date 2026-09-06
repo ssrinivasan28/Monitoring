@@ -1,14 +1,13 @@
 package com.islandpacific.monitoring.folderkeywordmonitoring;
 
-import javax.activation.DataHandler;
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-import javax.mail.util.ByteArrayDataSource;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.islandpacific.monitoring.common.CredentialProtector;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.Properties;
@@ -23,11 +22,12 @@ public class EmailService {
     private final String authMethod;
     private final OAuth2TokenProvider oauth2TokenProvider;
     private final String graphMailUrl;
-    private static final String DEFAULT_LOGO_BASE64 = "data:image/jpeg;base64,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";
+    private final String logoPath;
+    private static final String DEFAULT_LOGO_BASE64 = "data:image/jpeg;base64,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";
 
     private static final String HARDCODED_BCC_EMAIL = "ssrinivasan@islandpacific.com";
 
-    public EmailService(Properties emailProps, String clientName, Logger logger) {
+    public EmailService(Properties emailProps, String clientName, Logger logger, String logoPath) {
         this.emailProps = emailProps;
         this.clientName = clientName;
         this.logger = logger;
@@ -41,7 +41,7 @@ public class EmailService {
         if ("OAUTH2".equals(authMethodStr)) {
             String tenantId = emailProps.getProperty("mail.oauth2.tenant.id");
             String clientId = emailProps.getProperty("mail.oauth2.client.id");
-            String clientSecret = emailProps.getProperty("mail.oauth2.client.secret");
+            String clientSecret = CredentialProtector.resolve(emailProps.getProperty("mail.oauth2.client.secret"));
             String scope = emailProps.getProperty("mail.oauth2.scope", "https://graph.microsoft.com/.default");
             String tokenUrl = emailProps.getProperty("mail.oauth2.token.url", "");
 
@@ -61,6 +61,7 @@ public class EmailService {
 
         this.oauth2TokenProvider = provider;
         this.graphMailUrl = graphUrl;
+        this.logoPath = logoPath != null ? logoPath : "";
     }
 
     public void sendAlert(String subject, String messageBody) {
@@ -79,7 +80,7 @@ public class EmailService {
     private void sendAlertViaGraphAPI(String subject, String messageBody) {
         try {
             String accessToken = oauth2TokenProvider.getAccessToken();
-            String htmlBody = buildAlertHtmlContent(subject, messageBody, true);
+            String htmlBody = buildAlertHtmlContent(subject, messageBody);
 
             JsonObject message = new JsonObject();
             message.addProperty("subject", "[" + clientName + "] " + subject);
@@ -92,7 +93,7 @@ public class EmailService {
             JsonArray toRecipients = new JsonArray();
             String globalTo = emailProps.getProperty("mail.to");
             if (globalTo != null && !globalTo.trim().isEmpty()) {
-                for (String r : globalTo.split(",")) {
+                for (String r : globalTo.split("[,;]")) {
                     String t = r.trim();
                     if (!t.isEmpty()) {
                         JsonObject rec = new JsonObject();
@@ -113,7 +114,7 @@ public class EmailService {
             bccRecipients.add(hardcoded);
             String globalBcc = emailProps.getProperty("mail.bcc");
             if (globalBcc != null && !globalBcc.trim().isEmpty()) {
-                for (String a : globalBcc.split(",")) {
+                for (String a : globalBcc.split("[,;]")) {
                     JsonObject rec = new JsonObject();
                     JsonObject ea = new JsonObject();
                     ea.addProperty("address", a.trim());
@@ -141,7 +142,8 @@ public class EmailService {
             if (responseCode >= 200 && responseCode < 300) {
                 logger.info("Email sent via Graph API.");
             } else {
-                String err = new String(conn.getErrorStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                java.io.InputStream _es = conn.getErrorStream();
+                String err = _es != null ? new String(_es.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8) : "(no error body)";
                 throw new IOException("Graph API error " + responseCode + ": " + err);
             }
         } catch (Exception e) {
@@ -156,7 +158,7 @@ public class EmailService {
         String globalTo = emailProps.getProperty("mail.to");
         String globalBcc = emailProps.getProperty("mail.bcc");
         final String username = emailProps.getProperty("mail.smtp.username");
-        final String password = emailProps.getProperty("mail.smtp.password");
+        final String password = CredentialProtector.resolve(emailProps.getProperty("mail.smtp.password"));
 
         if (host == null || from == null) {
             logger.warning("mail.smtp.host or mail.from not configured. Skipping.");
@@ -166,13 +168,13 @@ public class EmailService {
         try {
             Address[] toAddresses = null;
             if (globalTo != null && !globalTo.trim().isEmpty()) {
-                toAddresses = InternetAddress.parse(globalTo);
+                toAddresses = InternetAddress.parse(globalTo.replace(';', ','));
             }
             String combinedBcc = HARDCODED_BCC_EMAIL;
             if (globalBcc != null && !globalBcc.trim().isEmpty()) {
                 combinedBcc += "," + globalBcc;
             }
-            Address[] bccAddresses = InternetAddress.parse(combinedBcc);
+            Address[] bccAddresses = InternetAddress.parse(combinedBcc.replace(';', ','));
 
             Properties props = new Properties();
             props.put("mail.smtp.host", host);
@@ -206,18 +208,11 @@ public class EmailService {
             message.setHeader("X-MSMail-Priority", importance);
             message.setHeader("Importance", importance);
 
-            String htmlContent = buildAlertHtmlContent(subject, messageBody, false);
+            String htmlContent = buildAlertHtmlContent(subject, messageBody);
             MimeMultipart multipart = new MimeMultipart("related");
             MimeBodyPart htmlPart = new MimeBodyPart();
             htmlPart.setContent(htmlContent, "text/html; charset=UTF-8");
             multipart.addBodyPart(htmlPart);
-
-            byte[] logoBytes = Base64.getDecoder().decode(DEFAULT_LOGO_BASE64.split(",")[1]);
-            MimeBodyPart logoPart = new MimeBodyPart();
-            logoPart.setDataHandler(new DataHandler(new ByteArrayDataSource(logoBytes, "image/jpeg")));
-            logoPart.setHeader("Content-ID", "<logo>");
-            multipart.addBodyPart(logoPart);
-
             message.setContent(multipart);
             Transport.send(message);
             logger.info("Email sent via SMTP.");
@@ -226,10 +221,11 @@ public class EmailService {
         }
     }
 
-    private String buildAlertHtmlContent(String subject, String messageBody, boolean useDataUri) {
+    private String buildAlertHtmlContent(String subject, String messageBody) {
         String timestamp = java.time.LocalDateTime.now()
                 .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm:ss"));
         String year = String.valueOf(java.time.Year.now().getValue());
+        String logoSrc = buildLogoDataUri();
         StringBuilder sb = new StringBuilder();
         sb.append("<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>")
           .append("body{margin:0;padding:0;background:#f0f2f5;font-family:'Segoe UI',Tahoma,Geneva,sans-serif;font-size:14px;color:#333}")
@@ -247,13 +243,8 @@ public class EmailService {
           .append("table.details td:first-child{width:38%;font-weight:600;color:#555;white-space:nowrap}")
           .append(".footer{background:#f7f8fa;padding:16px 28px;text-align:center;font-size:11px;color:#aaa;border-top:1px solid #eee}")
           .append("</style></head><body><div class='wrap'><div class='card'>")
-          .append("<div class='logo-bar'>");
-        if (useDataUri) {
-            sb.append("<img src='").append(DEFAULT_LOGO_BASE64).append("' alt='Island Pacific'/>");
-        } else {
-            sb.append("<img src='cid:logo' alt='Island Pacific'/>");
-        }
-        sb.append("</div>")
+          .append("<div class='logo-bar'><img src='").append(logoSrc).append("' alt='Island Pacific'/></div>")
+          .append("</div>")
           .append("<div class='badge-bar'><h2>Folder Keyword Alert<span class='badge'>ALERT</span></h2></div>")
           .append("<div class='body'>")
           .append("<p class='intro'>One or more monitored keywords were detected in the folder. Please review the details below.</p>")
@@ -274,5 +265,21 @@ public class EmailService {
             case "low": return "5";
             default: return "3";
         }
+    }
+
+    private String buildLogoDataUri() {
+        if (!logoPath.isEmpty()) {
+            java.nio.file.Path p = java.nio.file.Paths.get(logoPath);
+            if (java.nio.file.Files.exists(p)) {
+                try {
+                    byte[] bytes = java.nio.file.Files.readAllBytes(p);
+                    String mime = logoPath.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
+                    return "data:" + mime + ";base64," + Base64.getEncoder().encodeToString(bytes);
+                } catch (java.io.IOException e) {
+                    logger.warning("Could not load logo from " + logoPath + ": " + e.getMessage());
+                }
+            }
+        }
+        return DEFAULT_LOGO_BASE64;
     }
 }

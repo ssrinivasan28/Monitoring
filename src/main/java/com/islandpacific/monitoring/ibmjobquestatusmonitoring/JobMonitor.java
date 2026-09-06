@@ -40,13 +40,13 @@ public class JobMonitor {
         // We no longer assume active status at startup.
         // The first polling cycle will determine the baseline status for each job.
 
-        scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler = Executors.newSingleThreadScheduledExecutor(r -> { Thread t = new Thread(r); t.setDaemon(true); return t; });
         scheduler.scheduleAtFixedRate(this::monitorJobs,
                 0,
-                config.getPollingIntervalSeconds(),
-                TimeUnit.SECONDS);
+                config.getPollingIntervalMs(),
+                TimeUnit.MILLISECONDS);
 
-        logger.info("IBM i Job Monitor started. Polling every " + config.getPollingIntervalSeconds() + " seconds.");
+        logger.info("IBM i Job Monitor started. Polling every " + config.getPollingIntervalMs() + " ms.");
     }
 
     public void stop() {

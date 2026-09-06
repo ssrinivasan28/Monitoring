@@ -1,5 +1,7 @@
 package com.islandpacific.monitoring.ibmierrormonitoring;
 
+import com.islandpacific.monitoring.common.CredentialProtector;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,7 +30,8 @@ public class IFSErrorMonitorConfig {
     private final List<MonitoringConfig> monitoringConfigs;
     private final ConcurrentHashMap<String, Logger> locationLoggers;
     private final ConcurrentHashMap<String, SmbCredentials> globalSmbCredentials;
-    private String clientName; // Add this field
+    private String clientName;
+    private String logoPath;
 
     private static final Pattern UNC_PATH_PATTERN = Pattern.compile("^//([^/]+)/(.+)$");
 
@@ -62,9 +65,12 @@ public class IFSErrorMonitorConfig {
         return globalSmbCredentials;
     }
 
-    // Add this getter
     public String getClientName() {
         return clientName;
+    }
+
+    public String getLogoPath() {
+        return logoPath;
     }
 
     private void loadProperties(String emailPropertiesFilePath, String monitorPropertiesFilePath) throws IOException, IllegalArgumentException {
@@ -84,21 +90,22 @@ public class IFSErrorMonitorConfig {
             }
 
             // Load global IBM i credentials
-            String ibmiServerIp = monitorProps.getProperty("ibmi.server");
+            String ibmiServerIp = monitorProps.getProperty("ibmi.host");
             String ibmiUser = monitorProps.getProperty("ibmi.user");
-            String ibmiPassword = monitorProps.getProperty("ibmi.password");
+            String ibmiPassword = CredentialProtector.resolve(monitorProps.getProperty("ibmi.password"));
             String ibmiDomain = monitorProps.getProperty("ibmi.domain", "");
 
             if (ibmiServerIp != null && !ibmiServerIp.isEmpty() && ibmiUser != null && !ibmiUser.isEmpty()) {
-                globalSmbCredentials.put(ibmiServerIp, new SmbCredentials(ibmiUser, ibmiPassword, ibmiDomain)); 
+                globalSmbCredentials.put(ibmiServerIp, new SmbCredentials(ibmiUser, ibmiPassword, ibmiDomain));
                 logger.info(String.format("Loaded global IBM i credentials for server: %s (User: %s, Domain: %s)", ibmiServerIp, ibmiUser, ibmiDomain.isEmpty() ? "N/A" : ibmiDomain));
             } else {
-                logger.warning("Global IBM i server credentials (ibmi.server, ibmi.user, ibmi.password) are incomplete or missing. SMB access might fail for paths on this server.");
+                logger.severe("Global IBM i server credentials (ibmi.host, ibmi.user) are missing. SMB monitoring will fail.");
+                throw new IllegalArgumentException("ibmi.host and ibmi.user are required in monitor properties.");
             }
 
-            // Load client.name property
-            this.clientName = monitorProps.getProperty("client.name", "DefaultClient"); // Default value if not found
+            this.clientName = monitorProps.getProperty("client.name", "DefaultClient");
             logger.info("Loaded client name: " + this.clientName);
+            this.logoPath = monitorProps.getProperty("report.logo.path", "logo.jpg");
 
             // Load monitoring configurations
             Pattern locationPattern = Pattern.compile("^monitor\\.location\\.([^.]+)\\.(path|types|skip\\.to\\.emails|email\\.importance)$");

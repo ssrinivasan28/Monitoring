@@ -42,6 +42,8 @@ Build in order within a phase. Phases are sequential (1 assumes 0, etc.). The **
 | 1.6 | [Microsoft Teams integration (first)](phase-1/1.6-teams-integration.md) | ⭐ |
 | 1.7 | [ITSM two-way sync (ServiceNow/Jira)](phase-1/1.7-itsm-sync.md) | |
 | 1.8 | [Alert-noise KPI + correlation demo seed](phase-1/1.8-kpi-and-demo.md) | ⭐ |
+| 1.9 | [Multi-step, self-directed triage investigation](phase-1/1.9-agentic-investigation.md) | |
+| 1.10 | [Agent-directed workflow actions](phase-1/1.10-agent-directed-actions.md) | |
 
 ## Phase 2 — Natural-language ChatOps (Pro)
 | # | Chunk | |
@@ -59,6 +61,7 @@ Build in order within a phase. Phases are sequential (1 assumes 0, etc.). The **
 | 3.3 | [Knowledge Curator (RAG ingestion)](phase-3/3.3-knowledge-curator.md) | |
 | 3.4 | [Reporting / Digest agent (daily/weekly/monthly)](phase-3/3.4-reporting-digest.md) | |
 | 3.5 | [Insights (SPA)](phase-3/3.5-insights-spa.md) | |
+| 3.6 | [Proactive, self-triggered investigation](phase-3/3.6-proactive-self-triggered-investigation.md) | |
 
 ## Phase 4 — Production hardening (required for production-ready)
 | # | Chunk | |
@@ -72,7 +75,7 @@ Build in order within a phase. Phases are sequential (1 assumes 0, etc.). The **
 | 4.7 | [AI safety evaluation & red-team](phase-4/4.7-ai-safety-eval-redteam.md) | |
 | 4.8 | [Compliance (SOC 2) & accessibility](phase-4/4.8-compliance-accessibility.md) | |
 
-> **Scope frozen: 37 chunks total** (Phase 0:12 · 1:8 · 2:4 · 3:5 · 4:8).
+> **Scope: 40 chunks total** (Phase 0:12 · 1:10 · 2:4 · 3:6 · 4:8).
 > ⭐ = MVP: fleet view + pilot dashboards (Phase 0) and the cross-platform correlation showcase
 > (Phase 1) for one pilot tenant. **Production-ready = all 37 + the Definition of Done in
 > [ENTERPRISE_READINESS.md](../ENTERPRISE_READINESS.md).**

@@ -11,7 +11,7 @@ import java.util.logging.Logger;
 
 public class OAuth2TokenProvider {
 
-    private static final Logger LOGGER = Logger.getLogger(OAuth2TokenProvider.class.getName());
+    private static final Logger LOGGER = com.islandpacific.monitoring.common.AppLogger.getLogger();
 
     private final String clientId;
     private final String clientSecret;

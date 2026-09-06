@@ -13,8 +13,6 @@ import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.FileHandler;
-import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -24,7 +22,7 @@ public class MainJobQueCountMonitor {
 
     // File paths for configuration properties
     private static String emailPropertiesFilePath = "email.properties";
-    private static String jobQueueMonitorPropertiesFilePath = "jobqueuemonitor.properties";
+    private static String jobQueueMonitorPropertiesFilePath = "ibmjobqueuemonitor.properties";
 
     // Properties objects for different config files
     private static Properties emailAndGeneralProps = new Properties(); // For email settings
@@ -46,72 +44,30 @@ public class MainJobQueCountMonitor {
         }
 
         try {
-            loadProperties(); // Load properties first to read log.level
-            setupLogger(); // Configure application logging
-            
-            // Start automatic log purge
-            int retentionDays = Integer.parseInt(emailAndGeneralProps.getProperty("log.retention.days",
-                ibmiAndJobQueueProps.getProperty("log.retention.days", "30")));
-            int purgeIntervalHours = Integer.parseInt(emailAndGeneralProps.getProperty("log.purge.interval.hours",
-                ibmiAndJobQueueProps.getProperty("log.purge.interval.hours", "24")));
+            loadProperties();
+            setupLogger();
+
+            int retentionDays = Integer.parseInt(emailAndGeneralProps.getProperty("log.retention.days", "30"));
+            int purgeIntervalHours = Integer.parseInt(emailAndGeneralProps.getProperty("log.purge.interval.hours", "24"));
             com.islandpacific.monitoring.common.AppLogger.startScheduledLogPurge(retentionDays, purgeIntervalHours);
 
-            // Initialize core services
             ibmiJobQueueService = new IbmiJobQueueService(
                 monitorConfig.getIbmiHost(),
                 monitorConfig.getIbmiUser(),
                 monitorConfig.getIbmiPassword()
             );
-            // Determine authentication method
-            String authMethod = emailAndGeneralProps.getProperty("mail.auth.method", "SMTP").toUpperCase();
-            
-            // Initialize OAuth2 if needed
-            OAuth2TokenProvider oauth2Provider = null;
-            String graphMailUrl = null;
-            String fromUser = null;
-            
-            if ("OAUTH2".equals(authMethod)) {
-                String tenantId = emailAndGeneralProps.getProperty("mail.oauth2.tenant.id");
-                String clientId = emailAndGeneralProps.getProperty("mail.oauth2.client.id");
-                String clientSecret = emailAndGeneralProps.getProperty("mail.oauth2.client.secret");
-                String scope = emailAndGeneralProps.getProperty("mail.oauth2.scope", "https://graph.microsoft.com/.default");
-                String tokenUrl = emailAndGeneralProps.getProperty("mail.oauth2.token.url", "");
-                
-                if (tenantId != null && clientId != null && clientSecret != null) {
-                    oauth2Provider = new OAuth2TokenProvider(tenantId, clientId, clientSecret, scope, tokenUrl);
-                    fromUser = emailAndGeneralProps.getProperty("mail.oauth2.from.user", monitorConfig.getEmailFrom().replaceAll(".*<([^>]+)>.*", "$1").trim());
-                    String providedGraphUrl = emailAndGeneralProps.getProperty("mail.oauth2.graph.mail.url", "");
-                    if (providedGraphUrl != null && !providedGraphUrl.trim().isEmpty()) {
-                        graphMailUrl = providedGraphUrl.trim();
-                    } else {
-                        graphMailUrl = "https://graph.microsoft.com/v1.0/users/" + fromUser + "/sendMail";
-                    }
-                    logger.info("OAuth2 authentication configured for email service.");
-                }
-            }
 
             emailService = new EmailService(
-                monitorConfig.getEmailHost(),
-                monitorConfig.getEmailPort(),
-                monitorConfig.getEmailFrom(),
-                monitorConfig.getEmailTo(),
-                monitorConfig.getEmailBcc(),
-                monitorConfig.getEmailUsername(),
-                monitorConfig.getEmailPassword(),
-                monitorConfig.isEmailAuthEnabled(),
-                monitorConfig.isEmailStartTlsEnabled(),
-                monitorConfig.getEmailImportance(),
+                emailAndGeneralProps,
                 monitorConfig.getIbmiHost(),
                 monitorConfig.getClientMonitorName(),
-                authMethod,
-                oauth2Provider,
-                graphMailUrl,
-                fromUser
+                monitorConfig.getEmailImportance(),
+                monitorConfig.getLogoPath()
             );
             metricsServer = new MetricsServer(monitorConfig.getMetricsPort(), monitorConfig.getJobQueuesToMonitor());
             metricsServer.start();
 
-            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> { Thread t = new Thread(r); t.setDaemon(true); return t; });
             logger.info("Starting Job Queue monitoring service. Checking every " + monitorConfig.getMonitorIntervalMs() / 1000 + " seconds.");
 
             // Schedule the periodic job queue checks
@@ -143,12 +99,7 @@ public class MainJobQueCountMonitor {
                     logger.warning("Shutdown interrupted.");
                     scheduler.shutdownNow();
                 } finally {
-                    metricsServer.stop(); // Stop the HTTP server
-                    for (Handler handler : logger.getHandlers()) {
-                        if (handler instanceof FileHandler) {
-                            handler.close();
-                        }
-                    }
+                    metricsServer.stop();
                     logger.info("Job Queue monitor shutdown complete.");
                 }
             }));
@@ -162,6 +113,12 @@ public class MainJobQueCountMonitor {
         } catch (Exception e) {
             logger.log(Level.SEVERE, "An unexpected error occurred during application startup: " + e.getMessage(), e);
             System.exit(1);
+        }
+
+        try {
+            Thread.currentThread().join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
     private static void setupLogger() throws IOException {

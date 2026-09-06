@@ -1,5 +1,7 @@
 package com.islandpacific.monitoring.ibmifilemembermonitor;
 
+import com.islandpacific.monitoring.common.CredentialProtector;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
@@ -28,9 +30,9 @@ public class FileMemberMonitorConfig {
 
         try (FileInputStream fis = new FileInputStream(fileMemberMonitorConfigFile)) {
             fileMemberMonitorProps.load(fis);
-            logger.info("Loaded filemembermonitor.properties: " + fileMemberMonitorConfigFile);
+            logger.info("Loaded ibmfilemembermonitor.properties: " + fileMemberMonitorConfigFile);
         } catch (IOException e) {
-            logger.log(Level.SEVERE, "Failed to load filemembermonitor.properties: " + fileMemberMonitorConfigFile, e);
+            logger.log(Level.SEVERE, "Failed to load ibmfilemembermonitor.properties: " + fileMemberMonitorConfigFile, e);
             throw e;
         }
 
@@ -90,35 +92,25 @@ public class FileMemberMonitorConfig {
         }
 
         try {
-            long seconds = getFileMemberPollingIntervalSeconds();
-            if (seconds <= 0) {
-                logger.warning("Configuration 'file.member.pollingIntervalSeconds' must be a positive value. Using default.");
+            long ms = getMonitorIntervalMs();
+            if (ms <= 0) {
+                logger.warning("Configuration 'monitor.interval.ms' must be a positive value. Using default.");
             }
         } catch (NumberFormatException e) {
-            logger.warning("Configuration 'file.member.pollingIntervalSeconds' is not a valid number. Falling back to 'monitoring.interval.minutes' or default.");
-        }
-        if (!fileMemberMonitorProps.containsKey("file.member.pollingIntervalSeconds") ||
-            (fileMemberMonitorProps.containsKey("file.member.pollingIntervalSeconds") && !isValidLong(fileMemberMonitorProps.getProperty("file.member.pollingIntervalSeconds")))) {
-            try {
-                long minutes = getMonitoringIntervalMinutes();
-                if (minutes <= 0) {
-                    logger.warning("Configuration 'monitoring.interval.minutes' must be a positive value. Using default.");
-                }
-            } catch (NumberFormatException e) {
-                logger.warning("Configuration 'monitoring.interval.minutes' is not a valid number. Using default.");
-            }
+            logger.warning("Configuration 'monitor.interval.ms' is not a valid number. Using default.");
         }
 
-        // Use the actual emailProps object to check for recipients
         if (emailProps.getProperty("mail.to", "").isEmpty() && emailProps.getProperty("mail.bcc", "").isEmpty()) {
             logger.warning("No recipient emails configured (mail.to or mail.bcc). Email alerts will not be sent.");
         }
-        if (emailProps.getProperty("mail.smtp.host") == null || emailProps.getProperty("mail.smtp.host").trim().isEmpty()) {
+        String authMethod = emailProps.getProperty("mail.auth.method", "SMTP");
+        if ("SMTP".equalsIgnoreCase(authMethod) &&
+                (emailProps.getProperty("mail.smtp.host") == null || emailProps.getProperty("mail.smtp.host").trim().isEmpty())) {
             logger.warning("SMTP host (mail.smtp.host) is not configured. Email sending may fail.");
         }
 
         if (allUniqueMonitoredMembers.isEmpty()) {
-            logger.warning("No file members are configured for monitoring via 'files.members.to.monitor'.");
+            logger.warning("No file members configured via 'files.members.to.monitor'. Monitor will start but skip checks until configured.");
         } else {
             logger.info("Found " + allUniqueMonitoredMembers.size() + " unique file members configured for monitoring.");
         }
@@ -136,12 +128,17 @@ public class FileMemberMonitorConfig {
     // IBM i Connection Properties
     public String getIbmiHost() { return fileMemberMonitorProps.getProperty("ibmi.host"); }
     public String getIbmiUser() { return fileMemberMonitorProps.getProperty("ibmi.user"); }
-    public String getIbmiPassword() { return fileMemberMonitorProps.getProperty("ibmi.password"); }
+    public String getIbmiPassword() {
+        String raw = fileMemberMonitorProps.getProperty("ibmi.password");
+        if (raw == null || raw.trim().isEmpty()) {
+            throw new IllegalArgumentException("Required property 'ibmi.password' is missing or empty.");
+        }
+        return CredentialProtector.resolve(raw);
+    }
 
     // File Member Monitor Properties
     public boolean isFileMemberMonitorEnabled() { return Boolean.parseBoolean(fileMemberMonitorProps.getProperty("filemembermonitor.enabled", "true")); }
-    public long getMonitoringIntervalMinutes() { return Long.parseLong(fileMemberMonitorProps.getProperty("monitoring.interval.minutes", "60")); }
-    public long getFileMemberPollingIntervalSeconds() { return Long.parseLong(fileMemberMonitorProps.getProperty("file.member.pollingIntervalSeconds", "300")); }
+    public long getMonitorIntervalMs() { return Long.parseLong(fileMemberMonitorProps.getProperty("monitor.interval.ms", "300000")); }
 
     public List<String> getMonitoredFileMembers() { return List.copyOf(allUniqueMonitoredMembers); }
     public Map<String, Long> getMemberSpecificBreachThresholds() { return this.memberSpecificBreachThresholds; }
@@ -156,11 +153,15 @@ public class FileMemberMonitorConfig {
     }
 
     // Prometheus Metrics Properties
-    public int getPrometheusFileMemberPort() { return Integer.parseInt(fileMemberMonitorProps.getProperty("prometheus.filemember.port", "8080")); }
+    public int getPrometheusFileMemberPort() { return Integer.parseInt(fileMemberMonitorProps.getProperty("metrics.port", "8080")); }
 
     // NEW: Method to return the email properties object
     public Properties getEmailProperties() {
         return this.emailProps;
+    }
+
+    public Properties getFileMemberProps() {
+        return this.fileMemberMonitorProps;
     }
 
     // These methods are now redundant as EmailService will get properties directly from the Properties object
@@ -168,7 +169,7 @@ public class FileMemberMonitorConfig {
     public String getSmtpHost() { return emailProps.getProperty("mail.smtp.host"); }
     public int getSmtpPort() { return Integer.parseInt(emailProps.getProperty("mail.smtp.port", "587")); }
     public String getSmtpUsername() { return emailProps.getProperty("mail.smtp.user"); }
-    public String getSmtpPassword() { return emailProps.getProperty("mail.smtp.password"); }
+    public String getSmtpPassword() { return CredentialProtector.resolve(emailProps.getProperty("mail.smtp.password")); }
     public String getFromEmail() { return emailProps.getProperty("mail.from"); }
     public List<String> getToEmails() { String to = emailProps.getProperty("mail.to"); return to == null || to.trim().isEmpty() ? List.of() : Arrays.asList(to.split(",")); }
     public List<String> getBccEmails() { String bcc = emailProps.getProperty("mail.bcc"); return bcc == null || bcc.trim().isEmpty() ? List.of() : Arrays.asList(bcc.split(",")); }
@@ -176,5 +177,5 @@ public class FileMemberMonitorConfig {
     public boolean isSmtpAuthEnabled() { return Boolean.parseBoolean(emailProps.getProperty("mail.smtp.auth", "true")); }
     public boolean isSmtpStartTlsEnabled() { return Boolean.parseBoolean(emailProps.getProperty("mail.smtp.starttls.enable", "true")); }
 
-    public String getClientName() { return fileMemberMonitorProps.getProperty("client.name", "DefaultClient"); }
+    public String getClientName() { return fileMemberMonitorProps.getProperty("client.name", emailProps.getProperty("mail.clientName", "")); }
 }

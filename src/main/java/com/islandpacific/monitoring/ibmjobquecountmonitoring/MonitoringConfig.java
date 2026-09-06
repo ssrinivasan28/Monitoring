@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
+import com.islandpacific.monitoring.common.CredentialProtector;
+
 
 public class MonitoringConfig {
     // IBM i Connection
@@ -30,14 +32,15 @@ public class MonitoringConfig {
     // Monitor Settings
     private final int monitorIntervalMs;
     private final int metricsPort;
-    private final String clientMonitorName; 
+    private final String clientMonitorName;
+    private final String logoPath;
 
- 
+
     private MonitoringConfig(String ibmiHost, String ibmiUser, String ibmiPassword,
                              List<JobQueueInfo> jobQueuesToMonitor,
                              String emailHost, String emailPort, String emailFrom, String emailTo, String emailBcc,
                              String emailUsername, String emailPassword, boolean emailAuthEnabled, boolean emailStartTlsEnabled, String emailImportance,
-                             int monitorIntervalMs, int metricsPort, String clientMonitorName) { // Add clientMonitorName here
+                             int monitorIntervalMs, int metricsPort, String clientMonitorName, String logoPath) {
         this.ibmiHost = ibmiHost;
         this.ibmiUser = ibmiUser;
         this.ibmiPassword = ibmiPassword;
@@ -55,7 +58,8 @@ public class MonitoringConfig {
         this.emailImportance = emailImportance;
         this.monitorIntervalMs = monitorIntervalMs;
         this.metricsPort = metricsPort;
-        this.clientMonitorName = clientMonitorName; // Initialize new field
+        this.clientMonitorName = clientMonitorName;
+        this.logoPath = logoPath;
     }
 
    
@@ -74,7 +78,11 @@ public class MonitoringConfig {
         // IBM i connection properties (global for all queues)
         String ibmiHost = getRequiredProperty.apply(ibmiJobQueueProps, "ibmi.host");
         String ibmiUser = getRequiredProperty.apply(ibmiJobQueueProps, "ibmi.user");
-        String ibmiPassword = ibmiJobQueueProps.getProperty("ibmi.password", "");
+        String ibmiPasswordRaw = ibmiJobQueueProps.getProperty("ibmi.password");
+        if (ibmiPasswordRaw == null || ibmiPasswordRaw.trim().isEmpty()) {
+            throw new IllegalArgumentException("Required property 'ibmi.password' is missing or empty.");
+        }
+        String ibmiPassword = CredentialProtector.resolve(ibmiPasswordRaw);
 
         // Parse multiple job queue configurations
         List<JobQueueInfo> jobQueuesToMonitor = new ArrayList<>();
@@ -96,13 +104,16 @@ public class MonitoringConfig {
         }
 
         // Email properties
-        String emailHost = getRequiredProperty.apply(emailProps, "mail.smtp.host");
+        String authMethod = emailProps.getProperty("mail.auth.method", "SMTP");
+        String emailHost = "SMTP".equalsIgnoreCase(authMethod)
+            ? getRequiredProperty.apply(emailProps, "mail.smtp.host")
+            : emailProps.getProperty("mail.smtp.host", "");
         String emailPort = emailProps.getProperty("mail.smtp.port", "25");
         String emailFrom = getRequiredProperty.apply(emailProps, "mail.from");
         String emailTo = getRequiredProperty.apply(emailProps, "mail.to");
         String emailBcc = emailProps.getProperty("mail.bcc", "");
         String emailUsername = emailProps.getProperty("mail.smtp.username", "");
-        String emailPassword = emailProps.getProperty("mail.smtp.password", "");
+        String emailPassword = CredentialProtector.resolve(emailProps.getProperty("mail.smtp.password", ""));
         boolean emailAuth = Boolean.parseBoolean(emailProps.getProperty("mail.smtp.auth", "false"));
         boolean emailStartTlsEnable = Boolean.parseBoolean(emailProps.getProperty("mail.smtp.starttls.enable", "false"));
         String emailImportance = emailProps.getProperty("mail.importance", "Normal");
@@ -111,15 +122,15 @@ public class MonitoringConfig {
         int monitorInterval = Integer.parseInt(ibmiJobQueueProps.getProperty("monitor.interval.ms", String.valueOf(60000)));
         int metricsPort = Integer.parseInt(ibmiJobQueueProps.getProperty("metrics.port", String.valueOf(8081)));
 
-        // NEW: Read client.monitor property
-        String clientMonitorName = ibmiJobQueueProps.getProperty("client.monitor", ""); // Default to empty string if not found
+        String clientMonitorName = ibmiJobQueueProps.getProperty("client.monitor", "");
+        String logoPath = ibmiJobQueueProps.getProperty("logo.path", "logo.jpg");
 
         return new MonitoringConfig(
             ibmiHost, ibmiUser, ibmiPassword,
             jobQueuesToMonitor,
             emailHost, emailPort, emailFrom, emailTo, emailBcc,
             emailUsername, emailPassword, emailAuth, emailStartTlsEnable, emailImportance,
-            monitorInterval, metricsPort, clientMonitorName // Pass new parameter to constructor
+            monitorInterval, metricsPort, clientMonitorName, logoPath
         );
     }
 
@@ -140,5 +151,6 @@ public class MonitoringConfig {
     public String getEmailImportance() { return emailImportance; }
     public int getMonitorIntervalMs() { return monitorIntervalMs; }
     public int getMetricsPort() { return metricsPort; }
-    public String getClientMonitorName() { return clientMonitorName; } // NEW GETTER
+    public String getClientMonitorName() { return clientMonitorName; }
+    public String getLogoPath() { return logoPath; }
 }

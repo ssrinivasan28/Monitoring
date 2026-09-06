@@ -64,7 +64,7 @@ public class MainWinServiceMonitor {
             logger.info("Metrics exposed on port " + config.getMetricsPort());
 
             ExecutorService pollPool = Executors.newFixedThreadPool(config.getPollThreads());
-            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> { Thread t = new Thread(r); t.setDaemon(true); return t; });
 
             scheduler.scheduleAtFixedRate(() -> {
                 try {
@@ -185,6 +185,15 @@ public class MainWinServiceMonitor {
             boolean running = "Running".equalsIgnoreCase(status);
 
             if (!running) {
+                if ("NotFound".equalsIgnoreCase(status)) {
+                    if (!Boolean.TRUE.equals(alertedDown.get(key))) {
+                        logger.warning("[" + server + "] Service '" + service + "' was not found — check the service name in configuration");
+                        emailService.sendServiceNotFoundAlert(server, service);
+                        alertedDown.put(key, true);
+                    }
+                    downCycles.put(key, 0);
+                    metricsExporter.setDownCycles(server, service, 0);
+                } else {
                 int count = downCycles.getOrDefault(key, 0) + 1;
                 downCycles.put(key, count);
                 metricsExporter.setDownCycles(server, service, count);
@@ -211,6 +220,7 @@ public class MainWinServiceMonitor {
                         emailService.sendEscalationAlert(server, displayName, status, attempts);
                         alertedDown.put(key, true);
                     }
+                }
                 }
             } else {
                 downCycles.put(key, 0);

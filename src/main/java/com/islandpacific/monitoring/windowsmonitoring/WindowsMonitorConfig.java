@@ -2,6 +2,8 @@ package com.islandpacific.monitoring.windowsmonitoring;
 
 import java.util.*;
 
+import com.islandpacific.monitoring.common.CredentialProtector;
+
 public class WindowsMonitorConfig {
     private List<String> hosts;
     private double cpuAlertThreshold;
@@ -16,7 +18,15 @@ public class WindowsMonitorConfig {
     private List<String> killableProcesses;   // processes allowed to be killed on CPU breach
     private boolean diskCleanupEnabled;
     private int serviceMaxRestartAttempts;
+    private int pollTimeoutSeconds;
     private Map<String, Credentials> hostCredentials = new HashMap<>();
+
+    // Daily report
+    private boolean reportEnabled;
+    private String reportSendTime;
+    private String reportDataFolder;
+    private int reportRetentionDays;
+    private String reportLogoPath;
 
     public static class Credentials {
         public final String username;
@@ -71,6 +81,7 @@ public class WindowsMonitorConfig {
                 : Arrays.asList(killList.split(","));
         config.diskCleanupEnabled = Boolean.parseBoolean(appProps.getProperty("windows.disk.cleanup.enabled", "true"));
         config.serviceMaxRestartAttempts = Integer.parseInt(appProps.getProperty("windows.service.max.restart.attempts", "3"));
+        config.pollTimeoutSeconds = Integer.parseInt(appProps.getProperty("windows.poll.timeout.seconds", "60"));
 
         // Email properties
         config.authMethod = emailProps.getProperty("mail.auth.method", "SMTP").toUpperCase();
@@ -80,22 +91,29 @@ public class WindowsMonitorConfig {
         config.emailTo = emailProps.getProperty("mail.to");
         config.emailBcc = emailProps.getProperty("mail.bcc", "");
         config.emailUsername = emailProps.getProperty("mail.smtp.username", "");
-        config.emailPassword = emailProps.getProperty("mail.smtp.password", "");
+        config.emailPassword = CredentialProtector.resolve(emailProps.getProperty("mail.smtp.password", ""));
         config.emailAuthEnabled = Boolean.parseBoolean(emailProps.getProperty("mail.smtp.auth", "false"));
         config.emailStartTlsEnabled = Boolean
                 .parseBoolean(emailProps.getProperty("mail.smtp.starttls.enable", "false"));
         config.emailImportance = emailProps.getProperty("mail.importance", "Normal");
         config.oauth2TenantId = emailProps.getProperty("mail.oauth2.tenant.id", "");
         config.oauth2ClientId = emailProps.getProperty("mail.oauth2.client.id", "");
-        config.oauth2ClientSecret = emailProps.getProperty("mail.oauth2.client.secret", "");
+        config.oauth2ClientSecret = CredentialProtector.resolve(emailProps.getProperty("mail.oauth2.client.secret", ""));
         config.oauth2TokenUrl = emailProps.getProperty("mail.oauth2.token.url", "");
         config.graphMailUrl = emailProps.getProperty("mail.oauth2.graph.mail.url", "");
+
+        // Daily report
+        config.reportEnabled = Boolean.parseBoolean(appProps.getProperty("report.enabled", "false"));
+        config.reportSendTime = appProps.getProperty("report.send.time", "07:00");
+        config.reportDataFolder = appProps.getProperty("report.data.folder", "data/winmonitor");
+        config.reportRetentionDays = Integer.parseInt(appProps.getProperty("report.retention.days", "7"));
+        config.reportLogoPath = appProps.getProperty("report.logo.path", "");
 
         // Parse per-host credentials — trim host to match the key used in checkAllServerMetrics
         for (String host : config.hosts) {
             String trimmedHost = host.trim();
             String user = appProps.getProperty("windows.server." + trimmedHost + ".username");
-            String pass = appProps.getProperty("windows.server." + trimmedHost + ".password");
+            String pass = CredentialProtector.resolve(appProps.getProperty("windows.server." + trimmedHost + ".password"));
             if (user != null && pass != null) {
                 config.hostCredentials.put(trimmedHost, new Credentials(user, pass));
             }
@@ -196,7 +214,14 @@ public class WindowsMonitorConfig {
         return hostCredentials.get(host);
     }
 
+    public int getPollTimeoutSeconds() { return pollTimeoutSeconds; }
     public List<String> getKillableProcesses() { return killableProcesses; }
     public boolean isDiskCleanupEnabled() { return diskCleanupEnabled; }
     public int getServiceMaxRestartAttempts() { return serviceMaxRestartAttempts; }
+
+    public boolean isReportEnabled() { return reportEnabled; }
+    public String getReportSendTime() { return reportSendTime; }
+    public String getReportDataFolder() { return reportDataFolder; }
+    public int getReportRetentionDays() { return reportRetentionDays; }
+    public String getReportLogoPath() { return reportLogoPath; }
 }

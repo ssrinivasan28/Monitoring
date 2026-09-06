@@ -11,13 +11,15 @@ import java.util.logging.Logger;
 
 public class MainFolderKeywordMonitor {
 
-    private static final Logger LOGGER = Logger.getLogger(MainFolderKeywordMonitor.class.getName());
+    private static Logger LOGGER = Logger.getLogger(MainFolderKeywordMonitor.class.getName());
+    private static final String DEFAULT_EMAIL_FILE = "email.properties";
     private static final String DEFAULT_CONFIG_FILE = "folderlogkeywordmonitor.properties";
 
     public static void main(String[] args) {
         printBanner();
 
-        String configFile = args.length > 0 ? args[0] : DEFAULT_CONFIG_FILE;
+        String emailConfigPath = args.length > 0 ? args[0] : DEFAULT_EMAIL_FILE;
+        String configFile = args.length > 1 ? args[1] : DEFAULT_CONFIG_FILE;
 
         try {
             Properties configProps = new Properties();
@@ -25,7 +27,6 @@ public class MainFolderKeywordMonitor {
                 configProps.load(fis);
             }
 
-            String emailConfigPath = configProps.getProperty("email.config.path", "email.properties");
             Properties emailProps = new Properties();
             try (FileInputStream fis = new FileInputStream(emailConfigPath)) {
                 emailProps.load(fis);
@@ -34,6 +35,7 @@ public class MainFolderKeywordMonitor {
             String logLevel = configProps.getProperty("log.level", emailProps.getProperty("log.level", "INFO"));
             String logFolder = configProps.getProperty("log.folder", emailProps.getProperty("log.folder", "logs"));
             com.islandpacific.monitoring.common.AppLogger.setupLogger("folderkeywordmonitoring", logLevel, logFolder);
+            LOGGER = com.islandpacific.monitoring.common.AppLogger.getLogger();
 
             int retentionDays = Integer.parseInt(configProps.getProperty("log.retention.days",
                     emailProps.getProperty("log.retention.days", "30")));
@@ -42,7 +44,8 @@ public class MainFolderKeywordMonitor {
             com.islandpacific.monitoring.common.AppLogger.startScheduledLogPurge(retentionDays, purgeIntervalHours);
 
             FolderKeywordMonitorConfig config = new FolderKeywordMonitorConfig(configProps);
-            LOGGER.info("Monitoring folder: " + config.getFolderPath());
+            LOGGER.info("Monitoring folders: " + config.getFolderPaths());
+            LOGGER.info("Recursive: " + config.isRecursive());
             LOGGER.info("Keywords: " + config.getKeywords());
             LOGGER.info("Check interval: " + config.getCheckIntervalMinutes() + " minutes");
 
@@ -55,11 +58,12 @@ public class MainFolderKeywordMonitor {
                     LOGGER, config.getMetricsPort(), metrics);
             server.start();
 
-            EmailService emailService = new EmailService(emailProps, config.getClientName(), LOGGER);
+            String logoPath = configProps.getProperty("logo.path", "");
+            EmailService emailService = new EmailService(emailProps, config.getClientName(), LOGGER, logoPath);
             FolderKeywordMonitorService service = new FolderKeywordMonitorService(
                     LOGGER, config, emailService, totalFilesMatched, totalFilesScanned);
 
-            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> { Thread t = new Thread(r); t.setDaemon(true); return t; });
             scheduler.scheduleAtFixedRate(() -> {
                 try {
                     service.checkAndAlert();

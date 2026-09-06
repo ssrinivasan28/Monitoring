@@ -82,7 +82,8 @@ public class OAuth2TokenProvider {
             // Read response
             int responseCode = conn.getResponseCode();
             if (responseCode != HttpURLConnection.HTTP_OK) {
-                String errorResponse = new String(conn.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
+                java.io.InputStream _es = conn.getErrorStream();
+                String errorResponse = _es != null ? new String(_es.readAllBytes(), StandardCharsets.UTF_8) : "(no error body)";
                 throw new IOException("OAuth2 token request failed with code " + responseCode + ": " + errorResponse);
             }
             
@@ -94,7 +95,7 @@ public class OAuth2TokenProvider {
             
             // Cache the token (subtract 60 seconds for safety margin)
             this.cachedAccessToken = accessToken;
-            this.tokenExpiryTime = System.currentTimeMillis() + ((expiresIn - 60) * 1000L);
+            this.tokenExpiryTime = System.currentTimeMillis() + ((expiresIn - 300) * 1000L);
             
             logger.info("Successfully obtained OAuth2 access token (expires in " + expiresIn + " seconds)");
             return accessToken;

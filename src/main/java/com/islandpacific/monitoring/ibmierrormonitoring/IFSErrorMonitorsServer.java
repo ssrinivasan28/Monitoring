@@ -1,10 +1,12 @@
 package com.islandpacific.monitoring.ibmierrormonitoring;
 
 import com.sun.net.httpserver.HttpServer;
+import io.prometheus.client.exporter.common.TextFormat;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -14,7 +16,6 @@ public class IFSErrorMonitorsServer {
 
     private final Logger logger;
     private final int metricsPort;
-    private final IFSErrorMonitorMetrics metricsService;
     private static final String METRICS_PATH = "/metrics";
 
     private HttpServer server;
@@ -22,18 +23,20 @@ public class IFSErrorMonitorsServer {
     public IFSErrorMonitorsServer(Logger logger, int metricsPort, IFSErrorMonitorMetrics metricsService) {
         this.logger = logger;
         this.metricsPort = metricsPort;
-        this.metricsService = metricsService;
     }
 
 
     public void start() throws IOException {
         server = HttpServer.create(new InetSocketAddress(metricsPort), 0);
         server.createContext(METRICS_PATH, httpExchange -> {
-            String response = metricsService.generateMetrics();
-            httpExchange.getResponseHeaders().set("Content-Type", "text/plain; version=0.0.4; charset=utf-8");
-            httpExchange.sendResponseHeaders(200, response.length());
-            try (OutputStream os = httpExchange.getResponseBody()) {
-                os.write(response.getBytes());
+            httpExchange.getResponseHeaders().set("Content-Type", TextFormat.CONTENT_TYPE_004);
+            httpExchange.sendResponseHeaders(200, 0);
+            try (OutputStreamWriter writer = new OutputStreamWriter(httpExchange.getResponseBody())) {
+                TextFormat.write004(writer, io.prometheus.client.CollectorRegistry.defaultRegistry.metricFamilySamples());
+            } catch (Exception e) {
+                logger.log(Level.SEVERE, "Error writing metrics response: " + e.getMessage(), e);
+            } finally {
+                httpExchange.close();
             }
         });
         server.setExecutor(Executors.newSingleThreadExecutor());

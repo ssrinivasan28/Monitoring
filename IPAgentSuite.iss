@@ -63,6 +63,9 @@ Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "{
 Source: "installer\resources\monitoring-services\{#DirWSM}\{#JarWSM}"; DestDir: "{app}\monitoring-services\{#DirWSM}"; Flags: ignoreversion; Check: InstallWSM
 Source: "installer\resources\monitoring-services\{#DirSS}\{#JarSS}";   DestDir: "{app}\monitoring-services\{#DirSS}";  Flags: ignoreversion; Check: InstallSS
 
+; DPAPI credential encryption tool (always installed; run on this machine to encrypt property values)
+Source: "installer\resources\monitoring-services\CredTool\CredTool.jar"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+
 ; Properties — onlyifdoesntexist preserves config on upgrade
 Source: "installer\resources\monitoring-services\{#DirWSM}\winservicemonitor.properties"; DestDir: "{app}\monitoring-services\{#DirWSM}"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: InstallWSM
 Source: "installer\resources\monitoring-services\{#DirWSM}\email.properties";             DestDir: "{app}\monitoring-services\{#DirWSM}"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: InstallWSM

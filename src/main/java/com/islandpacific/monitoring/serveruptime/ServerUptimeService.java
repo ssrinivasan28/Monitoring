@@ -27,7 +27,7 @@ public class ServerUptimeService {
         this.currentStatus = currentStatus;
     }
 
-    /** Called once at startup to establish initial state and alert on any down servers. */
+    /** Called once at startup to establish baseline state — no alerts sent on startup. */
     public void initializeStatus() {
         for (String server : servers) {
             logger.info("Pinging " + server + " ...");
@@ -35,8 +35,7 @@ public class ServerUptimeService {
             serverStatusGauge.labels(server).set(isUp ? 1 : 0);
             currentStatus.put(server, isUp);
             if (!isUp) {
-                logger.warning("Server " + server + " is DOWN on startup. Sending initial alert.");
-                emailService.sendServerStatusAlert(server, false);
+                logger.warning("Server " + server + " is DOWN on startup (baseline — no alert sent).");
             } else {
                 logger.info("Server " + server + " is UP on startup.");
             }

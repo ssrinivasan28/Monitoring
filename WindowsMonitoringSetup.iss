@@ -45,7 +45,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Messages]
 WelcomeLabel1=Welcome to the Island Pacific Windows Monitoring Agent
-WelcomeLabel2=This wizard will install the Island Pacific Windows Monitoring Agent on your server.%n%nThe following monitoring services are available:%n%n  • WinMonitor           — CPU, memory, disk and Windows services%n  • WinFSErrorMonitor    — Error file detection in watched folders%n  • WinFSCardinalityMonitor — File count threshold alerting%n  • LogKeywordMonitor    — Application log keyword scanning%n  • ServerUpTimeMonitor  — Network reachability and ping health%n  • WinServiceMonitor    — Windows service state monitoring%n%nAll agents run as Windows services and send email alerts when action is needed.%n%nClick Next to continue, or Cancel to exit.
+WelcomeLabel2=This wizard will install the Island Pacific Windows Monitoring Agent on your server.%n%nThe following monitoring services are available:%n%n  • WinMonitor              — CPU, memory, disk and Windows services%n  • WinFSErrorMonitor       — Error file detection in watched folders%n  • WinFSCardinalityMonitor — File count threshold alerting%n  • LogKeywordMonitor       — Application log keyword scanning%n  • ServerUpTimeMonitor     — Network reachability and ping health%n  • WinServiceMonitor       — Windows service state monitoring%n  • FolderLogKeywordMonitor — Multi-folder keyword scanning%n  • ShareFileMonitor        — ShareFile folder file-count via FTPS%n  • SSLCertMonitor          — SSL certificate expiry alerting%n%nAll agents run as Windows services and send email alerts when action is needed.%n%nClick Next to continue, or Cancel to exit.
 FinishedHeadingLabel=Installation Complete
 FinishedLabel=The Island Pacific Windows Monitoring Agent has been installed successfully.%n%nInstalled services are now running and monitoring your Windows environment.%n%nEach agent writes daily log files to its log folder. You can verify service status at any time with:%n%n  sc query IPMonitoring_WinMonitor%n  sc query IPMonitoring_WinFSErrorMonitor%n  sc query IPMonitoring_WinFSCardinalityMonitor%n  sc query IPMonitoring_LogKeywordMonitor%n  sc query IPMonitoring_ServerUpTimeMonitor%n%nClick Finish to close this wizard.
 FinishedLabelNoIcons=The Island Pacific Windows Monitoring Agent has been installed. Selected monitoring services are now active.
@@ -65,6 +65,9 @@ Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "I
 Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_ServerUpTimeMonitor.exe"; Flags: ignoreversion
 Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_WinServiceMonitor.exe"; Flags: ignoreversion
 Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_FolderLogKeywordMonitor.exe"; Flags: ignoreversion
+Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_ShareFileMonitor.exe"; Flags: ignoreversion
+Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_SSLCertMonitor.exe"; Flags: ignoreversion
+Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_APIMonitor.exe"; Flags: ignoreversion
 
 ; JAR files (always updated on upgrade)
 Source: "installer\resources\monitoring-services\WinMonitor\*.jar"; DestDir: "{app}\monitoring-services\WinMonitor"; Flags: ignoreversion; Check: IsWinMonitorSelected
@@ -74,6 +77,11 @@ Source: "installer\resources\monitoring-services\LogKeywordMonitor\*.jar"; DestD
 Source: "installer\resources\monitoring-services\ServerUpTimeMonitor\*.jar"; DestDir: "{app}\monitoring-services\ServerUpTimeMonitor"; Flags: ignoreversion; Check: IsServerUpTimeMonitorSelected
 Source: "installer\resources\monitoring-services\WinServiceMonitor\*.jar"; DestDir: "{app}\monitoring-services\WinServiceMonitor"; Flags: ignoreversion; Check: IsWinServiceMonitorSelected
 Source: "installer\resources\monitoring-services\FolderLogKeywordMonitor\*.jar"; DestDir: "{app}\monitoring-services\FolderLogKeywordMonitor"; Flags: ignoreversion; Check: IsFolderLogKeywordMonitorSelected
+Source: "installer\resources\monitoring-services\ShareFileMonitor\*.jar"; DestDir: "{app}\monitoring-services\ShareFileMonitor"; Flags: ignoreversion; Check: IsShareFileMonitorSelected
+Source: "installer\resources\monitoring-services\SSLCertMonitor\*.jar"; DestDir: "{app}\monitoring-services\SSLCertMonitor"; Flags: ignoreversion; Check: IsSSLCertMonitorSelected
+Source: "installer\resources\monitoring-services\APIMonitor\*.jar"; DestDir: "{app}\monitoring-services\APIMonitor"; Flags: ignoreversion; Check: IsAPIMonitorSelected
+; DPAPI credential encryption tool (always installed; run on this machine to encrypt property values)
+Source: "installer\resources\monitoring-services\CredTool\CredTool.jar"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 
 ; Properties files - only written if not already present (preserves user config on upgrade)
 Source: "installer\resources\monitoring-services\WinMonitor\*.properties"; DestDir: "{app}\monitoring-services\WinMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsWinMonitorSelected
@@ -85,6 +93,12 @@ Source: "installer\resources\monitoring-services\ServerUpTimeMonitor\*.propertie
 Source: "installer\resources\monitoring-services\WinServiceMonitor\*.properties"; DestDir: "{app}\monitoring-services\WinServiceMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsWinServiceMonitorSelected
 Source: "installer\resources\monitoring-services\FolderLogKeywordMonitor\*.properties"; DestDir: "{app}\monitoring-services\FolderLogKeywordMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsFolderLogKeywordMonitorSelected
 Source: "folderlogkeywordmonitor.properties"; DestDir: "{app}\monitoring-services\FolderLogKeywordMonitor"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsFolderLogKeywordMonitorSelected
+Source: "installer\resources\monitoring-services\ShareFileMonitor\*.properties"; DestDir: "{app}\monitoring-services\ShareFileMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsShareFileMonitorSelected
+Source: "sharefilemonitor.properties"; DestDir: "{app}\monitoring-services\ShareFileMonitor"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsShareFileMonitorSelected
+Source: "installer\resources\monitoring-services\SSLCertMonitor\*.properties"; DestDir: "{app}\monitoring-services\SSLCertMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsSSLCertMonitorSelected
+Source: "sslcertmonitor.properties"; DestDir: "{app}\monitoring-services\SSLCertMonitor"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsSSLCertMonitorSelected
+Source: "installer\resources\monitoring-services\APIMonitor\*.properties"; DestDir: "{app}\monitoring-services\APIMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsAPIMonitorSelected
+Source: "apiurlmonitor.properties"; DestDir: "{app}\monitoring-services\APIMonitor"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsAPIMonitorSelected
 
 [Registry]
 Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstallPath"; ValueData: "{app}"; Flags: uninsdeletekey
@@ -115,9 +129,16 @@ Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "WinServiceMon
 Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstalledWinServiceMonitor"; ValueData: "{code:GetInstalledWinServiceMonitor}"; Flags: uninsdeletevalue
 Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "FolderLogKeywordMonitorPort"; ValueData: "{code:GetFolderLogKeywordMonitorPort}"; Flags: uninsdeletevalue
 Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstalledFolderLogKeywordMonitor"; ValueData: "{code:GetInstalledFolderLogKeywordMonitor}"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "ShareFileMonitorPort"; ValueData: "{code:GetShareFileMonitorPort}"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstalledShareFileMonitor"; ValueData: "{code:GetInstalledShareFileMonitor}"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "SSLCertMonitorPort"; ValueData: "{code:GetSSLCertMonitorPort}"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstalledSSLCertMonitor"; ValueData: "{code:GetInstalledSSLCertMonitor}"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "APIMonitorPort"; ValueData: "{code:GetAPIMonitorPort}"; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "{#AppRegKey}"; ValueType: string; ValueName: "InstalledAPIMonitor"; ValueData: "{code:GetInstalledAPIMonitor}"; Flags: uninsdeletevalue
 
 [UninstallDelete]
 Type: files; Name: "{app}\services\*.xml"
+Type: files; Name: "{app}\prometheus_windows_template.yml"
 Type: files; Name: "{app}\monitoring-services\*\email.properties"
 Type: dirifempty; Name: "{app}\monitoring-services\WinMonitor"
 Type: dirifempty; Name: "{app}\monitoring-services\WinFSErrorMonitor"
@@ -126,6 +147,9 @@ Type: dirifempty; Name: "{app}\monitoring-services\LogKeywordMonitor"
 Type: dirifempty; Name: "{app}\monitoring-services\ServerUpTimeMonitor"
 Type: dirifempty; Name: "{app}\monitoring-services\WinServiceMonitor"
 Type: dirifempty; Name: "{app}\monitoring-services\FolderLogKeywordMonitor"
+Type: dirifempty; Name: "{app}\monitoring-services\ShareFileMonitor"
+Type: dirifempty; Name: "{app}\monitoring-services\SSLCertMonitor"
+Type: dirifempty; Name: "{app}\monitoring-services\APIMonitor"
 Type: dirifempty; Name: "{app}\monitoring-services"
 Type: dirifempty; Name: "{app}\services"
 Type: dirifempty; Name: "{app}"
@@ -153,6 +177,9 @@ var
   ChkServerUpTimeMonitor:    TNewCheckBox;
   ChkWinServiceMonitor:      TNewCheckBox;
   ChkFolderLogKeywordMonitor: TNewCheckBox;
+  ChkShareFileMonitor:        TNewCheckBox;
+  ChkSSLCertMonitor:          TNewCheckBox;
+  ChkAPIMonitor:              TNewCheckBox;
 
   // ---- SMTP page controls ----
   SmtpHostEdit, SmtpPortEdit, SmtpUsernameEdit, SmtpPasswordEdit: TNewEdit;
@@ -174,6 +201,9 @@ var
   ServerUpTimeMonitorPortEdit:    TNewEdit;
   WinServiceMonitorPortEdit:      TNewEdit;
   FolderLogKeywordMonitorPortEdit: TNewEdit;
+  ShareFileMonitorPortEdit:        TNewEdit;
+  SSLCertMonitorPortEdit:          TNewEdit;
+  APIMonitorPortEdit:              TNewEdit;
 
   // ---- Port page labels (for visibility control) ----
   LblWinMonitorPort:             TNewStaticText;
@@ -183,6 +213,9 @@ var
   LblServerUpTimeMonitorPort:    TNewStaticText;
   LblWinServiceMonitorPort:      TNewStaticText;
   LblFolderLogKeywordMonitorPort: TNewStaticText;
+  LblShareFileMonitorPort:        TNewStaticText;
+  LblSSLCertMonitorPort:          TNewStaticText;
+  LblAPIMonitorPort:              TNewStaticText;
 
   // ---- State ----
   IsUpgrade: Boolean;
@@ -331,6 +364,9 @@ function GetLogKeywordMonitorPort(Param: string): string;      begin Result := L
 function GetServerUpTimeMonitorPort(Param: string): string;    begin Result := ServerUpTimeMonitorPortEdit.Text; end;
 function GetWinServiceMonitorPort(Param: string): string;      begin Result := WinServiceMonitorPortEdit.Text; end;
 function GetFolderLogKeywordMonitorPort(Param: string): string; begin Result := FolderLogKeywordMonitorPortEdit.Text; end;
+function GetShareFileMonitorPort(Param: string): string;        begin Result := ShareFileMonitorPortEdit.Text; end;
+function GetSSLCertMonitorPort(Param: string): string;          begin Result := SSLCertMonitorPortEdit.Text; end;
+function GetAPIMonitorPort(Param: string): string;              begin Result := APIMonitorPortEdit.Text; end;
 
 function GetInstalledWinMonitor(Param: string): string;
 begin if ChkWinMonitor.Checked then Result := 'true' else Result := 'false'; end;
@@ -346,6 +382,12 @@ function GetInstalledWinServiceMonitor(Param: string): string;
 begin if ChkWinServiceMonitor.Checked then Result := 'true' else Result := 'false'; end;
 function GetInstalledFolderLogKeywordMonitor(Param: string): string;
 begin if ChkFolderLogKeywordMonitor.Checked then Result := 'true' else Result := 'false'; end;
+function GetInstalledShareFileMonitor(Param: string): string;
+begin if ChkShareFileMonitor.Checked then Result := 'true' else Result := 'false'; end;
+function GetInstalledSSLCertMonitor(Param: string): string;
+begin if ChkSSLCertMonitor.Checked then Result := 'true' else Result := 'false'; end;
+function GetInstalledAPIMonitor(Param: string): string;
+begin if ChkAPIMonitor.Checked then Result := 'true' else Result := 'false'; end;
 
 // =============================================================================
 // [Check] functions used in [Files] section
@@ -357,6 +399,49 @@ function IsLogKeywordMonitorSelected: Boolean;     begin Result := ChkLogKeyword
 function IsServerUpTimeMonitorSelected: Boolean;   begin Result := ChkServerUpTimeMonitor.Checked; end;
 function IsWinServiceMonitorSelected: Boolean;     begin Result := ChkWinServiceMonitor.Checked; end;
 function IsFolderLogKeywordMonitorSelected: Boolean; begin Result := ChkFolderLogKeywordMonitor.Checked; end;
+function IsShareFileMonitorSelected: Boolean;        begin Result := ChkShareFileMonitor.Checked; end;
+function IsSSLCertMonitorSelected: Boolean;          begin Result := ChkSSLCertMonitor.Checked; end;
+function IsAPIMonitorSelected: Boolean;              begin Result := ChkAPIMonitor.Checked; end;
+
+// =============================================================================
+// DPAPI encryption (machine scope) - blob format matches CredentialProtector
+// in the monitor JARs. Secret is passed via environment variable, never on a
+// command line. On failure the plaintext is kept (services accept both).
+// =============================================================================
+function SetEnvironmentVariable(lpName, lpValue: string): Boolean;
+  external 'SetEnvironmentVariableW@kernel32.dll stdcall';
+
+function DpapiEncrypt(Value: string): string;
+var
+  OutFile, Cmd: string;
+  ResultCode: Integer;
+  Blob: AnsiString;
+begin
+  Result := Value;
+  if (Value = '') or (Copy(Value, 1, 6) = 'DPAPI(') then
+    Exit;
+
+  OutFile := ExpandConstant('{tmp}\dpapi_out.txt');
+  DeleteFile(OutFile);
+  SetEnvironmentVariable('IP_DPAPI_VALUE', Value);
+  SetEnvironmentVariable('IP_DPAPI_OUT', OutFile);
+
+  Cmd := '-NoProfile -ExecutionPolicy Bypass -Command "' +
+         'Add-Type -AssemblyName System.Security; ' +
+         '[IO.File]::WriteAllText($env:IP_DPAPI_OUT, ''DPAPI('' + ' +
+         '[Convert]::ToBase64String([Security.Cryptography.ProtectedData]::Protect(' +
+         '[Text.Encoding]::UTF8.GetBytes($env:IP_DPAPI_VALUE), $null, ' +
+         '[Security.Cryptography.DataProtectionScope]::LocalMachine)) + '')'')"';
+
+  if Exec('powershell.exe', Cmd, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and
+     (ResultCode = 0) and LoadStringFromFile(OutFile, Blob) then
+    Result := Trim(String(Blob))
+  else
+    Log('DPAPI encryption failed (exit code ' + IntToStr(ResultCode) + ') - storing value as entered');
+
+  DeleteFile(OutFile);
+  SetEnvironmentVariable('IP_DPAPI_VALUE', '');
+end;
 
 // =============================================================================
 // Helper: write email.properties into a monitor service folder
@@ -376,6 +461,10 @@ begin
     SmtpPassword := GetExistingEmailValue(ServicePath, 'mail.smtp.password', '');
   if (OAuthClientSecret = '') and FileExists(EmailFile) then
     OAuthClientSecret := GetExistingEmailValue(ServicePath, 'mail.oauth2.client.secret', '');
+
+  // Encrypt with DPAPI; already-encrypted DPAPI(...) values pass through
+  SmtpPassword := DpapiEncrypt(SmtpPassword);
+  OAuthClientSecret := DpapiEncrypt(OAuthClientSecret);
 
   Content := '# ===============================' + CRLF;
   Content := Content + '# Email Configuration' + CRLF;
@@ -474,8 +563,6 @@ var
 begin
   if FolderName = 'WinMonitor' then
     PortKey := 'metrics.exporter.port'
-  else if FolderName = 'ServerUpTimeMonitor' then
-    PortKey := 'exporter.port'
   else
     PortKey := 'metrics.port';
 
@@ -605,7 +692,7 @@ procedure CreateCustomPages;
 var
   Page: TWizardPage;
   Lbl: TNewStaticText;
-  SW: Integer;
+  SW, EditLeft, EditWidth: Integer;
 begin
   SW := WizardForm.InnerPage.Width - ScaleX(16);
 
@@ -630,46 +717,44 @@ begin
   Lbl := AddLabel(Page, 0, SW,
     'All selected monitors will be installed as Windows services and started automatically.', False);
 
-  ChkWinMonitor := AddCheckBox(Page, Lbl.Top + Lbl.Height + ScaleY(16),
+  ChkWinMonitor := AddCheckBox(Page, Lbl.Top + Lbl.Height + ScaleY(8),
     'WinMonitor  —  CPU, memory, disk usage and critical Windows services', True);
-  AddLabel(Page, ChkWinMonitor.Top + ChkWinMonitor.Height + ScaleY(2), SW,
-    '    Alerts after 3 consecutive threshold breaches (~15 min at default interval)', False);
 
   ChkWinFSErrorMonitor := AddCheckBox(Page,
-    ChkWinMonitor.Top + ChkWinMonitor.Height + ScaleY(24),
+    ChkWinMonitor.Top + ChkWinMonitor.Height + ScaleY(10),
     'WinFSErrorMonitor  —  Detects error files appearing in watched folders', True);
-  AddLabel(Page, ChkWinFSErrorMonitor.Top + ChkWinFSErrorMonitor.Height + ScaleY(2), SW,
-    '    Immediate alert on first detection of each new file (.err, .wrn, .dmp, etc.)', False);
 
   ChkWinFSCardinalityMonitor := AddCheckBox(Page,
-    ChkWinFSErrorMonitor.Top + ChkWinFSErrorMonitor.Height + ScaleY(24),
+    ChkWinFSErrorMonitor.Top + ChkWinFSErrorMonitor.Height + ScaleY(10),
     'WinFSCardinalityMonitor  —  File count threshold monitoring in watched folders', True);
-  AddLabel(Page, ChkWinFSCardinalityMonitor.Top + ChkWinFSCardinalityMonitor.Height + ScaleY(2), SW,
-    '    Alerts when file counts go above max or below min for 3 consecutive checks', False);
 
   ChkLogKeywordMonitor := AddCheckBox(Page,
-    ChkWinFSCardinalityMonitor.Top + ChkWinFSCardinalityMonitor.Height + ScaleY(24),
+    ChkWinFSCardinalityMonitor.Top + ChkWinFSCardinalityMonitor.Height + ScaleY(10),
     'LogKeywordMonitor  —  Scans application log files for error keywords', True);
-  AddLabel(Page, ChkLogKeywordMonitor.Top + ChkLogKeywordMonitor.Height + ScaleY(2), SW,
-    '    Reads incrementally — never re-processes content already seen', False);
 
   ChkServerUpTimeMonitor := AddCheckBox(Page,
-    ChkLogKeywordMonitor.Top + ChkLogKeywordMonitor.Height + ScaleY(24),
+    ChkLogKeywordMonitor.Top + ChkLogKeywordMonitor.Height + ScaleY(10),
     'ServerUpTimeMonitor  —  Pings servers to detect outages and recovery', True);
-  AddLabel(Page, ChkServerUpTimeMonitor.Top + ChkServerUpTimeMonitor.Height + ScaleY(2), SW,
-    '    Immediate DOWN alert when a server goes unreachable; UP alert on recovery', False);
 
   ChkWinServiceMonitor := AddCheckBox(Page,
-    ChkServerUpTimeMonitor.Top + ChkServerUpTimeMonitor.Height + ScaleY(24),
+    ChkServerUpTimeMonitor.Top + ChkServerUpTimeMonitor.Height + ScaleY(10),
     'WinServiceMonitor  —  Monitors Windows services.msc for configured services', True);
-  AddLabel(Page, ChkWinServiceMonitor.Top + ChkWinServiceMonitor.Height + ScaleY(2), SW,
-    '    Alerts when a service goes down; recovery alert when it comes back up', False);
 
   ChkFolderLogKeywordMonitor := AddCheckBox(Page,
-    ChkWinServiceMonitor.Top + ChkWinServiceMonitor.Height + ScaleY(24),
-    'FolderLogKeywordMonitor  —  Scans all files in a folder recursively for keywords', True);
-  AddLabel(Page, ChkFolderLogKeywordMonitor.Top + ChkFolderLogKeywordMonitor.Height + ScaleY(2), SW,
-    '    Alerts once per file per day when a keyword is found', False);
+    ChkWinServiceMonitor.Top + ChkWinServiceMonitor.Height + ScaleY(10),
+    'FolderLogKeywordMonitor  —  Scans one or more folders for keywords (recursive optional)', True);
+
+  ChkShareFileMonitor := AddCheckBox(Page,
+    ChkFolderLogKeywordMonitor.Top + ChkFolderLogKeywordMonitor.Height + ScaleY(10),
+    'ShareFileMonitor  —  Monitors ShareFile folder file counts via FTPS', True);
+
+  ChkSSLCertMonitor := AddCheckBox(Page,
+    ChkShareFileMonitor.Top + ChkShareFileMonitor.Height + ScaleY(10),
+    'SSLCertMonitor  —  Monitors SSL certificate expiry dates', True);
+
+  ChkAPIMonitor := AddCheckBox(Page,
+    ChkSSLCertMonitor.Top + ChkSSLCertMonitor.Height + ScaleY(10),
+    'APIMonitor  —  Polls HTTP/HTTPS URLs and alerts on failure', True);
 
   // ------------------------------------------------------------------
   // 3. Email authentication method
@@ -803,110 +888,158 @@ begin
     'Each installed agent exposes live metrics on a local HTTP port (e.g. http://localhost:3022/metrics). ' +
     'These ports must be free on this server. Only ports for selected agents are used.', False);
 
+  EditLeft := Round(SW * 0.72);
+  EditWidth := SW - EditLeft;
+
   LblWinMonitorPort := TNewStaticText.Create(Page);
   LblWinMonitorPort.Parent := Page.Surface;
   LblWinMonitorPort.Top := ScaleY(48);
   LblWinMonitorPort.Left := 0;
-  LblWinMonitorPort.Width := Round(SW * 0.68);
+  LblWinMonitorPort.Width := EditLeft - ScaleX(8);
   LblWinMonitorPort.Caption := 'WinMonitor port:';
-  LblWinMonitorPort.AutoSize := True;
+  LblWinMonitorPort.AutoSize := False;
 
   WinMonitorPortEdit := TNewEdit.Create(Page);
   WinMonitorPortEdit.Parent := Page.Surface;
   WinMonitorPortEdit.Top := LblWinMonitorPort.Top;
-  WinMonitorPortEdit.Left := Round(SW * 0.70);
-  WinMonitorPortEdit.Width := Round(SW * 0.30);
-  WinMonitorPortEdit.Text := GetSavedValue('WinMonitorPort', '3022');
+  WinMonitorPortEdit.Left := EditLeft;
+  WinMonitorPortEdit.Width := EditWidth;
+  WinMonitorPortEdit.Text := GetSavedValue('WinMonitorPort', '4010');
 
   LblWinFSErrorMonitorPort := TNewStaticText.Create(Page);
   LblWinFSErrorMonitorPort.Parent := Page.Surface;
   LblWinFSErrorMonitorPort.Top := WinMonitorPortEdit.Top + WinMonitorPortEdit.Height + ScaleY(8);
   LblWinFSErrorMonitorPort.Left := 0;
-  LblWinFSErrorMonitorPort.Width := Round(SW * 0.68);
+  LblWinFSErrorMonitorPort.Width := EditLeft - ScaleX(8);
   LblWinFSErrorMonitorPort.Caption := 'WinFSErrorMonitor port:';
-  LblWinFSErrorMonitorPort.AutoSize := True;
+  LblWinFSErrorMonitorPort.AutoSize := False;
 
   WinFSErrorMonitorPortEdit := TNewEdit.Create(Page);
   WinFSErrorMonitorPortEdit.Parent := Page.Surface;
   WinFSErrorMonitorPortEdit.Top := LblWinFSErrorMonitorPort.Top;
-  WinFSErrorMonitorPortEdit.Left := Round(SW * 0.70);
-  WinFSErrorMonitorPortEdit.Width := Round(SW * 0.30);
-  WinFSErrorMonitorPortEdit.Text := GetSavedValue('WinFSErrorMonitorPort', '3020');
+  WinFSErrorMonitorPortEdit.Left := EditLeft;
+  WinFSErrorMonitorPortEdit.Width := EditWidth;
+  WinFSErrorMonitorPortEdit.Text := GetSavedValue('WinFSErrorMonitorPort', '4011');
 
   LblWinFSCardinalityMonitorPort := TNewStaticText.Create(Page);
   LblWinFSCardinalityMonitorPort.Parent := Page.Surface;
   LblWinFSCardinalityMonitorPort.Top := WinFSErrorMonitorPortEdit.Top + WinFSErrorMonitorPortEdit.Height + ScaleY(8);
   LblWinFSCardinalityMonitorPort.Left := 0;
-  LblWinFSCardinalityMonitorPort.Width := Round(SW * 0.68);
+  LblWinFSCardinalityMonitorPort.Width := EditLeft - ScaleX(8);
   LblWinFSCardinalityMonitorPort.Caption := 'WinFSCardinalityMonitor port:';
-  LblWinFSCardinalityMonitorPort.AutoSize := True;
+  LblWinFSCardinalityMonitorPort.AutoSize := False;
 
   WinFSCardinalityMonitorPortEdit := TNewEdit.Create(Page);
   WinFSCardinalityMonitorPortEdit.Parent := Page.Surface;
   WinFSCardinalityMonitorPortEdit.Top := LblWinFSCardinalityMonitorPort.Top;
-  WinFSCardinalityMonitorPortEdit.Left := Round(SW * 0.70);
-  WinFSCardinalityMonitorPortEdit.Width := Round(SW * 0.30);
-  WinFSCardinalityMonitorPortEdit.Text := GetSavedValue('WinFSCardinalityMonitorPort', '3021');
+  WinFSCardinalityMonitorPortEdit.Left := EditLeft;
+  WinFSCardinalityMonitorPortEdit.Width := EditWidth;
+  WinFSCardinalityMonitorPortEdit.Text := GetSavedValue('WinFSCardinalityMonitorPort', '4012');
 
   LblLogKeywordMonitorPort := TNewStaticText.Create(Page);
   LblLogKeywordMonitorPort.Parent := Page.Surface;
   LblLogKeywordMonitorPort.Top := WinFSCardinalityMonitorPortEdit.Top + WinFSCardinalityMonitorPortEdit.Height + ScaleY(8);
   LblLogKeywordMonitorPort.Left := 0;
-  LblLogKeywordMonitorPort.Width := Round(SW * 0.68);
+  LblLogKeywordMonitorPort.Width := EditLeft - ScaleX(8);
   LblLogKeywordMonitorPort.Caption := 'LogKeywordMonitor port:';
-  LblLogKeywordMonitorPort.AutoSize := True;
+  LblLogKeywordMonitorPort.AutoSize := False;
 
   LogKeywordMonitorPortEdit := TNewEdit.Create(Page);
   LogKeywordMonitorPortEdit.Parent := Page.Surface;
   LogKeywordMonitorPortEdit.Top := LblLogKeywordMonitorPort.Top;
-  LogKeywordMonitorPortEdit.Left := Round(SW * 0.70);
-  LogKeywordMonitorPortEdit.Width := Round(SW * 0.30);
-  LogKeywordMonitorPortEdit.Text := GetSavedValue('LogKeywordMonitorPort', '3023');
+  LogKeywordMonitorPortEdit.Left := EditLeft;
+  LogKeywordMonitorPortEdit.Width := EditWidth;
+  LogKeywordMonitorPortEdit.Text := GetSavedValue('LogKeywordMonitorPort', '4013');
 
   LblServerUpTimeMonitorPort := TNewStaticText.Create(Page);
   LblServerUpTimeMonitorPort.Parent := Page.Surface;
   LblServerUpTimeMonitorPort.Top := LogKeywordMonitorPortEdit.Top + LogKeywordMonitorPortEdit.Height + ScaleY(8);
   LblServerUpTimeMonitorPort.Left := 0;
-  LblServerUpTimeMonitorPort.Width := Round(SW * 0.68);
+  LblServerUpTimeMonitorPort.Width := EditLeft - ScaleX(8);
   LblServerUpTimeMonitorPort.Caption := 'ServerUpTimeMonitor port:';
-  LblServerUpTimeMonitorPort.AutoSize := True;
+  LblServerUpTimeMonitorPort.AutoSize := False;
 
   ServerUpTimeMonitorPortEdit := TNewEdit.Create(Page);
   ServerUpTimeMonitorPortEdit.Parent := Page.Surface;
   ServerUpTimeMonitorPortEdit.Top := LblServerUpTimeMonitorPort.Top;
-  ServerUpTimeMonitorPortEdit.Left := Round(SW * 0.70);
-  ServerUpTimeMonitorPortEdit.Width := Round(SW * 0.30);
-  ServerUpTimeMonitorPortEdit.Text := GetSavedValue('ServerUpTimeMonitorPort', '3014');
+  ServerUpTimeMonitorPortEdit.Left := EditLeft;
+  ServerUpTimeMonitorPortEdit.Width := EditWidth;
+  ServerUpTimeMonitorPortEdit.Text := GetSavedValue('ServerUpTimeMonitorPort', '4014');
 
   LblWinServiceMonitorPort := TNewStaticText.Create(Page);
   LblWinServiceMonitorPort.Parent := Page.Surface;
   LblWinServiceMonitorPort.Top := ServerUpTimeMonitorPortEdit.Top + ServerUpTimeMonitorPortEdit.Height + ScaleY(8);
   LblWinServiceMonitorPort.Left := 0;
-  LblWinServiceMonitorPort.Width := Round(SW * 0.68);
+  LblWinServiceMonitorPort.Width := EditLeft - ScaleX(8);
   LblWinServiceMonitorPort.Caption := 'WinServiceMonitor port:';
-  LblWinServiceMonitorPort.AutoSize := True;
+  LblWinServiceMonitorPort.AutoSize := False;
 
   WinServiceMonitorPortEdit := TNewEdit.Create(Page);
   WinServiceMonitorPortEdit.Parent := Page.Surface;
   WinServiceMonitorPortEdit.Top := LblWinServiceMonitorPort.Top;
-  WinServiceMonitorPortEdit.Left := Round(SW * 0.70);
-  WinServiceMonitorPortEdit.Width := Round(SW * 0.30);
-  WinServiceMonitorPortEdit.Text := GetSavedValue('WinServiceMonitorPort', '3026');
+  WinServiceMonitorPortEdit.Left := EditLeft;
+  WinServiceMonitorPortEdit.Width := EditWidth;
+  WinServiceMonitorPortEdit.Text := GetSavedValue('WinServiceMonitorPort', '4015');
 
   LblFolderLogKeywordMonitorPort := TNewStaticText.Create(Page);
   LblFolderLogKeywordMonitorPort.Parent := Page.Surface;
   LblFolderLogKeywordMonitorPort.Top := WinServiceMonitorPortEdit.Top + WinServiceMonitorPortEdit.Height + ScaleY(8);
   LblFolderLogKeywordMonitorPort.Left := 0;
-  LblFolderLogKeywordMonitorPort.Width := Round(SW * 0.68);
+  LblFolderLogKeywordMonitorPort.Width := EditLeft - ScaleX(8);
   LblFolderLogKeywordMonitorPort.Caption := 'FolderLogKeywordMonitor port:';
-  LblFolderLogKeywordMonitorPort.AutoSize := True;
+  LblFolderLogKeywordMonitorPort.AutoSize := False;
 
   FolderLogKeywordMonitorPortEdit := TNewEdit.Create(Page);
   FolderLogKeywordMonitorPortEdit.Parent := Page.Surface;
   FolderLogKeywordMonitorPortEdit.Top := LblFolderLogKeywordMonitorPort.Top;
-  FolderLogKeywordMonitorPortEdit.Left := Round(SW * 0.70);
-  FolderLogKeywordMonitorPortEdit.Width := Round(SW * 0.30);
-  FolderLogKeywordMonitorPortEdit.Text := GetSavedValue('FolderLogKeywordMonitorPort', '3027');
+  FolderLogKeywordMonitorPortEdit.Left := EditLeft;
+  FolderLogKeywordMonitorPortEdit.Width := EditWidth;
+  FolderLogKeywordMonitorPortEdit.Text := GetSavedValue('FolderLogKeywordMonitorPort', '4016');
+
+  LblShareFileMonitorPort := TNewStaticText.Create(Page);
+  LblShareFileMonitorPort.Parent := Page.Surface;
+  LblShareFileMonitorPort.Top := FolderLogKeywordMonitorPortEdit.Top + FolderLogKeywordMonitorPortEdit.Height + ScaleY(8);
+  LblShareFileMonitorPort.Left := 0;
+  LblShareFileMonitorPort.Width := EditLeft - ScaleX(8);
+  LblShareFileMonitorPort.Caption := 'ShareFileMonitor port:';
+  LblShareFileMonitorPort.AutoSize := False;
+
+  ShareFileMonitorPortEdit := TNewEdit.Create(Page);
+  ShareFileMonitorPortEdit.Parent := Page.Surface;
+  ShareFileMonitorPortEdit.Top := LblShareFileMonitorPort.Top;
+  ShareFileMonitorPortEdit.Left := EditLeft;
+  ShareFileMonitorPortEdit.Width := EditWidth;
+  ShareFileMonitorPortEdit.Text := GetSavedValue('ShareFileMonitorPort', '4017');
+
+  LblSSLCertMonitorPort := TNewStaticText.Create(Page);
+  LblSSLCertMonitorPort.Parent := Page.Surface;
+  LblSSLCertMonitorPort.Top := ShareFileMonitorPortEdit.Top + ShareFileMonitorPortEdit.Height + ScaleY(8);
+  LblSSLCertMonitorPort.Left := 0;
+  LblSSLCertMonitorPort.Width := EditLeft - ScaleX(8);
+  LblSSLCertMonitorPort.Caption := 'SSLCertMonitor port:';
+  LblSSLCertMonitorPort.AutoSize := False;
+
+  SSLCertMonitorPortEdit := TNewEdit.Create(Page);
+  SSLCertMonitorPortEdit.Parent := Page.Surface;
+  SSLCertMonitorPortEdit.Top := LblSSLCertMonitorPort.Top;
+  SSLCertMonitorPortEdit.Left := EditLeft;
+  SSLCertMonitorPortEdit.Width := EditWidth;
+  SSLCertMonitorPortEdit.Text := GetSavedValue('SSLCertMonitorPort', '4018');
+
+  LblAPIMonitorPort := TNewStaticText.Create(Page);
+  LblAPIMonitorPort.Parent := Page.Surface;
+  LblAPIMonitorPort.Top := SSLCertMonitorPortEdit.Top + SSLCertMonitorPortEdit.Height + ScaleY(8);
+  LblAPIMonitorPort.Left := 0;
+  LblAPIMonitorPort.Width := EditLeft - ScaleX(8);
+  LblAPIMonitorPort.Caption := 'APIMonitor port:';
+  LblAPIMonitorPort.AutoSize := False;
+
+  APIMonitorPortEdit := TNewEdit.Create(Page);
+  APIMonitorPortEdit.Parent := Page.Surface;
+  APIMonitorPortEdit.Top := LblAPIMonitorPort.Top;
+  APIMonitorPortEdit.Left := EditLeft;
+  APIMonitorPortEdit.Width := EditWidth;
+  APIMonitorPortEdit.Text := GetSavedValue('APIMonitorPort', '4019');
 end;
 
 // =============================================================================
@@ -916,6 +1049,21 @@ procedure InitializeWizard;
 begin
   IsUpgrade := CheckIsUpgrade;
   CreateCustomPages;
+end;
+
+// =============================================================================
+// CurPageChanged — append upgrade-specific notes to the Finished page
+// =============================================================================
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if (CurPageID = wpFinished) and IsUpgrade and ChkFolderLogKeywordMonitor.Checked then
+  begin
+    WizardForm.FinishedLabel.Caption := WizardForm.FinishedLabel.Caption + Chr(13) + Chr(10) + Chr(13) + Chr(10) +
+      'FolderLogKeywordMonitor: new optional settings are available in ' +
+      'folderlogkeywordmonitor.properties (your existing file was preserved):' + Chr(13) + Chr(10) +
+      '  monitor.folder.paths  - monitor multiple folders (comma-separated)' + Chr(13) + Chr(10) +
+      '  monitor.recursive     - scan subfolders (true/false, default false)';
+  end;
 end;
 
 // =============================================================================
@@ -934,7 +1082,9 @@ begin
   if PageID = ServicePortsPage.ID then
     Result := not (ChkWinMonitor.Checked or ChkWinFSErrorMonitor.Checked or
                    ChkWinFSCardinalityMonitor.Checked or ChkLogKeywordMonitor.Checked or
-                   ChkServerUpTimeMonitor.Checked or ChkWinServiceMonitor.Checked);
+                   ChkServerUpTimeMonitor.Checked or ChkWinServiceMonitor.Checked or
+                   ChkFolderLogKeywordMonitor.Checked or ChkShareFileMonitor.Checked or
+                   ChkSSLCertMonitor.Checked or ChkAPIMonitor.Checked);
 end;
 
 // =============================================================================
@@ -951,7 +1101,9 @@ begin
   begin
     HasMonitor := ChkWinMonitor.Checked or ChkWinFSErrorMonitor.Checked or
                   ChkWinFSCardinalityMonitor.Checked or ChkLogKeywordMonitor.Checked or
-                  ChkServerUpTimeMonitor.Checked or ChkWinServiceMonitor.Checked;
+                  ChkServerUpTimeMonitor.Checked or ChkWinServiceMonitor.Checked or
+                  ChkFolderLogKeywordMonitor.Checked or ChkShareFileMonitor.Checked or
+                  ChkSSLCertMonitor.Checked or ChkAPIMonitor.Checked;
     if not HasMonitor then
     begin
       MsgBox('Please select at least one monitoring agent to install.', mbError, MB_OK);
@@ -1010,7 +1162,141 @@ begin
       MsgBox('WinServiceMonitor port must be a number between 1024 and 65535.', mbError, MB_OK);
       Result := False; Exit;
     end;
+    if ChkFolderLogKeywordMonitor.Checked and not IsValidPort(FolderLogKeywordMonitorPortEdit.Text) then
+    begin
+      MsgBox('FolderLogKeywordMonitor port must be a number between 1024 and 65535.', mbError, MB_OK);
+      Result := False; Exit;
+    end;
+    if ChkShareFileMonitor.Checked and not IsValidPort(ShareFileMonitorPortEdit.Text) then
+    begin
+      MsgBox('ShareFileMonitor port must be a number between 1024 and 65535.', mbError, MB_OK);
+      Result := False; Exit;
+    end;
+    if ChkSSLCertMonitor.Checked and not IsValidPort(SSLCertMonitorPortEdit.Text) then
+    begin
+      MsgBox('SSLCertMonitor port must be a number between 1024 and 65535.', mbError, MB_OK);
+      Result := False; Exit;
+    end;
+    if ChkAPIMonitor.Checked and not IsValidPort(APIMonitorPortEdit.Text) then
+    begin
+      MsgBox('APIMonitor port must be a number between 1024 and 65535.', mbError, MB_OK);
+      Result := False; Exit;
+    end;
   end;
+end;
+
+// =============================================================================
+// GeneratePrometheusTemplate — writes prometheus_windows_template.yml with
+// scrape jobs for all monitors selected during this installation.
+// Drop this file into your Prometheus scrape_configs to start collecting.
+// =============================================================================
+procedure GeneratePrometheusTemplate;
+var
+  D, Path, CRLF, Content, ClientLabel: string;
+begin
+  D := ExpandConstant('{app}');
+  Path := D + '\prometheus_windows_template.yml';
+  CRLF := #13#10;
+  ClientLabel := ClientNamePage.Values[0];
+  if ClientLabel = '' then ClientLabel := 'windows';
+
+  Content :=
+    '# Island Pacific Windows Monitoring Agent — Prometheus scrape template' + CRLF +
+    '# Copy the jobs below into the scrape_configs section of your prometheus.yml' + CRLF +
+    '# Generated by installer for client: ' + ClientLabel + CRLF + CRLF +
+    'scrape_configs:' + CRLF;
+
+  if ChkWinMonitor.Checked then
+    Content := Content +
+      '  - job_name: "WinMonitor"' + CRLF +
+      '    static_configs:' + CRLF +
+      '      - targets: ["localhost:' + WinMonitorPortEdit.Text + '"]' + CRLF +
+      '        labels:' + CRLF +
+      '          app: "WinMonitor"' + CRLF +
+      '          client: "' + ClientLabel + '"' + CRLF + CRLF;
+
+  if ChkWinFSErrorMonitor.Checked then
+    Content := Content +
+      '  - job_name: "WinFSErrorMonitor"' + CRLF +
+      '    static_configs:' + CRLF +
+      '      - targets: ["localhost:' + WinFSErrorMonitorPortEdit.Text + '"]' + CRLF +
+      '        labels:' + CRLF +
+      '          app: "WinFSErrorMonitor"' + CRLF +
+      '          client: "' + ClientLabel + '"' + CRLF + CRLF;
+
+  if ChkWinFSCardinalityMonitor.Checked then
+    Content := Content +
+      '  - job_name: "WinFSCardinalityMonitor"' + CRLF +
+      '    static_configs:' + CRLF +
+      '      - targets: ["localhost:' + WinFSCardinalityMonitorPortEdit.Text + '"]' + CRLF +
+      '        labels:' + CRLF +
+      '          app: "WinFSCardinalityMonitor"' + CRLF +
+      '          client: "' + ClientLabel + '"' + CRLF + CRLF;
+
+  if ChkLogKeywordMonitor.Checked then
+    Content := Content +
+      '  - job_name: "LogKeywordMonitor"' + CRLF +
+      '    static_configs:' + CRLF +
+      '      - targets: ["localhost:' + LogKeywordMonitorPortEdit.Text + '"]' + CRLF +
+      '        labels:' + CRLF +
+      '          app: "LogKeywordMonitor"' + CRLF +
+      '          client: "' + ClientLabel + '"' + CRLF + CRLF;
+
+  if ChkServerUpTimeMonitor.Checked then
+    Content := Content +
+      '  - job_name: "ServerUpTimeMonitor"' + CRLF +
+      '    static_configs:' + CRLF +
+      '      - targets: ["localhost:' + ServerUpTimeMonitorPortEdit.Text + '"]' + CRLF +
+      '        labels:' + CRLF +
+      '          app: "ServerUpTimeMonitor"' + CRLF +
+      '          client: "' + ClientLabel + '"' + CRLF + CRLF;
+
+  if ChkWinServiceMonitor.Checked then
+    Content := Content +
+      '  - job_name: "WinServiceMonitor"' + CRLF +
+      '    static_configs:' + CRLF +
+      '      - targets: ["localhost:' + WinServiceMonitorPortEdit.Text + '"]' + CRLF +
+      '        labels:' + CRLF +
+      '          app: "WinServiceMonitor"' + CRLF +
+      '          client: "' + ClientLabel + '"' + CRLF + CRLF;
+
+  if ChkFolderLogKeywordMonitor.Checked then
+    Content := Content +
+      '  - job_name: "FolderLogKeywordMonitor"' + CRLF +
+      '    static_configs:' + CRLF +
+      '      - targets: ["localhost:' + FolderLogKeywordMonitorPortEdit.Text + '"]' + CRLF +
+      '        labels:' + CRLF +
+      '          app: "FolderLogKeywordMonitor"' + CRLF +
+      '          client: "' + ClientLabel + '"' + CRLF + CRLF;
+
+  if ChkShareFileMonitor.Checked then
+    Content := Content +
+      '  - job_name: "ShareFileMonitor"' + CRLF +
+      '    static_configs:' + CRLF +
+      '      - targets: ["localhost:' + ShareFileMonitorPortEdit.Text + '"]' + CRLF +
+      '        labels:' + CRLF +
+      '          app: "ShareFileMonitor"' + CRLF +
+      '          client: "' + ClientLabel + '"' + CRLF + CRLF;
+
+  if ChkSSLCertMonitor.Checked then
+    Content := Content +
+      '  - job_name: "SSLCertMonitor"' + CRLF +
+      '    static_configs:' + CRLF +
+      '      - targets: ["localhost:' + SSLCertMonitorPortEdit.Text + '"]' + CRLF +
+      '        labels:' + CRLF +
+      '          app: "SSLCertMonitor"' + CRLF +
+      '          client: "' + ClientLabel + '"' + CRLF + CRLF;
+
+  if ChkAPIMonitor.Checked then
+    Content := Content +
+      '  - job_name: "APIMonitor"' + CRLF +
+      '    static_configs:' + CRLF +
+      '      - targets: ["localhost:' + APIMonitorPortEdit.Text + '"]' + CRLF +
+      '        labels:' + CRLF +
+      '          app: "APIMonitor"' + CRLF +
+      '          client: "' + ClientLabel + '"' + CRLF + CRLF;
+
+  SaveStringToFile(Path, Content, False);
 end;
 
 // =============================================================================
@@ -1026,6 +1312,10 @@ begin
     StopAndUninstallService('IPMonitoring_LogKeywordMonitor.exe');
     StopAndUninstallService('IPMonitoring_ServerUpTimeMonitor.exe');
     StopAndUninstallService('IPMonitoring_WinServiceMonitor.exe');
+    StopAndUninstallService('IPMonitoring_FolderLogKeywordMonitor.exe');
+    StopAndUninstallService('IPMonitoring_ShareFileMonitor.exe');
+    StopAndUninstallService('IPMonitoring_SSLCertMonitor.exe');
+    StopAndUninstallService('IPMonitoring_APIMonitor.exe');
     Exit;
   end;
 
@@ -1078,6 +1368,40 @@ begin
       'Monitors Windows services and sends alerts on state changes',
       'WinServiceMonitor.jar', 'winservicemonitor.properties',
       GetWinServiceMonitorPort(''));
+
+  if ChkFolderLogKeywordMonitor.Checked then
+    InstallWinMonitor(
+      'FolderLogKeywordMonitor', 'IPMonitoring_FolderLogKeywordMonitor',
+      'IP Monitoring - Folder Log Keyword Monitor',
+      'Scans one or more folders for configured keywords (recursive optional)',
+      'FolderLogKeywordMonitor.jar', 'folderlogkeywordmonitor.properties',
+      GetFolderLogKeywordMonitorPort(''));
+
+  if ChkShareFileMonitor.Checked then
+    InstallWinMonitor(
+      'ShareFileMonitor', 'IPMonitoring_ShareFileMonitor',
+      'IP Monitoring - ShareFile Monitor',
+      'Monitors ShareFile folder file counts via FTPS implicit SSL',
+      'ShareFileMonitor.jar', 'sharefilemonitor.properties',
+      GetShareFileMonitorPort(''));
+
+  if ChkSSLCertMonitor.Checked then
+    InstallWinMonitor(
+      'SSLCertMonitor', 'IPMonitoring_SSLCertMonitor',
+      'IP Monitoring - SSL Certificate Monitor',
+      'Monitors SSL certificate expiry and sends advance warning alerts',
+      'SSLCertMonitor.jar', 'sslcertmonitor.properties',
+      GetSSLCertMonitorPort(''));
+
+  if ChkAPIMonitor.Checked then
+    InstallWinMonitor(
+      'APIMonitor', 'IPMonitoring_APIMonitor',
+      'IP Monitoring - API URL Monitor',
+      'Polls HTTP/HTTPS endpoints and sends alerts on failure or timeout',
+      'APIMonitor.jar', 'apiurlmonitor.properties',
+      GetAPIMonitorPort(''));
+
+  GeneratePrometheusTemplate;
 end;
 
 // =============================================================================
@@ -1093,4 +1417,8 @@ begin
   StopAndUninstallService('IPMonitoring_LogKeywordMonitor.exe');
   StopAndUninstallService('IPMonitoring_ServerUpTimeMonitor.exe');
   StopAndUninstallService('IPMonitoring_WinServiceMonitor.exe');
+  StopAndUninstallService('IPMonitoring_FolderLogKeywordMonitor.exe');
+  StopAndUninstallService('IPMonitoring_ShareFileMonitor.exe');
+  StopAndUninstallService('IPMonitoring_SSLCertMonitor.exe');
+  StopAndUninstallService('IPMonitoring_APIMonitor.exe');
 end;

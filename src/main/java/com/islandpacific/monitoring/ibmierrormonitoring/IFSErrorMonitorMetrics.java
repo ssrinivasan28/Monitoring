@@ -1,66 +1,61 @@
 package com.islandpacific.monitoring.ibmierrormonitoring;
 
+import io.prometheus.client.Gauge;
+import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
-import java.time.Instant;
 
-/**
- * Service class responsible for generating Prometheus-style metrics
- * for the IFS Error Monitor application.
- */
 public class IFSErrorMonitorMetrics {
 
-    private final ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> totalFileCounts;
-    private final ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> newFileCounts;
-    private volatile long lastScanTimestamp; 
+    private static final Gauge UPTIME_SECONDS = Gauge.build()
+            .name("error_notifier_uptime_seconds")
+            .help("Uptime of the error notifier application in seconds.")
+            .register();
+
+    private static final Gauge LAST_SCAN_TIMESTAMP_SECONDS = Gauge.build()
+            .name("error_notifier_last_scan_timestamp_seconds")
+            .help("Last time a scan was completed in epoch seconds.")
+            .register();
+
+    private static final Gauge TOTAL_FILES = Gauge.build()
+            .name("error_notifier_total_files")
+            .help("Total number of files found for a given location and file type.")
+            .labelNames("location", "file_type")
+            .register();
+
+    private static final Gauge NEW_FILES_DETECTED = Gauge.build()
+            .name("error_notifier_new_files_detected")
+            .help("Number of new files detected in the last scan for a given location and file type.")
+            .labelNames("location", "file_type")
+            .register();
 
     public IFSErrorMonitorMetrics(Logger logger,
                                   ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> totalFileCounts,
                                   ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> newFileCounts) {
-        this.totalFileCounts = totalFileCounts;
-        this.newFileCounts = newFileCounts;
-        this.lastScanTimestamp = 0; // Initialize
     }
 
     public void setLastScanTimestamp(long timestamp) {
-        this.lastScanTimestamp = timestamp;
+        LAST_SCAN_TIMESTAMP_SECONDS.set(timestamp);
     }
 
-    /**
-     * Generates Prometheus-style metrics as a String.
-     *
-     * @return A String containing the metrics in Prometheus exposition format.
-     */
+    public static void updateUptime() {
+        long processStartMillis = ProcessHandle.current().info().startInstant()
+                .orElse(Instant.EPOCH).toEpochMilli();
+        UPTIME_SECONDS.set((System.currentTimeMillis() - processStartMillis) / 1000.0);
+    }
+
+    public static void updateCountMetrics(
+            ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> totalFileCounts,
+            ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> newFileCounts) {
+        totalFileCounts.forEach((location, extCounts) ->
+            extCounts.forEach((ext, count) ->
+                TOTAL_FILES.labels(location, ext.startsWith(".") ? ext.substring(1) : ext).set(count)));
+        newFileCounts.forEach((location, extCounts) ->
+            extCounts.forEach((ext, count) ->
+                NEW_FILES_DETECTED.labels(location, ext.startsWith(".") ? ext.substring(1) : ext).set(count)));
+    }
+
     public String generateMetrics() {
-        StringBuilder metrics = new StringBuilder();
-
-        long uptimeSeconds = (System.currentTimeMillis() - ProcessHandle.current().info().startInstant().orElse(Instant.EPOCH).toEpochMilli()) / 1000;
-        metrics.append("# HELP error_notifier_uptime_seconds Uptime of the error notifier application in seconds.\n");
-        metrics.append("# TYPE error_notifier_uptime_seconds gauge\n");
-        metrics.append("error_notifier_uptime_seconds ").append(uptimeSeconds).append("\n");
-
-        metrics.append("# HELP error_notifier_last_scan_timestamp_seconds Last time a scan was completed in epoch seconds.\n");
-        metrics.append("# TYPE error_notifier_last_scan_timestamp_seconds gauge\n");
-        metrics.append("error_notifier_last_scan_timestamp_seconds ").append(lastScanTimestamp).append("\n");
-
-        metrics.append("# HELP error_notifier_total_files Total number of files found for a given location and file type.\n");
-        metrics.append("# TYPE error_notifier_total_files gauge\n");
-        totalFileCounts.forEach((location, extCounts) -> {
-            extCounts.forEach((ext, count) -> {
-                metrics.append(String.format("error_notifier_total_files{location=\"%s\",file_type=\"%s\"} %d\n",
-                        location, ext.substring(1), count));
-            });
-        });
-
-        metrics.append("# HELP error_notifier_new_files_detected Total number of new files detected for a given location and file type.\n");
-        metrics.append("# TYPE error_notifier_new_files_detected counter\n");
-        newFileCounts.forEach((location, extCounts) -> {
-            extCounts.forEach((ext, count) -> {
-                metrics.append(String.format("error_notifier_new_files_detected{location=\"%s\",file_type=\"%s\"} %d\n",
-                        location, ext.substring(1), count));
-            });
-        });
-
-        return metrics.toString();
+        return "";
     }
 }

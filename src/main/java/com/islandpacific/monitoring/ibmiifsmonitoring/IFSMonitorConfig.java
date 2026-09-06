@@ -1,5 +1,6 @@
 package com.islandpacific.monitoring.ibmiifsmonitoring;
 
+import com.islandpacific.monitoring.common.CredentialProtector;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -73,16 +74,16 @@ public class IFSMonitorConfig {
             }
 
             // Load global IBM i (SMB) credentials
-            String ibmiServerIp = monitorProps.getProperty("ibmi.server");
+            String ibmiServerIp = monitorProps.getProperty("ibmi.host");
             String ibmiUser = monitorProps.getProperty("ibmi.user");
-            String ibmiPassword = monitorProps.getProperty("ibmi.password");
+            String ibmiPassword = CredentialProtector.resolve(monitorProps.getProperty("ibmi.password"));
             String ibmiDomain = monitorProps.getProperty("ibmi.domain", ""); // Optional domain for NTLM
 
             if (ibmiServerIp != null && !ibmiServerIp.isEmpty() && ibmiUser != null && !ibmiUser.isEmpty()) {
-                globalSmbCredentials.put(ibmiServerIp, new SmbCredentials(ibmiUser, ibmiPassword, ibmiDomain)); 
+                globalSmbCredentials.put(ibmiServerIp, new SmbCredentials(ibmiUser, ibmiPassword, ibmiDomain));
                 logger.info(String.format("Loaded global IBM i credentials for server: %s (User: %s, Domain: %s)", ibmiServerIp, ibmiUser, ibmiDomain.isEmpty() ? "N/A" : ibmiDomain));
             } else {
-                logger.warning("Global IBM i server credentials (ibmi.server, ibmi.user, ibmi.password) are incomplete or missing. SMB access might fail for paths on this server.");
+                logger.warning("Global IBM i server credentials (ibmi.host, ibmi.user, ibmi.password) are incomplete or missing. SMB access might fail for paths on this server.");
             }
 
             // Load monitoring configurations
@@ -113,8 +114,7 @@ public class IFSMonitorConfig {
                     String alertTooManyBodyPrefix = props.get("alert.too.many.body.prefix");
                     String emailImportance = props.getOrDefault("email.importance", "Normal");
                     boolean ignoreZeroFileAlert = Boolean.parseBoolean(props.getOrDefault("ignore.zero.file.alert", "false"));
-                    // Use client.name for consistency with other monitors (fallback to monitor.server for backward compatibility)
-                    String clientName = monitorProps.getProperty("client.name", monitorProps.getProperty("monitor.server", "DefaultClient"));
+                    String clientName = monitorProps.getProperty("client.name", emailProps.getProperty("mail.clientName", ""));
                     String fileTypesStr = props.getOrDefault("file.types", ""); // Get file types string
 
                     if (name == null || name.trim().isEmpty() || pathStr == null || pathStr.trim().isEmpty()) {

@@ -10,6 +10,8 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.islandpacific.monitoring.common.CredentialProtector;
+
 public class JobMonitorConfig {
 
     private static final Logger logger = Logger.getLogger(JobMonitorConfig.class.getName());
@@ -24,7 +26,7 @@ public class JobMonitorConfig {
 
     // Job Monitoring Details
     private List<JobDefinition> jobsToMonitor = new ArrayList<>();
-    private long pollingIntervalSeconds;
+    private long pollingIntervalMs;
     private int prometheusPort;
 
     // Email Configuration (mail.* keys)
@@ -61,7 +63,11 @@ public class JobMonitorConfig {
         // IBM i Connection
         ibmiHost = jobListProps.getProperty("ibmi.host");
         ibmiUser = jobListProps.getProperty("ibmi.user");
-        ibmiPassword = jobListProps.getProperty("ibmi.password");
+        String ibmiPasswordRaw = jobListProps.getProperty("ibmi.password");
+        if (ibmiPasswordRaw == null || ibmiPasswordRaw.trim().isEmpty()) {
+            throw new IllegalArgumentException("Required property 'ibmi.password' is missing or empty.");
+        }
+        ibmiPassword = CredentialProtector.resolve(ibmiPasswordRaw);
 
         // Job Monitoring
         String jobListString = jobListProps.getProperty("jobs.list");
@@ -82,14 +88,14 @@ public class JobMonitorConfig {
                     });
         }
 
-        pollingIntervalSeconds = Long.parseLong(jobListProps.getProperty("monitor.pollingIntervalSeconds", "60"));
-        prometheusPort = Integer.parseInt(jobListProps.getProperty("prometheus.port", "3013"));
+        pollingIntervalMs = Long.parseLong(jobListProps.getProperty("monitor.interval.ms", "60000"));
+        prometheusPort = Integer.parseInt(jobListProps.getProperty("metrics.port", "3013"));
 
         // Email (mail.* keys)
         smtpHost = emailProps.getProperty("mail.smtp.host");
         smtpPort = emailProps.getProperty("mail.smtp.port");
-        smtpUsername = emailProps.getProperty("mail.username");
-        smtpPassword = emailProps.getProperty("mail.password");
+        smtpUsername = emailProps.getProperty("mail.smtp.username", "");
+        smtpPassword = CredentialProtector.resolve(emailProps.getProperty("mail.smtp.password", ""));
 
         fromEmail = emailProps.getProperty("mail.from");
         toEmails = emailProps.getProperty("mail.to");
@@ -120,8 +126,8 @@ public class JobMonitorConfig {
         return jobsToMonitor;
     }
 
-    public long getPollingIntervalSeconds() {
-        return pollingIntervalSeconds;
+    public long getPollingIntervalMs() {
+        return pollingIntervalMs;
     }
 
     public int getPrometheusPort() {

@@ -3,17 +3,14 @@ package com.islandpacific.monitoring.winservicemonitor;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-import javax.activation.DataHandler;
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-import javax.mail.util.ByteArrayDataSource;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -67,6 +64,27 @@ public class EmailService {
     public void sendServiceRecoveryAlert(String server, String service) {
         String subject = "RECOVERED: Service '" + service + "' is Running on " + server;
         String body = buildServiceAlertHtml(server, service, "Running", true);
+        send(subject, body);
+    }
+
+    public void sendServiceNotFoundAlert(String server, String service) {
+        String subject = "CONFIG ERROR: Service '" + service + "' not found on " + server;
+        String timestamp = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm:ss"));
+        String body = buildHtmlEmail(
+                "#6c3483",
+                "SERVICE NOT FOUND",
+                "#f5eef8",
+                "#6c3483",
+                "Service Not Found: " + escapeHtml(service),
+                "The configured service name was not found on the target server. Check the service name in winservicemonitor.properties.",
+                new String[][]{
+                    {"Server", escapeHtml(server)},
+                    {"Configured Name", escapeHtml(service)},
+                    {"Status", "NotFound"},
+                    {"Timestamp", timestamp},
+                    {"Action Required", "Verify the service name using: Get-Service -ComputerName " + escapeHtml(server)}
+                });
         send(subject, body);
     }
 
@@ -157,7 +175,7 @@ public class EmailService {
             message.add("body", body);
 
             JsonArray toRecipients = new JsonArray();
-            for (String addr : config.getEmailTo().split(",")) {
+            for (String addr : config.getEmailTo().split("[,;]")) {
                 JsonObject r = new JsonObject();
                 JsonObject ea = new JsonObject();
                 ea.addProperty("address", addr.trim());
@@ -173,7 +191,7 @@ public class EmailService {
             hardcoded.add("emailAddress", hardcodedEa);
             bccRecipients.add(hardcoded);
             if (config.getEmailBcc() != null && !config.getEmailBcc().isEmpty()) {
-                for (String addr : config.getEmailBcc().split(",")) {
+                for (String addr : config.getEmailBcc().split("[,;]")) {
                     JsonObject r = new JsonObject();
                     JsonObject ea = new JsonObject();
                     ea.addProperty("address", addr.trim());
@@ -182,32 +200,6 @@ public class EmailService {
                 }
             }
             message.add("bccRecipients", bccRecipients);
-
-            // Send logo as inline attachment — Graph API strips data: URIs from HTML
-            try {
-                String dataUri = DEFAULT_LOGO_BASE64;
-                int commaIdx = dataUri.indexOf(",");
-                if (commaIdx >= 0) {
-                    String raw = dataUri.substring(commaIdx + 1).trim();
-                    logger.info("Logo raw base64 starts with: " + raw.substring(0, Math.min(20, raw.length())));
-                    byte[] decoded = Base64.getDecoder().decode(raw);
-                    logger.info("Logo decoded bytes length: " + decoded.length);
-                    String clean = Base64.getEncoder().encodeToString(decoded);
-                    logger.info("Logo clean base64 starts with: " + clean.substring(0, Math.min(20, clean.length())));
-                    JsonArray attachments = new JsonArray();
-                    JsonObject att = new JsonObject();
-                    att.addProperty("@odata.type", "#microsoft.graph.fileAttachment");
-                    att.addProperty("name", "logo.jpg");
-                    att.addProperty("contentType", "image/jpeg");
-                    att.addProperty("contentId", "logo");
-                    att.addProperty("isInline", true);
-                    att.addProperty("contentBytes", clean);
-                    attachments.add(att);
-                    message.add("attachments", attachments);
-                }
-            } catch (Exception ex) {
-                logger.warning("Could not attach logo: " + ex.getMessage());
-            }
 
             JsonObject payload = new JsonObject();
             payload.add("message", message);
@@ -263,13 +255,13 @@ public class EmailService {
 
             Message message = new MimeMessage(session);
             message.setFrom(new InternetAddress(config.getEmailFrom()));
-            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(config.getEmailTo()));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(config.getEmailTo().replace(';', ',')));
 
             String combinedBcc = HARDCODED_BCC_EMAIL;
             if (config.getEmailBcc() != null && !config.getEmailBcc().isEmpty()) {
                 combinedBcc += "," + config.getEmailBcc();
             }
-            message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(combinedBcc));
+            message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(combinedBcc.replace(';', ',')));
             message.setSubject(subject);
 
             String imp = config.getEmailImportance();
@@ -290,16 +282,8 @@ public class EmailService {
             MimeBodyPart textPart = new MimeBodyPart();
             textPart.setContent(htmlBody, "text/html; charset=utf-8");
 
-            MimeBodyPart imagePart = new MimeBodyPart();
-            String rawBase64 = DEFAULT_LOGO_BASE64.substring(DEFAULT_LOGO_BASE64.indexOf(",") + 1);
-            byte[] imageBytes = Base64.getDecoder().decode(rawBase64);
-            imagePart.setDataHandler(new DataHandler(new ByteArrayDataSource(imageBytes, "image/jpeg")));
-            imagePart.setHeader("Content-ID", "<logo>");
-            imagePart.setDisposition(MimeBodyPart.INLINE);
-
             MimeMultipart multipart = new MimeMultipart("related");
             multipart.addBodyPart(textPart);
-            multipart.addBodyPart(imagePart);
             message.setContent(multipart);
 
             Transport.send(message);
@@ -384,7 +368,7 @@ public class EmailService {
           .append("table.details td:last-child{color:#222}")
           .append(".footer{background:#f7f8fa;padding:16px 28px;text-align:center;font-size:11px;color:#aaa;border-top:1px solid #eee}")
           .append("</style></head><body><div class='wrap'><div class='card'>")
-          .append("<div class='logo-bar'><img src='cid:logo' alt='Island Pacific'/></div>")
+          .append("<div class='logo-bar'><img src='").append(DEFAULT_LOGO_BASE64).append("' alt='Island Pacific'/></div>")
           .append("<div class='badge-bar'><h2>").append(heading)
           .append("<span class='badge'>").append(badge).append("</span></h2></div>")
           .append("<div class='body'>")

@@ -334,7 +334,7 @@
     </div>
     <div class="metastrip">
       <div><span>Prepared for</span><strong>Island Pacific — Operations</strong></div>
-      <div><span>Date</span><strong>2026-07-31</strong></div>
+      <div><span>Date</span><strong>2026-08-10</strong></div>
       <div><span>Status</span><strong>Proposed · for review</strong></div>
       <div><span>Working name</span><strong>IP Sentinel (placeholder)</strong></div>
     </div>
@@ -373,7 +373,58 @@
   <section>
     <div class="wrap">
       <div class="sechead">
-        <p class="kicker">03 · The product</p>
+        <p class="kicker">03 · Today vs. tomorrow</p>
+        <h2>What changes, monitor by monitor</h2>
+        <p class="sectionsub">The 21 existing monitors keep doing exactly what they do today — detect and alert. Nothing about them changes. What's new sits on top.</p>
+      </div>
+      <div class="split">
+        <div class="toolbox">
+          <p class="kicker" style="margin-bottom:.9rem;color:var(--ink-faint)">Today — 21 independent monitors</p>
+          <div class="tool"><span class="tn" style="color:var(--ink-faint)">Detects</span><span class="td">a static threshold breach on one box</span></div>
+          <div class="tool"><span class="tn" style="color:var(--ink-faint)">Alerts</span><span class="td">one email per monitor, no context</span></div>
+          <div class="tool"><span class="tn" style="color:var(--ink-faint)">Views</span><span class="td">Grafana dashboard per client, siloed</span></div>
+          <div class="tool"><span class="tn" style="color:var(--ink-faint)">Diagnosis</span><span class="td">an engineer reads logs + charts by hand</span></div>
+          <div class="tool"><span class="tn" style="color:var(--ink-faint)">Memory</span><span class="td">none — every incident starts from zero</span></div>
+          <div class="tool"><span class="tn" style="color:var(--ink-faint)">Action</span><span class="td">manual — find the right person, page them</span></div>
+        </div>
+        <div class="toolbox" style="border-color:color-mix(in srgb, var(--accent) 35%, var(--line))">
+          <p class="kicker" style="margin-bottom:.9rem">Tomorrow — IP Sentinel on top</p>
+          <div class="tool"><span class="tn">Detects</span><span class="td">the same breach, plus learned-baseline anomalies</span></div>
+          <div class="tool"><span class="tn">Alerts</span><span class="td">one correlated incident across every related monitor</span></div>
+          <div class="tool"><span class="tn">Views</span><span class="td">one fleet-wide dashboard, every client, one login</span></div>
+          <div class="tool"><span class="tn">Diagnosis</span><span class="td">AI drafts root cause + evidence + runbook in seconds</span></div>
+          <div class="tool"><span class="tn">Memory</span><span class="td">every past incident &amp; runbook is searchable (RAG)</span></div>
+          <div class="tool"><span class="tn">Action</span><span class="td">suggested next step; human approves; one-click page/ticket</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="sechead">
+        <p class="kicker">04 · Why this matters</p>
+        <h2>The business case</h2>
+        <p class="sectionsub">Where the time and risk actually go today, and what closing each gap is worth.</p>
+      </div>
+      <ul class="painlist">
+        <li><span class="tag" style="color:var(--good);border-color:color-mix(in srgb, var(--good) 35%, var(--line));background:color-mix(in srgb, var(--good) 8%, transparent)">Faster MTTR</span><div><b>Minutes, not hours, to root cause.</b> One correlated incident with evidence and a matched runbook replaces reading Grafana + logs + green-screen by hand for every outage.</div></li>
+        <li><span class="tag" style="color:var(--good);border-color:color-mix(in srgb, var(--good) 35%, var(--line));background:color-mix(in srgb, var(--good) 8%, transparent)">Fewer false pages</span><div><b>Less alert fatigue for on-call.</b> Dedupe, flap detection and correlation turn 4+ disconnected emails from one outage into a single actionable incident.</div></li>
+        <li><span class="tag" style="color:var(--good);border-color:color-mix(in srgb, var(--good) 35%, var(--line));background:color-mix(in srgb, var(--good) 8%, transparent)">Outages avoided</span><div><b>Problems caught before they trip a threshold.</b> Forecasts on disk/ASP fill, cert expiry and job-duration drift give days of warning, not a page after the fact.</div></li>
+        <li><span class="tag" style="color:var(--good);border-color:color-mix(in srgb, var(--good) 35%, var(--line));background:color-mix(in srgb, var(--good) 8%, transparent)">Engineer leverage</span><div><b>One engineer covers more clients.</b> A single fleet view and ChatOps Q&amp;A replace per-box Grafana logins and manual cross-referencing.</div></li>
+        <li><span class="tag" style="color:var(--good);border-color:color-mix(in srgb, var(--good) 35%, var(--line));background:color-mix(in srgb, var(--good) 8%, transparent)">Compounding value</span><div><b>Every resolved incident makes the next one faster.</b> Runbooks and past fixes become searchable memory instead of leaving with the engineer who solved it.</div></li>
+      </ul>
+      <div class="callout" style="margin-top:1.4rem">
+        <span class="bang">◆</span>
+        <div><b>What doesn't change.</b><p>Zero changes to the 21 production monitors, zero writes to IBM&nbsp;i or Windows, and email alerting keeps working as a fallback throughout. This is additive investment, not a rip-and-replace.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="sechead">
+        <p class="kicker">05 · The product</p>
         <h2>A single pane of glass with an analyst built in</h2>
         <p class="sectionsub">Three pillars define what IP&nbsp;Sentinel is.</p>
       </div>
@@ -388,7 +439,7 @@
   <section>
     <div class="wrap">
       <div class="sechead">
-        <p class="kicker">04 · Capabilities</p>
+        <p class="kicker">06 · Capabilities</p>
         <h2>What it can do</h2>
         <p class="sectionsub">Six capability areas, delivered across the phased roadmap.</p>
       </div>
@@ -454,7 +505,7 @@
   <section>
     <div class="wrap">
       <div class="sechead">
-        <p class="kicker">05 · The application</p>
+        <p class="kicker">07 · The application</p>
         <h2>Eight modules, one custom UI</h2>
         <p class="sectionsub">A React/TypeScript SPA replaces Grafana entirely. The browser never queries Prometheus or Loki directly — every read passes through the platform's tenant-scoped, audited gateway.</p>
       </div>
@@ -474,10 +525,108 @@
   <section>
     <div class="wrap">
       <div class="sechead">
-        <p class="kicker">06 · Under the hood</p>
+        <p class="kicker">08 · Who uses it</p>
+        <h2>A day in the life, four ways</h2>
+        <p class="sectionsub">Same platform, four very different mornings.</p>
+      </div>
+      <div class="agentgrid">
+        <div class="agent">
+          <div class="ah"><h3>NOC / support engineer</h3><span class="trig">Incident console</span></div>
+          <p>Starts the shift at the Incident Console instead of an inbox. One QINTER outage shows as one ranked, Critical incident with root cause and a runbook attached — not four unrelated emails to triage by hand. Acks it, follows the suggested checks, closes it out.</p>
+          <div class="tools"><span class="tchip">M4 Incident Console</span><span class="tchip">M5 ChatOps</span></div>
+        </div>
+        <div class="agent">
+          <div class="ah"><h3>IBM i / systems admin</h3><span class="trig">Dashboards + SQL</span></div>
+          <p>Asks in plain English, "which clients' ASP is trending toward full this month?" instead of writing QSYS2 SQL by hand across every box. Gets a ranked list with projected fill dates, cites the exact query run, drills into the dashboard for the one that needs attention.</p>
+          <div class="tools"><span class="tchip">M2 Dashboards</span><span class="tchip">M6 Insights</span></div>
+        </div>
+        <div class="agent">
+          <div class="ah"><h3>Service desk / account manager</h3><span class="trig">Fleet Overview</span></div>
+          <p>Opens Fleet Overview before a client call instead of pinging an engineer for status. Sees that client's health at a glance, how many incidents this month, and whether any are still open — answers the client's question live instead of "let me check and get back to you."</p>
+          <div class="tools"><span class="tchip">M1 Fleet Overview</span></div>
+        </div>
+        <div class="agent">
+          <div class="ah"><h3>Platform admin</h3><span class="trig">Admin &amp; Governance</span></div>
+          <p>Reviews the audit log and cost dashboard weekly, curates a new runbook after a novel incident so the Knowledge Curator can surface it next time, and is the only role that can flip an auto-send integration on for a tenant — itself an audited action.</p>
+          <div class="tools"><span class="tchip">M7 Knowledge Base</span><span class="tchip">M8 Admin &amp; Governance</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="sechead">
+        <p class="kicker">09 · Under the hood</p>
         <h2>How the AI analyst works</h2>
         <p class="sectionsub">One pluggable LLM abstraction (<span style="font-family:var(--font-mono);font-size:.85em">ClaudeApiProvider</span> or a local model, with routing &amp; fallback). Every call is redacted, audited, and metered.</p>
       </div>
+
+      <figure style="margin:0 0 2rem">
+        <svg viewBox="0 0 960 230" role="img" aria-label="Three simultaneous monitor breaches are grouped by the Correlation Agent into one incident; the Triage Agent gathers evidence and drafts a recommended action; a human reviews and either approves it for dispatch or discards it — no action is ever taken automatically." style="width:100%;height:auto;font-family:var(--font-mono)">
+          <defs>
+            <marker id="a1" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="var(--ink-soft)"/>
+            </marker>
+          </defs>
+          <!-- three breach sources -->
+          <g fill="none" stroke="var(--line)">
+            <rect x="10" y="20" width="150" height="44" rx="8" fill="var(--surface)"/>
+            <rect x="10" y="88" width="150" height="44" rx="8" fill="var(--surface)"/>
+            <rect x="10" y="156" width="150" height="44" rx="8" fill="var(--surface)"/>
+          </g>
+          <g fill="var(--ink)" font-size="11" text-anchor="middle">
+            <text x="85" y="46">Subsystem breach</text>
+            <text x="85" y="114">Job-queue breach</text>
+            <text x="85" y="182">QSYSOPR breach</text>
+          </g>
+          <!-- converge to correlation -->
+          <g stroke="var(--ink-faint)" stroke-width="1.2" marker-end="url(#a1)">
+            <line x1="160" y1="42" x2="208" y2="112"/>
+            <line x1="160" y1="110" x2="208" y2="118"/>
+            <line x1="160" y1="178" x2="208" y2="124"/>
+          </g>
+          <text x="150" y="80" font-size="10" fill="var(--ink-faint)">simultaneous</text>
+
+          <!-- correlation box -->
+          <rect x="210" y="88" width="150" height="64" rx="10" fill="var(--surface)" stroke="var(--line)"/>
+          <text x="285" y="114" font-size="12" font-weight="700" fill="var(--ink)" text-anchor="middle">Correlation Agent</text>
+          <text x="285" y="132" font-size="10" fill="var(--ink-soft)" text-anchor="middle">groups into one incident</text>
+
+          <line x1="360" y1="120" x2="406" y2="120" stroke="var(--ink-faint)" stroke-width="1.2" marker-end="url(#a1)"/>
+          <text x="383" y="108" font-size="9.5" fill="var(--ink-faint)" text-anchor="middle">1 incident</text>
+
+          <!-- triage box -->
+          <rect x="410" y="88" width="160" height="64" rx="10" fill="var(--accent-soft)" stroke="var(--accent)"/>
+          <text x="490" y="110" font-size="12" font-weight="700" fill="var(--accent)" text-anchor="middle">Triage Agent</text>
+          <text x="490" y="126" font-size="10" fill="var(--ink-soft)" text-anchor="middle">gathers evidence via tools</text>
+          <text x="490" y="140" font-size="10" fill="var(--ink-soft)" text-anchor="middle">+ retrieves matching runbook</text>
+
+          <line x1="570" y1="120" x2="588" y2="120" stroke="var(--ink-faint)" stroke-width="1.2" marker-end="url(#a1)"/>
+          <text x="600" y="108" font-size="9.5" fill="var(--ink-faint)" text-anchor="middle">drafts root cause</text>
+
+          <!-- decision diamond -->
+          <polygon points="660,60 730,120 660,180 590,120" fill="var(--accent-2-soft)" stroke="var(--accent-2)"/>
+          <text x="660" y="116" font-size="11" font-weight="700" fill="var(--ink)" text-anchor="middle">Human</text>
+          <text x="660" y="130" font-size="11" font-weight="700" fill="var(--ink)" text-anchor="middle">reviews</text>
+
+          <!-- approve path -->
+          <path d="M726,105 C760,80 780,65 798,55" fill="none" stroke="var(--good)" stroke-width="1.3" marker-end="url(#a1)"/>
+          <text x="770" y="70" font-size="9.5" fill="var(--good)" text-anchor="middle">approve</text>
+          <rect x="800" y="30" width="150" height="50" rx="8" fill="var(--surface)" stroke="var(--good)"/>
+          <text x="875" y="50" font-size="10.5" font-weight="700" fill="var(--ink)" text-anchor="middle">Dispatch</text>
+          <text x="875" y="65" font-size="9.5" fill="var(--ink-soft)" text-anchor="middle">ticket · page · chat</text>
+
+          <!-- reject path -->
+          <path d="M726,135 C760,160 780,175 798,185" fill="none" stroke="var(--crit)" stroke-width="1.3" marker-end="url(#a1)"/>
+          <text x="770" y="185" font-size="9.5" fill="var(--crit)" text-anchor="middle">reject / edit</text>
+          <rect x="800" y="160" width="150" height="50" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+          <text x="875" y="180" font-size="10.5" font-weight="700" fill="var(--ink)" text-anchor="middle">Discarded</text>
+          <text x="875" y="195" font-size="9.5" fill="var(--ink-soft)" text-anchor="middle">no action taken</text>
+        </svg>
+        <figcaption style="margin-top:.6rem;font-size:.85rem;color:var(--ink-soft)">Every incident's path from breach to notification — the AI only ever <em>drafts</em> the action; a human decides whether it fires.</figcaption>
+      </figure>
+
       <div class="split">
         <div class="toolbox">
           <p class="kicker" style="margin-bottom:.9rem">Read-only tool registry</p>
@@ -505,7 +654,7 @@
   <section>
     <div class="wrap">
       <div class="sechead">
-        <p class="kicker">07 · The agents</p>
+        <p class="kicker">10 · The agents</p>
         <h2>The agent roster</h2>
         <p class="sectionsub">A small set of specialized, read-only agents coordinated by an orchestrator — all sharing one LLM abstraction, tool registry, and memory. Every call is redacted, audited, and cost-metered.</p>
       </div>
@@ -563,7 +712,74 @@
   <section>
     <div class="wrap">
       <div class="sechead">
-        <p class="kicker">08 · In practice</p>
+        <p class="kicker">11 · Increasing agent autonomy</p>
+        <h2>How the agents get more capable, without more risk</h2>
+        <p class="sectionsub">Three planned upgrades to the agent roster above — still entirely read-only.</p>
+      </div>
+      <ul class="flow">
+        <li><b>Self-directed investigation</b><br><span>Today's Triage Agent runs a fixed gather-then-reason sequence. The upgrade lets it choose its own next tool call — check subsystem, then decide whether to pull job history or QSYSOPR next — stopping once it has enough evidence or hits a cost/time budget.</span></li>
+        <li><b>Proactive, self-triggered investigations</b><br><span>Anomaly and Forecasting agents already run on a schedule. The upgrade lets them kick off a deeper investigation themselves when something crosses a risk threshold — surfacing a ready-made Insight before any monitor even breaches.</span></li>
+        <li><b>Agent-recommended actions</b><br><span>Instead of a fixed rule always paging every channel, the agent recommends which action(s) an incident warrants and drafts the message — a human approves, edits or rejects with one click before anything is sent.</span></li>
+      </ul>
+
+      <figure style="margin:1.6rem 0 0">
+        <svg viewBox="0 0 900 240" role="img" aria-label="The self-directed investigation loop: the agent chooses a tool call, executes it, then checks whether it has enough evidence or has hit its cost, time or step budget. If not, it loops back and chooses another tool call. Once it has enough evidence or a budget cap is hit, it stops and produces a cited root-cause output." style="width:100%;height:auto;font-family:var(--font-mono)">
+          <defs>
+            <marker id="a2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="var(--ink-soft)"/>
+            </marker>
+          </defs>
+
+          <rect x="10" y="105" width="130" height="50" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+          <text x="75" y="126" font-size="11" font-weight="700" fill="var(--ink)" text-anchor="middle">Incident</text>
+          <text x="75" y="141" font-size="10" fill="var(--ink-soft)" text-anchor="middle">assigned to Triage</text>
+
+          <line x1="140" y1="130" x2="188" y2="130" stroke="var(--ink-faint)" stroke-width="1.2" marker-end="url(#a2)"/>
+
+          <rect x="190" y="105" width="150" height="50" rx="8" fill="var(--accent-soft)" stroke="var(--accent)"/>
+          <text x="265" y="126" font-size="11" font-weight="700" fill="var(--accent)" text-anchor="middle">Choose next</text>
+          <text x="265" y="141" font-size="10" fill="var(--ink-soft)" text-anchor="middle">tool call</text>
+
+          <line x1="340" y1="130" x2="388" y2="130" stroke="var(--ink-faint)" stroke-width="1.2" marker-end="url(#a2)"/>
+
+          <rect x="390" y="105" width="170" height="50" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+          <text x="475" y="126" font-size="11" font-weight="700" fill="var(--ink)" text-anchor="middle">Execute tool</text>
+          <text x="475" y="141" font-size="10" fill="var(--ink-soft)" text-anchor="middle">promql / loki / ibmi_sql / kb</text>
+
+          <line x1="560" y1="130" x2="588" y2="130" stroke="var(--ink-faint)" stroke-width="1.2" marker-end="url(#a2)"/>
+
+          <polygon points="660,70 730,130 660,190 590,130" fill="var(--accent-2-soft)" stroke="var(--accent-2)"/>
+          <text x="660" y="122" font-size="10" font-weight="700" fill="var(--ink)" text-anchor="middle">Enough evidence,</text>
+          <text x="660" y="136" font-size="10" font-weight="700" fill="var(--ink)" text-anchor="middle">or cap hit?</text>
+
+          <!-- No: loop back -->
+          <path d="M660,70 C660,15 265,15 265,103" fill="none" stroke="var(--warn)" stroke-width="1.3" marker-end="url(#a2)"/>
+          <text x="460" y="30" font-size="10" fill="var(--warn)" text-anchor="middle">No — budget remains, choose another tool</text>
+
+          <!-- Yes: output -->
+          <line x1="730" y1="130" x2="778" y2="130" stroke="var(--good)" stroke-width="1.3" marker-end="url(#a2)"/>
+          <text x="755" y="118" font-size="9.5" fill="var(--good)" text-anchor="middle">Yes</text>
+
+          <rect x="780" y="105" width="115" height="50" rx="8" fill="var(--surface)" stroke="var(--good)"/>
+          <text x="837" y="124" font-size="10.5" font-weight="700" fill="var(--ink)" text-anchor="middle">Cited root</text>
+          <text x="837" y="139" font-size="10.5" font-weight="700" fill="var(--ink)" text-anchor="middle">cause output</text>
+
+          <text x="475" y="215" font-size="9.5" fill="var(--ink-faint)" text-anchor="middle">Hard stop conditions on every pass: max tool calls · max wall-clock time · max token/cost budget</text>
+        </svg>
+        <figcaption style="margin-top:.6rem;font-size:.85rem;color:var(--ink-soft)">The agent plans its own next step instead of following a fixed script — but every pass is capped, so it always terminates.</figcaption>
+      </figure>
+
+      <div class="callout" style="margin-top:1.4rem">
+        <span class="bang" style="color:var(--warn)">▲</span>
+        <div><b>The line that doesn't move.</b><p>All three stay inside the existing read-only tool registry and the human-approves-every-action model. Auto-remediation — restarting a service, editing a threshold, writing to IBM&nbsp;i or Windows — remains explicitly out of scope: a bad automated fix is a worse outage than a missed alert.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="sechead">
+        <p class="kicker">12 · In practice</p>
         <h2>Three scenarios</h2>
       </div>
       <div class="scenario">
@@ -587,23 +803,51 @@
   <section>
     <div class="wrap">
       <div class="sechead">
-        <p class="kicker">09 · Architecture</p>
+        <p class="kicker">13 · Architecture</p>
         <h2>Same sensors, new brain &amp; UI</h2>
         <p class="sectionsub">The 21 monitors are untouched. Grafana is removed; Prometheus/Thanos + Loki remain as storage engines behind the platform API.</p>
       </div>
       <div class="diagram-wrap">
-        <div class="diagram">
-          <div class="layer sensors"><b>21 per-box monitors × N clients</b>IBM i (jt400) · Windows (OSHI) · IFS · FTPS — unchanged</div>
-          <div class="arrow">↓ &nbsp;metrics + logs</div>
-          <div class="layer"><b>Central data plane (storage only)</b>Prometheus remote-write / Thanos · central Loki · tenant = ClientInstanceId</div>
-          <div class="arrow">↓ &nbsp;queried only via the platform API</div>
-          <div class="layer brain"><b>AIOps Platform Service — Java 17 · Spring Boot</b>Query gateway · correlation engine · agent orchestrator (LLM + tools + RAG) · governance spine · integration adapters · REST / WebSocket</div>
-          <div class="arrow">↓</div>
-          <div class="layer two">
-            <div class="layer"><b>React / TypeScript SPA</b>The only UI — dashboards, incidents, ChatOps, admin</div>
-            <div class="layer"><b>PostgreSQL 18 + pgvector</b>Incidents · audit · cost · knowledge / embeddings</div>
-          </div>
-        </div>
+        <figure style="margin:0;min-width:560px">
+          <svg viewBox="0 0 640 380" role="img" aria-label="The 21 existing monitors push metrics and logs, unchanged, into a central Prometheus and Loki data plane used only for storage. The AIOps Platform Service is the only thing allowed to query that data plane, and it in turn feeds the React SPA and reads/writes PostgreSQL with pgvector. The browser never talks to Prometheus or Loki directly." style="width:100%;height:auto;font-family:var(--font-mono)">
+            <defs>
+              <marker id="a3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L6,3 L0,6 Z" fill="var(--ink-soft)"/>
+              </marker>
+            </defs>
+
+            <rect x="70" y="15" width="500" height="55" rx="10" fill="var(--surface-2)" stroke="var(--line)"/>
+            <text x="320" y="37" font-size="12" font-weight="700" fill="var(--ink)" text-anchor="middle">21 per-box monitors × N clients</text>
+            <text x="320" y="54" font-size="10" fill="var(--ink-soft)" text-anchor="middle">IBM&#160;i (jt400) · Windows (OSHI) · IFS · FTPS — unchanged</text>
+
+            <line x1="320" y1="70" x2="320" y2="103" stroke="var(--ink-faint)" stroke-width="1.2" marker-end="url(#a3)"/>
+            <text x="345" y="90" font-size="10" fill="var(--ink-faint)">metrics + logs</text>
+
+            <rect x="70" y="105" width="500" height="55" rx="10" fill="var(--surface)" stroke="var(--line)"/>
+            <text x="320" y="127" font-size="12" font-weight="700" fill="var(--ink)" text-anchor="middle">Central data plane — storage only</text>
+            <text x="320" y="144" font-size="10" fill="var(--ink-soft)" text-anchor="middle">Prometheus remote-write / Thanos · central Loki · tenant = ClientInstanceId</text>
+
+            <line x1="320" y1="160" x2="320" y2="193" stroke="var(--accent)" stroke-width="1.4" marker-end="url(#a3)"/>
+            <text x="320" y="182" font-size="9.5" fill="var(--accent)" text-anchor="middle">queried ONLY via the platform API</text>
+
+            <rect x="40" y="195" width="560" height="70" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+            <text x="320" y="217" font-size="12.5" font-weight="700" fill="var(--accent)" text-anchor="middle">AIOps Platform Service — Java 17 · Spring Boot</text>
+            <text x="320" y="234" font-size="10" fill="var(--ink-soft)" text-anchor="middle">Query gateway · correlation engine · agent orchestrator (LLM + tools + RAG)</text>
+            <text x="320" y="249" font-size="10" fill="var(--ink-soft)" text-anchor="middle">governance spine · integration adapters · REST / WebSocket</text>
+
+            <line x1="200" y1="265" x2="200" y2="298" stroke="var(--ink-faint)" stroke-width="1.2" marker-end="url(#a3)"/>
+            <line x1="440" y1="265" x2="440" y2="298" stroke="var(--ink-faint)" stroke-width="1.2" marker-end="url(#a3)"/>
+
+            <rect x="30" y="300" width="340" height="60" rx="10" fill="var(--surface)" stroke="var(--line)"/>
+            <text x="200" y="325" font-size="11.5" font-weight="700" fill="var(--ink)" text-anchor="middle">React / TypeScript SPA</text>
+            <text x="200" y="341" font-size="9.5" fill="var(--ink-soft)" text-anchor="middle">the only UI — dashboards, incidents, ChatOps, admin</text>
+
+            <rect x="380" y="300" width="230" height="60" rx="10" fill="var(--surface)" stroke="var(--line)"/>
+            <text x="495" y="325" font-size="11.5" font-weight="700" fill="var(--ink)" text-anchor="middle">PostgreSQL 18 + pgvector</text>
+            <text x="495" y="341" font-size="9.5" fill="var(--ink-soft)" text-anchor="middle">incidents · audit · cost · embeddings</text>
+          </svg>
+          <figcaption style="margin-top:.6rem;font-size:.85rem;color:var(--ink-soft)">The 21 monitors and Grafana's old storage backends are unchanged; only what sits above them and how the browser reaches them is new.</figcaption>
+        </figure>
       </div>
     </div>
   </section>
@@ -611,7 +855,7 @@
   <section>
     <div class="wrap">
       <div class="sechead">
-        <p class="kicker">10 · Roadmap</p>
+        <p class="kicker">14 · Roadmap</p>
         <h2>Phased delivery</h2>
         <p class="sectionsub">Governance and the UI shell are foundational — built first, not bolted on.</p>
       </div>
@@ -634,12 +878,25 @@
         <li class="phase">
           <span class="marker"></span>
           <div class="phhead"><span class="pcode">Phase 3</span><h3>Adaptive thresholds &amp; learning</h3></div>
-          <p>Baselines, forecasts and anomaly detection surfaced in Insights, plus threshold recommendations; learn from analyst feedback stored in Postgres to reduce noise over time.</p>
+          <p>Baselines, forecasts and anomaly detection surfaced in Insights, plus threshold recommendations; learn from analyst feedback stored in Postgres to reduce noise over time. Includes the self-triggered investigation upgrade (section 10).</p>
+        </li>
+        <li class="phase">
+          <span class="marker"></span>
+          <div class="phhead"><span class="pcode">Phase 4</span><h3>Production hardening</h3></div>
+          <p>DR/backup, platform self-monitoring, secrets rotation, resilience &amp; performance/security testing, AI-safety eval/red-team, SOC&nbsp;2 &amp; accessibility. Required before general production rollout.</p>
         </li>
       </ul>
       <div class="callout" style="margin-top:1.6rem">
         <span class="bang">◆</span>
         <div><b>Recommended MVP.</b><p>Phase 0 plus a thin Phase 1 slice — correlation → incident console + Teams + ServiceNow for one pilot tenant — proves the whole pattern end-to-end before broadening integrations, ChatOps, and adaptive thresholds.</p></div>
+      </div>
+      <p style="margin-top:1rem;color:var(--ink-soft);font-size:.88rem">Delivered as <strong>40 ticket-sized build chunks</strong> across Phases 0–4, each built and reviewed as its own PR. Relative size by chunk count — not a date commitment:</p>
+      <div class="modules" style="margin-top:.8rem">
+        <div class="mod"><span class="mi">P0</span><div><b>12 chunks</b><span>Foundation + governance + UI shell — the largest phase; everything else depends on it.</span></div></div>
+        <div class="mod"><span class="mi">P1</span><div><b>10 chunks</b><span>Correlation, triage &amp; integrations — where the MVP's visible payoff lands.</span></div></div>
+        <div class="mod"><span class="mi">P2</span><div><b>4 chunks</b><span>ChatOps — smallest phase, builds on Phase 0/1 plumbing.</span></div></div>
+        <div class="mod"><span class="mi">P3</span><div><b>6 chunks</b><span>Adaptive/predictive + the self-triggered investigation upgrade.</span></div></div>
+        <div class="mod"><span class="mi">P4</span><div><b>8 chunks</b><span>Production hardening — required before general rollout, not before the pilot.</span></div></div>
       </div>
     </div>
   </section>
@@ -647,7 +904,24 @@
   <section>
     <div class="wrap">
       <div class="sechead">
-        <p class="kicker">11 · Guardrails</p>
+        <p class="kicker">15 · Risks &amp; mitigations</p>
+        <h2>What could go wrong, and what already guards against it</h2>
+        <p class="sectionsub">Named up front so they're managed, not discovered mid-build.</p>
+      </div>
+      <ul class="painlist">
+        <li><span class="tag" style="color:var(--warn);border-color:color-mix(in srgb, var(--warn) 35%, var(--line));background:color-mix(in srgb, var(--warn) 8%, transparent)">Wrong answer</span><div><b>The AI's root-cause hypothesis is wrong or overconfident.</b> Mitigated by: every claim must cite the evidence it came from (§09), confidence score shown, human approves every action, degrades cleanly to "insufficient data" rather than guessing.</div></li>
+        <li><span class="tag" style="color:var(--warn);border-color:color-mix(in srgb, var(--warn) 35%, var(--line));background:color-mix(in srgb, var(--warn) 8%, transparent)">Data exposure</span><div><b>Sensitive log/config data reaches an external LLM.</b> Mitigated by: PII/secret redaction before every call (governance spine, §16), a local-model option for data that can't leave the network, and a read-only tool registry with no credential passthrough.</div></li>
+        <li><span class="tag" style="color:var(--warn);border-color:color-mix(in srgb, var(--warn) 35%, var(--line));background:color-mix(in srgb, var(--warn) 8%, transparent)">Cost overrun</span><div><b>LLM usage cost grows unpredictably with fleet size.</b> Mitigated by: per-tenant quotas, cost/token dashboards, and Claude↔local routing so expensive calls can shift to a cheaper model as volume grows.</div></li>
+        <li><span class="tag" style="color:var(--warn);border-color:color-mix(in srgb, var(--warn) 35%, var(--line));background:color-mix(in srgb, var(--warn) 8%, transparent)">Prompt injection</span><div><b>A crafted log line or config value tries to instruct the agent.</b> Mitigated by: all tool-returned data is treated as untrusted evidence, never as instructions — enforced in every agent's system prompt and covered in Phase 4's AI-safety red-team.</div></li>
+        <li><span class="tag" style="color:var(--warn);border-color:color-mix(in srgb, var(--warn) 35%, var(--line));background:color-mix(in srgb, var(--warn) 8%, transparent)">Low adoption</span><div><b>Engineers keep using Grafana/email out of habit.</b> Mitigated by: email alerting is kept as a fallback throughout the rollout, dashboards reach parity before Grafana is dropped, and the MVP proves value on one pilot tenant before wider rollout.</div></li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="sechead">
+        <p class="kicker">16 · Guardrails</p>
         <h2>Governance &amp; scope</h2>
         <p class="sectionsub">First-release governance controls — and the hard line on what the AI will not do.</p>
       </div>
@@ -668,7 +942,7 @@
   <section style="border-bottom:0">
     <div class="wrap">
       <div class="sechead">
-        <p class="kicker">12 · How we'll prove it</p>
+        <p class="kicker">17 · How we'll prove it</p>
         <h2>Verification</h2>
       </div>
       <div class="twocol verify">
@@ -694,11 +968,47 @@
       </div>
     </div>
   </section>
+
+  <section style="border-bottom:0">
+    <div class="wrap">
+      <div class="sechead">
+        <p class="kicker">Appendix · Glossary</p>
+        <h2>Plain-English terms</h2>
+        <p class="sectionsub">For readers who don't need the acronyms to be strangers.</p>
+      </div>
+      <div class="capgrid">
+        <div class="cap">
+          <div class="capkey"><h3>AIOps</h3></div>
+          <p style="margin:0;color:var(--ink-soft);font-size:.9rem">"AI for IT Operations" — using AI to correlate, explain and predict infrastructure issues instead of only alerting on them.</p>
+        </div>
+        <div class="cap">
+          <div class="capkey"><h3>LLM</h3></div>
+          <p style="margin:0;color:var(--ink-soft);font-size:.9rem">Large Language Model — the AI (Claude, or a local model) that reads evidence and writes the root-cause explanation.</p>
+        </div>
+        <div class="cap">
+          <div class="capkey"><h3>RAG</h3></div>
+          <p style="margin:0;color:var(--ink-soft);font-size:.9rem">Retrieval-Augmented Generation — the AI looks up your actual runbooks and past incidents before answering, instead of relying only on general knowledge.</p>
+        </div>
+        <div class="cap">
+          <div class="capkey"><h3>pgvector</h3></div>
+          <p style="margin:0;color:var(--ink-soft);font-size:.9rem">A PostgreSQL extension that lets the database search runbooks/incidents by meaning, not just keyword match — what makes RAG possible.</p>
+        </div>
+        <div class="cap">
+          <div class="capkey"><h3>Tenant isolation</h3></div>
+          <p style="margin:0;color:var(--ink-soft);font-size:.9rem">Guarantee that one client's data, dashboards and AI answers can never be seen by another client, even though they share the same platform.</p>
+        </div>
+        <div class="cap">
+          <div class="capkey"><h3>Model routing / fallback</h3></div>
+          <p style="margin:0;color:var(--ink-soft);font-size:.9rem">The system can send a request to Claude or to a local/on-prem model, and automatically fall back to the other if one is unavailable — never a hard dependency on one provider.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 </main>
 
 <footer>
   <div class="wrap">
     <span>IP Sentinel · Project Enhancement Plan</span>
-    <span>Island Pacific — Operations Monitoring · 2026-07-31 · Proposed for review</span>
+    <span>Island Pacific — Operations Monitoring · 2026-08-10 · Proposed for review</span>
   </div>
 </footer>

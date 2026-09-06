@@ -1,260 +1,231 @@
 package com.islandpacific.monitoring.ibmnetworkenabler;
 
 import com.ibm.as400.access.*;
+import com.islandpacific.monitoring.common.AppLogger;
+import com.islandpacific.monitoring.common.CredentialProtector;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.Statement;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class MainNetworkEnabler {
 
-    // These will now be loaded from a properties file
+    private static final Logger logger = Logger.getLogger(MainNetworkEnabler.class.getName());
+
     private static String SYSTEM_NAME;
     private static String USERNAME;
     private static String PASSWORD;
-    private static int MONITOR_INTERVAL_MS; // Changed to milliseconds
-
-    private static final String PROPERTIES_FILE_NAME = "networkenable.properties"; // Centralized properties file name
+    private static int MONITOR_INTERVAL_MS;
 
     @SuppressWarnings("deprecation")
     public static void main(String[] args) {
-        // Ensure the custom LogManager is initialized
-        // The static block in LogManager will handle its setup.
+        String emailPropsFile = args.length >= 1 ? args[0] : "email.properties";
+        String monitorPropsFile = args.length >= 2 ? args[1] : "ibmnetworkenabler.properties";
 
         ScheduledExecutorService scheduler = null;
 
         try {
-            // Load configuration from properties file
-            loadConfiguration();
+            loadConfiguration(emailPropsFile, monitorPropsFile);
 
-            // Initialize the scheduler
-            scheduler = Executors.newSingleThreadScheduledExecutor();
+            scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "network-enabler");
+                t.setDaemon(true);
+                return t;
+            });
 
-            LogManager.info("IBM i NetServer User Enabler service starting. Checking every " + (MONITOR_INTERVAL_MS / 1000 / 60) + " minutes (" + MONITOR_INTERVAL_MS + " ms).");
+            logger.info("IBM i NetServer User Enabler service starting. Checking every "
+                    + (MONITOR_INTERVAL_MS / 1000 / 60) + " minutes.");
 
-            // Schedule the task to run periodically
             scheduler.scheduleAtFixedRate(() -> {
-                AS400 system = null; // AS400 system object for the current task run
+                AS400 system = null;
                 try {
-                    LogManager.info("\n--- Starting new scan for disabled NetServer users ---");
-
-                    // 1. Establish connection to the IBM i system
-                    LogManager.info("Attempting to connect to IBM i system: " + SYSTEM_NAME + "...");
+                    logger.info("--- Starting new scan for disabled NetServer users ---");
                     system = new AS400(SYSTEM_NAME, USERNAME, PASSWORD);
-                    system.connectService(AS400.COMMAND); // Connect to the command service
-                    LogManager.info("Successfully connected to IBM i system.");
+                    system.connectService(AS400.COMMAND);
+                    logger.info("Connected to IBM i system: " + SYSTEM_NAME);
 
-                    // 2. Get all disabled NetServer users
-                    List<String> disabledUsers = getDisabledNetServerUsers(system);
+                    List<String> disabledUsers = getDisabledNetServerUsers();
 
                     if (disabledUsers.isEmpty()) {
-                        LogManager.info("No NetServer users found with disabled access. No action needed.");
+                        logger.info("No NetServer users found with disabled access.");
                     } else {
-                        LogManager.info("\n--- Found " + disabledUsers.size() + " disabled NetServer users ---");
+                        logger.info("Found " + disabledUsers.size() + " disabled NetServer user(s).");
                         for (String userProfile : disabledUsers) {
-                            LogManager.info("\nProcessing user: " + userProfile);
-                            LogManager.info("NetServer access for user '" + userProfile + "' is currently DISABLED. Attempting to enable using QZLSCHSI API...");
-
-                            // 3. Enable NetServer access using the QZLSCHSI API for the current user
+                            logger.info("Processing user: " + userProfile);
                             try {
                                 callQZLSCHSIAPI(system, userProfile);
-                                LogManager.info("Attempted to enable NetServer access for user '" + userProfile + "' using QZLSCHSI API.");
-
-                                // Optional: Verify the change after attempting to enable
-                                LogManager.info("Verifying status after attempting to enable for " + userProfile + "...");
-                                if (!isNetServerDisabled(system, userProfile)) {
-                                    LogManager.info("Verification successful: NetServer access for '" + userProfile + "' is now ENABLED.");
+                                logger.info("QZLSCHSI called for user '" + userProfile + "'.");
+                                if (!isNetServerDisabled(userProfile)) {
+                                    logger.info("Verified: NetServer access for '" + userProfile + "' is now ENABLED.");
                                 } else {
-                                    LogManager.warning("Verification note: QSYS2.USER_INFO still reports NetServer access for '" + userProfile + "' as DISABLED. However, QZLSCHSI API has been executed, which should grant access. Please verify connectivity manually.");
+                                    logger.warning("Verification: QSYS2.USER_INFO still reports '" + userProfile + "' as DISABLED after API call.");
                                 }
                             } catch (Exception e) {
-                                LogManager.severe("Error enabling NetServer access for user '" + userProfile + "': " + e.getMessage(), e);
+                                logger.log(Level.SEVERE, "Error enabling NetServer for '" + userProfile + "': " + e.getMessage(), e);
                             }
                         }
-                        LogManager.info("\n--- Finished processing all disabled NetServer users ---");
+                        logger.info("--- Finished processing disabled NetServer users ---");
                     }
 
                 } catch (AS400SecurityException e) {
-                    LogManager.severe("Security error connecting to IBM i: " + e.getMessage(), e);
+                    logger.log(Level.SEVERE, "Security error connecting to IBM i: " + e.getMessage(), e);
                 } catch (ErrorCompletingRequestException e) {
-                    LogManager.severe("Error completing request: " + e.getMessage(), e);
+                    logger.log(Level.SEVERE, "Error completing request: " + e.getMessage(), e);
                 } catch (InterruptedException e) {
-                    LogManager.severe("Operation interrupted: " + e.getMessage(), e);
-                } catch (java.io.IOException e) {
-                    LogManager.severe("I/O error during scan: " + e.getMessage(), e);
+                    logger.log(Level.SEVERE, "Operation interrupted: " + e.getMessage(), e);
+                } catch (IOException e) {
+                    logger.log(Level.SEVERE, "I/O error during scan: " + e.getMessage(), e);
                 } catch (Exception e) {
-                    LogManager.severe("An unexpected error occurred during scan: " + e.getMessage(), e);
+                    logger.log(Level.SEVERE, "Unexpected error during scan: " + e.getMessage(), e);
                 } finally {
-                    // Disconnect from the IBM i system for the current task run
                     if (system != null) {
                         try {
                             system.disconnectAllServices();
-                            LogManager.info("Disconnected from IBM i system for current scan.");
                         } catch (Exception e) {
-                            LogManager.severe("Error during system disconnect: " + e.getMessage(), e);
+                            logger.log(Level.WARNING, "Error during system disconnect: " + e.getMessage(), e);
                         }
                     }
-                    LogManager.info("--- Scan completed ---");
+                    logger.info("--- Scan completed ---");
                 }
-            }, 0, MONITOR_INTERVAL_MS, TimeUnit.MILLISECONDS); // Changed to MILLISECONDS
+            }, 0, MONITOR_INTERVAL_MS, TimeUnit.MILLISECONDS);
 
-            // Add a shutdown hook to ensure graceful termination
-            final ScheduledExecutorService finalScheduler = scheduler; // Need final reference for lambda
+            final ScheduledExecutorService finalScheduler = scheduler;
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                LogManager.info("\nShutting down IBM i NetServer User Enabler gracefully...");
-                finalScheduler.shutdown(); // Initiate shutdown
+                logger.info("Shutting down IBM i NetServer User Enabler...");
+                finalScheduler.shutdown();
                 try {
-                    if (!finalScheduler.awaitTermination(30, TimeUnit.SECONDS)) { // Wait for tasks to finish
-                        LogManager.warning("Scheduler did not terminate in time, forcing shutdown.");
-                        finalScheduler.shutdownNow(); // Force shutdown if not terminated
+                    if (!finalScheduler.awaitTermination(30, TimeUnit.SECONDS)) {
+                        finalScheduler.shutdownNow();
                     }
                 } catch (InterruptedException e) {
-                    LogManager.warning("Shutdown interrupted.");
                     finalScheduler.shutdownNow();
+                    Thread.currentThread().interrupt();
                 }
-                LogManager.info("IBM i NetServer User Enabler shutdown complete.");
+                logger.info("Shutdown complete.");
             }));
 
+            Thread.currentThread().join();
+
         } catch (IOException e) {
-            LogManager.severe("Application failed to start due to configuration error: " + e.getMessage(), e);
-            System.exit(1); // Exit if configuration cannot be loaded
+            logger.severe("Failed to start due to configuration error: " + e.getMessage());
+            System.exit(1);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         } catch (Exception e) {
-            LogManager.severe("An unexpected error occurred during application startup: " + e.getMessage(), e);
+            logger.log(Level.SEVERE, "Unexpected error during startup: " + e.getMessage(), e);
             System.exit(1);
         }
     }
 
-
-    private static void loadConfiguration() throws IOException {
-        Properties properties = new Properties();
-        try (FileInputStream fis = new FileInputStream(PROPERTIES_FILE_NAME)) {
-            properties.load(fis);
-            SYSTEM_NAME = properties.getProperty("system.name");
-            USERNAME = properties.getProperty("username");
-            PASSWORD = properties.getProperty("password");
-            MONITOR_INTERVAL_MS = Integer.parseInt(properties.getProperty("monitor.interval.ms", "300000")); // Default to 300000 ms (5 minutes)
-
-            if (SYSTEM_NAME == null || USERNAME == null || PASSWORD == null) {
-                throw new IOException("Missing one or more required properties (system.name, username, password) in " + PROPERTIES_FILE_NAME);
-            }
-            LogManager.info("Configuration loaded from " + PROPERTIES_FILE_NAME + ".");
+    private static void loadConfiguration(String emailPropsFile, String monitorPropsFile) throws IOException {
+        Properties emailProps = new Properties();
+        try (FileInputStream fis = new FileInputStream(emailPropsFile)) {
+            emailProps.load(fis);
         }
+
+        Properties monitorProps = new Properties();
+        try (FileInputStream fis = new FileInputStream(monitorPropsFile)) {
+            monitorProps.load(fis);
+        }
+
+        String logLevel = emailProps.getProperty("log.level", "INFO");
+        String logFolder = emailProps.getProperty("log.folder", "logs");
+        int retentionDays = Integer.parseInt(emailProps.getProperty("log.retention.days", "30"));
+        int purgeIntervalHours = Integer.parseInt(emailProps.getProperty("log.purge.interval.hours", "24"));
+        AppLogger.setupLogger("ibmnetworkenabler", logLevel, logFolder);
+        AppLogger.startScheduledLogPurge(retentionDays, purgeIntervalHours);
+
+        SYSTEM_NAME = monitorProps.getProperty("ibmi.host");
+        USERNAME = monitorProps.getProperty("ibmi.user");
+        String passwordRaw = monitorProps.getProperty("ibmi.password");
+
+        if (SYSTEM_NAME == null || SYSTEM_NAME.trim().isEmpty()
+                || USERNAME == null || USERNAME.trim().isEmpty()
+                || passwordRaw == null || passwordRaw.trim().isEmpty()) {
+            throw new IOException("Missing required property: ibmi.host, ibmi.user, or ibmi.password in " + monitorPropsFile);
+        }
+        PASSWORD = CredentialProtector.resolve(passwordRaw);
+        MONITOR_INTERVAL_MS = Integer.parseInt(monitorProps.getProperty("monitor.interval.ms", "300000"));
+
+        logger.info("Configuration loaded. System: " + SYSTEM_NAME + ", interval: " + MONITOR_INTERVAL_MS + "ms");
     }
 
-
-    private static boolean isNetServerDisabled(AS400 system, String userProfile) throws Exception {
-        Connection jdbcConnection = null;
-        Statement stmt = null;
-        ResultSet rs = null;
-        boolean isDisabled = false;
-
-        try {
-            // Register the JTOpen JDBC driver
-            Class.forName("com.ibm.as400.access.AS400JDBCDriver");
-            // Use static SYSTEM_NAME, USERNAME, and PASSWORD for JDBC connection URL
-            String url = "jdbc:as400://" + SYSTEM_NAME + ";user=" + USERNAME + ";password=" + PASSWORD;
-            jdbcConnection = DriverManager.getConnection(url);
-
-            stmt = jdbcConnection.createStatement();
-
-            // SQL query to get the NETSERVER_DISABLED status
-            String sql = "SELECT NETSERVER_DISABLED FROM QSYS2.USER_INFO WHERE AUTHORIZATION_NAME = '" + userProfile.toUpperCase() + "'";
-            LogManager.fine("Executing SQL: " + sql);
-            rs = stmt.executeQuery(sql);
-
-            if (rs.next()) {
-                String netServerStatus = rs.getString("NETSERVER_DISABLED");
-                isDisabled = "YES".equalsIgnoreCase(netServerStatus);
-            } else {
-                LogManager.info("User profile '" + userProfile + "' not found on the IBM i system during verification.");
-            }
-        } finally {
-            // Close JDBC resources
-            if (rs != null) try { rs.close(); } catch (SQLException e) { LogManager.warning("Error closing ResultSet: " + e.getMessage()); }
-            if (stmt != null) try { stmt.close(); } catch (SQLException e) { LogManager.warning("Error closing Statement: " + e.getMessage()); }
-            if (jdbcConnection != null) try { jdbcConnection.close(); } catch (SQLException e) { LogManager.warning("Error closing JDBC Connection: " + e.getMessage()); }
-        }
-        return isDisabled;
-    }
-
-
-    private static List<String> getDisabledNetServerUsers(AS400 system) throws Exception {
+    private static List<String> getDisabledNetServerUsers() throws Exception {
         List<String> disabledUsers = new ArrayList<>();
-        Connection jdbcConnection = null;
-        Statement stmt = null;
-        ResultSet rs = null;
-
-        try {
-            Class.forName("com.ibm.as400.access.AS400JDBCDriver");
-            String url = "jdbc:as400://" + SYSTEM_NAME + ";user=" + USERNAME + ";password=" + PASSWORD;
-            jdbcConnection = DriverManager.getConnection(url);
-            stmt = jdbcConnection.createStatement();
-
-            // SQL query to get all authorization names where NETSERVER_DISABLED is 'YES'
-            String sql = "SELECT AUTHORIZATION_NAME FROM QSYS2.USER_INFO WHERE NETSERVER_DISABLED = 'YES'";
-            LogManager.info("Querying for disabled NetServer users: " + sql);
-            rs = stmt.executeQuery(sql);
-
+        Class.forName("com.ibm.as400.access.AS400JDBCDriver");
+        String url = "jdbc:as400://" + SYSTEM_NAME;
+        try (Connection conn = DriverManager.getConnection(url, USERNAME, PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(
+                     "SELECT AUTHORIZATION_NAME FROM QSYS2.USER_INFO WHERE NETSERVER_DISABLED = 'YES'");
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 disabledUsers.add(rs.getString("AUTHORIZATION_NAME"));
             }
-            LogManager.info("Found " + disabledUsers.size() + " users with disabled NetServer access.");
-
-        } finally {
-            if (rs != null) try { rs.close(); } catch (SQLException e) { LogManager.warning("Error closing ResultSet: " + e.getMessage()); }
-            if (stmt != null) try { stmt.close(); } catch (SQLException e) { LogManager.warning("Error closing Statement: " + e.getMessage()); }
-            if (jdbcConnection != null) try { jdbcConnection.close(); } catch (SQLException e) { LogManager.warning("Error closing JDBC Connection: " + e.getMessage()); }
         }
+        logger.info("Found " + disabledUsers.size() + " user(s) with disabled NetServer access.");
         return disabledUsers;
     }
 
+    private static boolean isNetServerDisabled(String userProfile) throws Exception {
+        Class.forName("com.ibm.as400.access.AS400JDBCDriver");
+        String url = "jdbc:as400://" + SYSTEM_NAME;
+        try (Connection conn = DriverManager.getConnection(url, USERNAME, PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(
+                     "SELECT NETSERVER_DISABLED FROM QSYS2.USER_INFO WHERE AUTHORIZATION_NAME = ?")) {
+            ps.setString(1, userProfile.toUpperCase());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return "YES".equalsIgnoreCase(rs.getString("NETSERVER_DISABLED"));
+                }
+            }
+        }
+        return false;
+    }
 
+    @SuppressWarnings("deprecation")
     private static void callQZLSCHSIAPI(AS400 system, String userProfile) throws Exception {
         ProgramCall programCall = new ProgramCall(system);
         ProgramParameter[] parmList = new ProgramParameter[4];
 
-        // Total length = 4 (for binary length) + 10 (for user profile) = 14 bytes
         int requestVarLength = 14;
         ByteBuffer requestVarBuffer = ByteBuffer.allocate(requestVarLength);
-        requestVarBuffer.order(ByteOrder.BIG_ENDIAN); // Changed to BIG_ENDIAN for typical IBM i binary integers
-        requestVarBuffer.putInt(10); // Length of user profile name
+        requestVarBuffer.order(ByteOrder.BIG_ENDIAN);
+        requestVarBuffer.putInt(10);
         String paddedUserProfile = String.format("%-10s", userProfile.toUpperCase());
         requestVarBuffer.put(new AS400Text(paddedUserProfile.length(), system.getCcsid(), system).toBytes(paddedUserProfile));
 
         parmList[0] = new ProgramParameter(requestVarBuffer.array());
         parmList[1] = new ProgramParameter(new AS400Bin4().toBytes(requestVarLength));
         parmList[2] = new ProgramParameter(new AS400Text(8, system.getCcsid(), system).toBytes("ZLSS0200"));
-
-        byte[] errorCode = new byte[8]; // Minimal error code structure
-        parmList[3] = new ProgramParameter(errorCode); // Output parameter for error information
+        parmList[3] = new ProgramParameter(new byte[8]);
 
         programCall.setProgram("/QSYS.LIB/QZLSCHSI.PGM", parmList);
-
-        LogManager.info("Calling QSYS/QZLSCHSI API for user: " + userProfile);
+        logger.info("Calling QZLSCHSI for user: " + userProfile);
 
         if (programCall.run()) {
-            LogManager.info("QZLSCHSI API call successful.");
-            AS400Message[] messageList = programCall.getMessageList();
-            for (int i = 0; i < messageList.length; ++i) {
-                LogManager.info("API message: " + messageList[i].getText());
+            for (AS400Message msg : programCall.getMessageList()) {
+                logger.info("API message: " + msg.getText());
             }
         } else {
-            AS400Message[] messageList = programCall.getMessageList();
-            for (int i = 0; i < messageList.length; ++i) {
-                LogManager.severe("API call failed. Message: " + messageList[i].getText());
+            StringBuilder sb = new StringBuilder("QZLSCHSI failed for '" + userProfile + "':");
+            for (AS400Message msg : programCall.getMessageList()) {
+                logger.severe("API error: " + msg.getText());
+                sb.append(" ").append(msg.getText());
             }
-            throw new Exception("Failed to call QSYS/QZLSCHSI API for user: " + userProfile);
+            throw new Exception(sb.toString());
         }
     }
 }

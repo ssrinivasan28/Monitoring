@@ -28,6 +28,9 @@ public class LogKeywordMonitorService {
     // Track matched lines per cycle: file -> keyword -> list of matching lines
     private final Map<String, Map<String, List<String>>> newMatchLines;
 
+    // Keywords already alerted for each file when alertOnFirstMatch=true
+    private final Map<String, Set<String>> alertedKeywords = new HashMap<>();
+
     // Persisted state file — survives service restarts so positions are not lost
     private static final String POSITIONS_STATE_FILE = "logs/processed/lkm_positions.properties";
 
@@ -142,6 +145,33 @@ public class LogKeywordMonitorService {
 
         // Send email alerts for any new matches
         sendAlertsForNewMatches();
+
+        // Evict tracked state for files that no longer exist (e.g. old date-stamped log
+        // files matched by a glob pattern) so memory/disk state doesn't grow without bound.
+        evictDeletedFiles();
+    }
+
+    private void evictDeletedFiles() {
+        List<String> stale = new ArrayList<>();
+        for (String trackedPath : filePositions.keySet()) {
+            if (!Files.exists(Paths.get(trackedPath))) {
+                stale.add(trackedPath);
+            }
+        }
+        if (stale.isEmpty()) {
+            return;
+        }
+        for (String path : stale) {
+            filePositions.remove(path);
+            totalMatchCounts.remove(path);
+            newMatchCounts.remove(path);
+            newMatchLines.remove(path);
+            linesScanned.remove(path);
+            readErrors.remove(path);
+            alertedKeywords.remove(path);
+        }
+        logger.info("Evicted tracking state for " + stale.size() + " no-longer-existing log file(s)");
+        persistPositions();
     }
 
     private void checkSingleLogFile(LogKeywordMonitorConfig.LogFileConfig logFileConfig, Path logPath)
@@ -173,40 +203,55 @@ public class LogKeywordMonitorService {
 
         logger.fine("Reading new data from " + logPathStr + " (position " + lastPosition + " to " + currentSize + ")");
 
-        // Read new lines from file using UTF-8; use a FileInputStream with skip to honour the byte offset
+        // Read new lines from file using UTF-8; use a FileInputStream with skip to honour the byte offset.
+        // Track bytes consumed by complete lines only — a trailing partial line (the writer hasn't flushed
+        // its terminating newline yet) must not advance the position, or the completed portion of that
+        // line is skipped forever once the writer finishes it.
         long linesRead = 0;
-        long newPosition = lastPosition;
+        long bytesConsumed = 0;
         try (java.io.FileInputStream fis = new java.io.FileInputStream(logPath.toFile())) {
             fis.skip(lastPosition);
-            try (java.io.BufferedReader reader = new java.io.BufferedReader(
-                    new java.io.InputStreamReader(fis, java.nio.charset.StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    linesRead++;
+            byte[] raw = fis.readAllBytes();
+            int lineStart = 0;
+            for (int i = 0; i < raw.length; i++) {
+                if (raw[i] != '\n') {
+                    continue;
+                }
+                int lineEnd = i;
+                // Strip a trailing \r so CRLF line endings don't leak into the matched text
+                if (lineEnd > lineStart && raw[lineEnd - 1] == '\r') {
+                    lineEnd--;
+                }
+                String line = new String(raw, lineStart, lineEnd - lineStart, java.nio.charset.StandardCharsets.UTF_8);
+                lineStart = i + 1;
+                bytesConsumed = lineStart;
+                linesRead++;
 
-                    Map<String, Integer> matches = logFileConfig.findMatches(line);
-                    if (!matches.isEmpty()) {
-                        logger.fine("Found matches in line: " + line.substring(0, Math.min(100, line.length())));
+                Map<String, Integer> matches = logFileConfig.findMatches(line);
+                if (!matches.isEmpty()) {
+                    logger.fine("Found matches in line: " + line.substring(0, Math.min(100, line.length())));
 
-                        totalMatchCounts.putIfAbsent(logPathStr, new ConcurrentHashMap<>());
-                        newMatchCounts.putIfAbsent(logPathStr, new ConcurrentHashMap<>());
-                        newMatchLines.putIfAbsent(logPathStr, new HashMap<>());
+                    totalMatchCounts.putIfAbsent(logPathStr, new ConcurrentHashMap<>());
+                    newMatchCounts.putIfAbsent(logPathStr, new ConcurrentHashMap<>());
+                    newMatchLines.putIfAbsent(logPathStr, new HashMap<>());
 
-                        for (Map.Entry<String, Integer> entry : matches.entrySet()) {
-                            String keyword = entry.getKey();
-                            int count = entry.getValue();
-                            totalMatchCounts.get(logPathStr).merge(keyword, (long) count, Long::sum);
-                            newMatchCounts.get(logPathStr).merge(keyword, (long) count, Long::sum);
-                            newMatchLines.get(logPathStr).computeIfAbsent(keyword, k -> new ArrayList<>()).add(line);
-                            logger.info("Keyword match: '" + keyword + "' in " + logPathStr);
+                    for (Map.Entry<String, Integer> entry : matches.entrySet()) {
+                        String keyword = entry.getKey();
+                        int count = entry.getValue();
+                        totalMatchCounts.get(logPathStr).merge(keyword, (long) count, Long::sum);
+                        if (logFileConfig.isAlertOnFirstMatch()) {
+                            Set<String> alerted = alertedKeywords.computeIfAbsent(logPathStr, k -> new HashSet<>());
+                            if (alerted.contains(keyword)) continue;
+                            alerted.add(keyword);
                         }
+                        newMatchCounts.get(logPathStr).merge(keyword, (long) count, Long::sum);
+                        newMatchLines.get(logPathStr).computeIfAbsent(keyword, k -> new ArrayList<>()).add(line);
+                        logger.info("Keyword match: '" + keyword + "' in " + logPathStr);
                     }
                 }
             }
-            // Record byte position as current file size (we read to EOF)
-            newPosition = currentSize;
         }
-        filePositions.put(logPathStr, newPosition);
+        filePositions.put(logPathStr, lastPosition + bytesConsumed);
         persistPositions();
         linesScanned.merge(logPathStr, linesRead, Long::sum);
         logger.fine("Scanned " + linesRead + " new lines from " + logPathStr);

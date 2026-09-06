@@ -61,18 +61,19 @@ public class ServerUptimeServiceTest {
     }
 
     @Test
-    public void initializeStatus_downServer_sendsDownAlert() {
+    public void initializeStatus_downServer_noAlertOnBaseline() {
         ServerUptimeService service = buildService(List.of("host-b"), Map.of("host-b", false));
 
         service.initializeStatus();
 
-        verify(emailService, times(1)).sendServerStatusAlert("host-b", false);
+        // Baseline scan: no alert sent — first DOWN is treated as unknown state, not a change
+        verify(emailService, never()).sendServerStatusAlert(anyString(), anyBoolean());
         assertEquals(currentStatus.get("host-b"), Boolean.FALSE);
         assertEquals(registry.getSampleValue("server_status_test", new String[]{"server"}, new String[]{"host-b"}), 0.0);
     }
 
     @Test
-    public void initializeStatus_multipleServers_alertOnlyDownOnes() {
+    public void initializeStatus_multipleServers_noAlertsOnBaseline() {
         ServerUptimeService service = buildService(
             List.of("up-host", "down-host"),
             Map.of("up-host", true, "down-host", false)
@@ -80,8 +81,8 @@ public class ServerUptimeServiceTest {
 
         service.initializeStatus();
 
-        verify(emailService, never()).sendServerStatusAlert(eq("up-host"), anyBoolean());
-        verify(emailService, times(1)).sendServerStatusAlert("down-host", false);
+        // Baseline scan sends no alerts for any server regardless of status
+        verify(emailService, never()).sendServerStatusAlert(anyString(), anyBoolean());
     }
 
     // --- checkAndAlert: no change ---

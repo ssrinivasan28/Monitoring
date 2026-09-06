@@ -1,5 +1,6 @@
 package com.islandpacific.monitoring.sharefilemonitoring;
 
+import com.islandpacific.monitoring.common.CredentialProtector;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
@@ -39,7 +40,7 @@ public class MainShareFileMonitor {
 
             String ftpHost = config.getMonitorProps().getProperty("ftp.host", "islandpacific.sharefileftp.com");
             String ftpUser = config.getMonitorProps().getProperty("ftp.username");
-            String ftpPass = config.getMonitorProps().getProperty("ftp.password");
+            String ftpPass = CredentialProtector.resolve(config.getMonitorProps().getProperty("ftp.password"));
 
             if (ftpUser == null || ftpPass == null) {
                 throw new IllegalArgumentException("ftp.username and ftp.password are required in " + monitorPropsPath);
@@ -47,7 +48,8 @@ public class MainShareFileMonitor {
 
             int alertWindowSize = Integer.parseInt(config.getMonitorProps().getProperty("alert.window.size", "3"));
 
-            EmailService emailService = new EmailService(config.getEmailProps(), config.getClientName());
+            String logoPath = config.getMonitorProps().getProperty("logo.path", "");
+            EmailService emailService = new EmailService(config.getEmailProps(), config.getClientName(), logoPath);
             ShareFileMonitorService monitorService = new ShareFileMonitorService(logger, emailService, ftpHost, ftpUser, ftpPass, alertWindowSize);
             ShareFileAppServer appServer = new ShareFileAppServer(logger, port);
             appServer.start();

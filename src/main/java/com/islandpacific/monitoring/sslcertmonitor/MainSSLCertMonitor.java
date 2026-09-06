@@ -51,7 +51,7 @@ public class MainSSLCertMonitor {
             // Tracks which thresholds have already fired per host — key: "host:port", value: set of threshold days alerted
             ConcurrentHashMap<String, Set<Integer>> alertedThresholds = new ConcurrentHashMap<>();
 
-            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> { Thread t = new Thread(r); t.setDaemon(true); return t; });
 
             scheduler.scheduleAtFixedRate(() -> {
                 try {

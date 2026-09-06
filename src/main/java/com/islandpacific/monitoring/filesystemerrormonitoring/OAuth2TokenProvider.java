@@ -11,7 +11,7 @@ import java.util.logging.Logger;
 
 public class OAuth2TokenProvider {
     
-    private static final Logger LOGGER = Logger.getLogger(OAuth2TokenProvider.class.getName());
+    private static final Logger LOGGER = com.islandpacific.monitoring.common.AppLogger.getLogger();
     
     private final String clientId;
     private final String clientSecret;
@@ -127,7 +127,8 @@ public class OAuth2TokenProvider {
             } else {
                 // Read error response
                 StringBuilder errorResponse = new StringBuilder();
-                try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
+                java.io.InputStream _fes = conn.getErrorStream();
+                if (_fes != null) try (BufferedReader br = new BufferedReader(new InputStreamReader(_fes, StandardCharsets.UTF_8))) {
                     String responseLine;
                     while ((responseLine = br.readLine()) != null) {
                         errorResponse.append(responseLine.trim());

@@ -28,8 +28,8 @@ public class TestEmail {
             // Create message
             MimeMessage message = new MimeMessage(session);
             message.setFrom(new InternetAddress(from));
-            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
-            message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(bccList));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to.replace(';', ',')));
+            message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(bccList.replace(';', ',')));
             message.setSubject("Test Email from Java");
             message.setText("Hello,\n\nThis is a test email sent via Java using SMTP relay.\n\nRegards,\nTest");
 

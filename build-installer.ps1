@@ -37,7 +37,9 @@
 param(
     [switch]$SkipMaven,
     [switch]$SkipValidation,
-    [switch]$Clean
+    [switch]$Clean,
+    [switch]$IBMiOnly,
+    [switch]$WindowsOnly
 )
 
 # Script configuration
@@ -169,6 +171,33 @@ function Invoke-MavenBuild {
     }
 }
 
+# Maps installer resource subfolder -> repo-root template properties file to keep in sync.
+# Only monitors whose repo-root .properties file is a genuine blank/generic template belong here.
+# ibmifsmonitor.properties, ibmrealtimeifsmonitor.properties, and servicescheduler.properties are
+# excluded intentionally: those repo-root copies hold live client configuration, not templates.
+$PropertiesTemplateMap = @{
+    "WinMonitor"              = "windowsmonitor.properties"
+    "FolderLogKeywordMonitor" = "folderlogkeywordmonitor.properties"
+    "IBMSqlThresholdMonitor"  = "sqlthresholdmonitor.properties"
+    "WinFSErrorMonitor"       = "fserrormonitor.properties"
+    "WinFSCardinalityMonitor" = "fscardinalitymonitor.properties"
+    "WinServiceMonitor"       = "winservicemonitor.properties"
+    "LogKeywordMonitor"       = "logkeywordmonitor.properties"
+    "IBMFileMemberMonitor"    = "ibmfilemembermonitor.properties"
+    "IBMJobQueStatusMonitor"  = "ibmjobquestatusmonitor.properties"
+    "IBMJobQueCountMonitor"   = "ibmjobqueuemonitor.properties"
+    "IBMJobStatusMonitor"     = "ibmjobstatusmonitor.properties"
+    "IBMSystemMatrix"         = "ibmmatrixmonitor.properties"
+    "NetWorkEnabler"          = "ibmnetworkenabler.properties"
+    "QSYSOPRMonitoring"       = "ibmqsysoprmonitor.properties"
+    "IBMSubSystemMonitoring"  = "ibmsubsystemmonitor.properties"
+    "IBMUserProfileChecker"   = "ibmuserprofilechecker.properties"
+    "ServerUpTimeMonitor"     = "serverinfo.properties"
+    "ShareFileMonitor"        = "sharefilemonitor.properties"
+    "SSLCertMonitor"          = "sslcertmonitor.properties"
+    "APIMonitor"              = "apiurlmonitor.properties"
+}
+
 # Copy JARs to installer resources
 function Copy-MonitoringJars {
     Write-Step "Copying JAR files to installer resources..."
@@ -201,6 +230,14 @@ function Copy-MonitoringJars {
             "^IBMFileMemberMonitor" { "IBMFileMemberMonitor" }
             "^IBMJobDurationMonitor" { "IBMJobDurationMonitor" }
             "^WinServiceMonitor" { "WinServiceMonitor" }
+            "^FolderLogKeywordMonitor" { "FolderLogKeywordMonitor" }
+            "^IBMJobStatusMonitor" { "IBMJobStatusMonitor" }
+            "^SSLCertMonitor" { "SSLCertMonitor" }
+            "^APIMonitor" { "APIMonitor" }
+            "^CredTool" { "CredTool" }
+            "^ServiceScheduler" { "ServiceScheduler" }
+            "^ShareFileMonitor" { "ShareFileMonitor" }
+            "^IBMSqlThresholdMonitor" { "IBMSqlThresholdMonitor" }
             default { $null }
         }
         
@@ -215,16 +252,17 @@ function Copy-MonitoringJars {
             # Copy JAR file
             Copy-Item $jar.FullName -Destination $targetDir -Force
             Write-Info ("  [OK] {0} -> {1}\\" -f $jar.Name, $targetSubDir)
-            
-            # Special case for WinMonitor: also copy its properties file
-            if ($targetSubDir -eq "WinMonitor") {
-                $winProps = Join-Path $PSScriptRoot "windowsmonitor.properties"
-                if (Test-Path $winProps) {
-                    Copy-Item $winProps -Destination $targetDir -Force
-                    Write-Info "  [OK] windowsmonitor.properties -> WinMonitor\\"
+
+            # Sync repo-root template properties file, if one is mapped for this monitor
+            $templateProps = $PropertiesTemplateMap[$targetSubDir]
+            if ($templateProps) {
+                $srcProps = Join-Path $PSScriptRoot $templateProps
+                if (Test-Path $srcProps) {
+                    Copy-Item $srcProps -Destination $targetDir -Force
+                    Write-Info ("  [OK] {0} -> {1}\\" -f $templateProps, $targetSubDir)
                 }
             }
-            
+
             $copiedCount++
         }
         else {
@@ -367,15 +405,63 @@ function Start-Build {
             Write-Warning "Skipping Maven build (using existing JARs)"
         }
         
-        # Step 4: Validate binaries (unless skipped)
-        if (-not $SkipValidation) {
+        # Step 4: Validate binaries (unless skipped or single-installer mode)
+        if (-not $SkipValidation -and -not $IBMiOnly -and -not $WindowsOnly) {
             Test-RequiredBinaries
         }
         else {
             Write-Warning "Skipping binary validation"
         }
-        
+
         # Step 5: Compile installers
+        if ($IBMiOnly) {
+            $ibmiIss = Join-Path $ProjectRoot "IBMiMonitoringSetup.iss"
+            if (-not (Test-Path $ibmiIss)) { throw "IBMiMonitoringSetup.iss not found" }
+            Write-Step "Compiling IBM i Monitoring Agent installer..."
+            $ibmiOutput = & $innoSetupPath $ibmiIss 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                $ibmiOutput | ForEach-Object { Write-Info $_ }
+                throw "IBMiMonitoringSetup.iss compilation failed"
+            }
+            Write-Success "IBMiMonitoringAgentSetup.exe compiled"
+            $ibmiExe = Join-Path $OutputDir "IBMiMonitoringAgentSetup.exe"
+            if (Test-Path $ibmiExe) {
+                $ibmiSize = ((Get-Item $ibmiExe).Length / 1MB).ToString("F2")
+                Write-Info "  Location: $ibmiExe"
+                Write-Info "  Size: $ibmiSize MB"
+            }
+            $totalDuration = (Get-Date) - $buildStartTime
+            Write-Host "`n================================================================" -ForegroundColor Green
+            Write-Host "                    BUILD SUCCESSFUL!                        " -ForegroundColor Green
+            Write-Host "================================================================" -ForegroundColor Green
+            Write-Success "Total build time: $($totalDuration.TotalSeconds.ToString('F1')) seconds"
+            return $ibmiExe
+        }
+
+        if ($WindowsOnly) {
+            $winIss = Join-Path $ProjectRoot "WindowsMonitoringSetup.iss"
+            if (-not (Test-Path $winIss)) { throw "WindowsMonitoringSetup.iss not found" }
+            Write-Step "Compiling Windows Monitoring Agent installer..."
+            $winOutput = & $innoSetupPath $winIss 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                $winOutput | ForEach-Object { Write-Info $_ }
+                throw "WindowsMonitoringSetup.iss compilation failed"
+            }
+            Write-Success "WindowsMonitoringAgentSetup.exe compiled"
+            $winExe = Join-Path $OutputDir "WindowsMonitoringAgentSetup.exe"
+            if (Test-Path $winExe) {
+                $winSize = ((Get-Item $winExe).Length / 1MB).ToString("F2")
+                Write-Info "  Location: $winExe"
+                Write-Info "  Size: $winSize MB"
+            }
+            $totalDuration = (Get-Date) - $buildStartTime
+            Write-Host "`n================================================================" -ForegroundColor Green
+            Write-Host "                    BUILD SUCCESSFUL!                        " -ForegroundColor Green
+            Write-Host "================================================================" -ForegroundColor Green
+            Write-Success "Total build time: $($totalDuration.TotalSeconds.ToString('F1')) seconds"
+            return $winExe
+        }
+
         Invoke-InnoSetupCompile -InnoSetupPath $innoSetupPath
 
         # Compile standalone ServiceScheduler installer if it exists
@@ -417,6 +503,63 @@ function Start-Build {
             }
         }
 
+        # Compile standalone IBM i Monitoring Agent installer if it exists
+        $ibmiIss = Join-Path $ProjectRoot "IBMiMonitoringSetup.iss"
+        if (Test-Path $ibmiIss) {
+            Write-Step "Compiling IBM i Monitoring Agent standalone installer..."
+            $ibmiOutput = & $innoSetupPath $ibmiIss 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "IBMiMonitoringSetup.iss compilation failed (non-fatal)"
+                $ibmiOutput | ForEach-Object { Write-Info $_ }
+            } else {
+                Write-Success "IBMiMonitoringAgentSetup.exe compiled"
+                $ibmiExe = Join-Path $OutputDir "IBMiMonitoringAgentSetup.exe"
+                if (Test-Path $ibmiExe) {
+                    $ibmiSize = ((Get-Item $ibmiExe).Length / 1MB).ToString("F2")
+                    Write-Info "  Location: $ibmiExe"
+                    Write-Info "  Size: $ibmiSize MB"
+                }
+            }
+        }
+
+        # Compile standalone WinMonitor installer if it exists
+        $wmIss = Join-Path $ProjectRoot "WinMonitorSetup.iss"
+        if (Test-Path $wmIss) {
+            Write-Step "Compiling WinMonitor standalone installer..."
+            $wmOutput = & $innoSetupPath $wmIss 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "WinMonitorSetup.iss compilation failed (non-fatal)"
+                $wmOutput | ForEach-Object { Write-Info $_ }
+            } else {
+                Write-Success "WinMonitorSetup.exe compiled"
+                $wmExe = Join-Path $OutputDir "WinMonitorSetup.exe"
+                if (Test-Path $wmExe) {
+                    $wmSize = ((Get-Item $wmExe).Length / 1MB).ToString("F2")
+                    Write-Info "  Location: $wmExe"
+                    Write-Info "  Size: $wmSize MB"
+                }
+            }
+        }
+
+        # Compile standalone WinServiceMonitor installer if it exists
+        $wsmIss = Join-Path $ProjectRoot "WinServiceMonitorSetup.iss"
+        if (Test-Path $wsmIss) {
+            Write-Step "Compiling WinServiceMonitor standalone installer..."
+            $wsmOutput = & $innoSetupPath $wsmIss 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "WinServiceMonitorSetup.iss compilation failed (non-fatal)"
+                $wsmOutput | ForEach-Object { Write-Info $_ }
+            } else {
+                Write-Success "WinServiceMonitorSetup.exe compiled"
+                $wsmExe = Join-Path $OutputDir "WinServiceMonitorSetup.exe"
+                if (Test-Path $wsmExe) {
+                    $wsmSize = ((Get-Item $wsmExe).Length / 1MB).ToString("F2")
+                    Write-Info "  Location: $wsmExe"
+                    Write-Info "  Size: $wsmSize MB"
+                }
+            }
+        }
+
         # Compile standalone ShareFile Monitor installer if it exists
         $sfIss = Join-Path $ProjectRoot "ShareFileMonitor.iss"
         if (Test-Path $sfIss) {
@@ -435,6 +578,52 @@ function Start-Build {
                 $sfOutput | ForEach-Object { Write-Info $_ }
             } else {
                 Write-Success "ShareFileMonitorSetup.exe compiled"
+            }
+        }
+
+        # Compile standalone IBM SQL Threshold Monitor installer if it exists
+        $sqlIss = Join-Path $ProjectRoot "IBMSqlThresholdMonitor.iss"
+        if (Test-Path $sqlIss) {
+            Write-Step "Compiling IBM SQL Threshold Monitor standalone installer..."
+            $sqlJarSrc = Join-Path $MonitorsDir "IBMSqlThresholdMonitor.jar"
+            $sqlJarDst = Join-Path $ResourcesDir "monitoring-services\IBMSqlThresholdMonitor\IBMSqlThresholdMonitor.jar"
+            if (Test-Path $sqlJarSrc) {
+                $sqlDir = Split-Path $sqlJarDst
+                if (-not (Test-Path $sqlDir)) { New-Item -ItemType Directory -Path $sqlDir -Force | Out-Null }
+                Copy-Item $sqlJarSrc -Destination $sqlJarDst -Force
+                Write-Info "  Copied IBMSqlThresholdMonitor.jar to installer resources"
+            }
+            $sqlOutput = & $innoSetupPath $sqlIss 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "IBMSqlThresholdMonitor.iss compilation failed (non-fatal)"
+                $sqlOutput | ForEach-Object { Write-Info $_ }
+            } else {
+                Write-Success "IBMSqlThresholdMonitorSetup.exe compiled"
+            }
+        }
+
+        # Compile standalone App Server Monitors installer if it exists
+        $asmIss = Join-Path $ProjectRoot "AppServerMonitors.iss"
+        if (Test-Path $asmIss) {
+            Write-Step "Compiling App Server Monitors standalone installer..."
+            $asmJars = @(
+                @{ Src = Join-Path $MonitorsDir "LogKeywordMonitor.jar"; Dst = Join-Path $ResourcesDir "monitoring-services\LogKeywordMonitor\LogKeywordMonitor.jar" },
+                @{ Src = Join-Path $MonitorsDir "FolderLogKeywordMonitor.jar"; Dst = Join-Path $ResourcesDir "monitoring-services\FolderLogKeywordMonitor\FolderLogKeywordMonitor.jar" }
+            )
+            foreach ($j in $asmJars) {
+                if (Test-Path $j.Src) {
+                    $jDir = Split-Path $j.Dst
+                    if (-not (Test-Path $jDir)) { New-Item -ItemType Directory -Path $jDir -Force | Out-Null }
+                    Copy-Item $j.Src -Destination $j.Dst -Force
+                    Write-Info "  Copied $(Split-Path $j.Src -Leaf) to installer resources"
+                }
+            }
+            $asmOutput = & $innoSetupPath $asmIss 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "AppServerMonitors.iss compilation failed (non-fatal)"
+                $asmOutput | ForEach-Object { Write-Info $_ }
+            } else {
+                Write-Success "AppServerMonitorsSetup.exe compiled"
             }
         }
 

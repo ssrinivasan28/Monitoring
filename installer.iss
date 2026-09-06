@@ -75,8 +75,11 @@ Name: "{app}\promtail"; Check: IsLogAgentRole
 Name: "{app}\grafana\conf"; Check: IsMonitoringServerRole
 Name: "{app}\grafana\data"; Flags: uninsneveruninstall; Check: IsMonitoringServerRole
 Name: "{app}\monitoring-services"
+Name: "{app}\logo"
 
 [Files]
+; Shared logo for email alerts
+Source: "installer\resources\logo\IPLogo.jpg"; DestDir: "{app}\logo"; Flags: ignoreversion
 ; Core services - Prometheus & Grafana
 Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoringPrometheus.exe"; Flags: ignoreversion; Check: IsMonitoringServerRole
 Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoringGrafana.exe"; Flags: ignoreversion; Check: IsMonitoringServerRole
@@ -104,8 +107,8 @@ Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "I
 Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_IBMSubSystemMonitoring.exe"; Flags: ignoreversion
 Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_IBMSystemMatrix.exe"; Flags: ignoreversion
 Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_IBMUserProfileChecker.exe"; Flags: ignoreversion
-Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_NetWorkEnabler.exe"; Flags: ignoreversion
-Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_QSYSOPRMonitoring.exe"; Flags: ignoreversion
+Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_IBMNetworkEnabler.exe"; Flags: ignoreversion
+Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_IBMQSYSOPRMonitor.exe"; Flags: ignoreversion
 Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_WinFSErrorMonitor.exe"; Flags: ignoreversion
 Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_WinFSCardinalityMonitor.exe"; Flags: ignoreversion
 Source: "installer\resources\WinSW.exe"; DestDir: "{app}\services"; DestName: "IPMonitoring_WinMonitor.exe"; Flags: ignoreversion
@@ -123,14 +126,16 @@ Source: "installer\resources\monitoring-services\ServerUpTimeMonitor\*.jar"; Des
 Source: "installer\resources\monitoring-services\IBMSubSystemMonitoring\*.jar"; DestDir: "{app}\monitoring-services\IBMSubSystemMonitoring"; Flags: ignoreversion; Check: IsSubSystemMonitorSelected
 Source: "installer\resources\monitoring-services\IBMSystemMatrix\*.jar"; DestDir: "{app}\monitoring-services\IBMSystemMatrix"; Flags: ignoreversion; Check: IsSystemMatrixSelected
 Source: "installer\resources\monitoring-services\IBMUserProfileChecker\*.jar"; DestDir: "{app}\monitoring-services\IBMUserProfileChecker"; Flags: ignoreversion; Check: IsUserProfileCheckerSelected
-Source: "installer\resources\monitoring-services\NetWorkEnabler\*.jar"; DestDir: "{app}\monitoring-services\NetWorkEnabler"; Flags: ignoreversion; Check: IsNetWorkEnablerSelected
-Source: "installer\resources\monitoring-services\QSYSOPRMonitoring\*.jar"; DestDir: "{app}\monitoring-services\QSYSOPRMonitoring"; Flags: ignoreversion; Check: IsQSYSOPRMonitorSelected
+Source: "installer\resources\monitoring-services\IBMNetworkEnabler\*.jar"; DestDir: "{app}\monitoring-services\IBMNetworkEnabler"; Flags: ignoreversion; Check: IsNetWorkEnablerSelected
+Source: "installer\resources\monitoring-services\IBMQSYSOPRMonitor\*.jar"; DestDir: "{app}\monitoring-services\IBMQSYSOPRMonitor"; Flags: ignoreversion; Check: IsQSYSOPRMonitorSelected
 Source: "installer\resources\monitoring-services\WinFSErrorMonitor\*.jar"; DestDir: "{app}\monitoring-services\WinFSErrorMonitor"; Flags: ignoreversion; Check: IsWinFSErrorMonitorSelected
 Source: "installer\resources\monitoring-services\WinFSCardinalityMonitor\*.jar"; DestDir: "{app}\monitoring-services\WinFSCardinalityMonitor"; Flags: ignoreversion; Check: IsWinFSCardinalityMonitorSelected
 Source: "installer\resources\monitoring-services\WinMonitor\*.jar"; DestDir: "{app}\monitoring-services\WinMonitor"; Flags: ignoreversion; Check: IsWinMonitorSelected
 Source: "installer\resources\monitoring-services\LogKeywordMonitor\*.jar"; DestDir: "{app}\monitoring-services\LogKeywordMonitor"; Flags: ignoreversion; Check: IsLogKeywordMonitorSelected
 Source: "installer\resources\monitoring-services\IBMFileMemberMonitor\*.jar"; DestDir: "{app}\monitoring-services\IBMFileMemberMonitor"; Flags: ignoreversion; Check: IsFileMemberMonitorSelected
 Source: "installer\resources\monitoring-services\IBMJobDurationMonitor\*.jar"; DestDir: "{app}\monitoring-services\IBMJobDurationMonitor"; Flags: ignoreversion skipifsourcedoesntexist; Check: IsJobDurationMonitorSelected
+; DPAPI credential encryption tool (always installed; run on this machine to encrypt property values)
+Source: "installer\resources\monitoring-services\CredTool\CredTool.jar"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 
 ; Properties files - only copy if they don't exist (preserve user customizations on upgrade)
 ; email.properties is excluded because it is dynamically generated
@@ -142,8 +147,8 @@ Source: "installer\resources\monitoring-services\ServerUpTimeMonitor\*.propertie
 Source: "installer\resources\monitoring-services\IBMSubSystemMonitoring\*.properties"; DestDir: "{app}\monitoring-services\IBMSubSystemMonitoring"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsSubSystemMonitorSelected
 Source: "installer\resources\monitoring-services\IBMSystemMatrix\*.properties"; DestDir: "{app}\monitoring-services\IBMSystemMatrix"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsSystemMatrixSelected
 Source: "installer\resources\monitoring-services\IBMUserProfileChecker\*.properties"; DestDir: "{app}\monitoring-services\IBMUserProfileChecker"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsUserProfileCheckerSelected
-Source: "installer\resources\monitoring-services\NetWorkEnabler\*.properties"; DestDir: "{app}\monitoring-services\NetWorkEnabler"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsNetWorkEnablerSelected
-Source: "installer\resources\monitoring-services\QSYSOPRMonitoring\*.properties"; DestDir: "{app}\monitoring-services\QSYSOPRMonitoring"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsQSYSOPRMonitorSelected
+Source: "installer\resources\monitoring-services\IBMNetworkEnabler\*.properties"; DestDir: "{app}\monitoring-services\IBMNetworkEnabler"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsNetWorkEnablerSelected
+Source: "installer\resources\monitoring-services\IBMQSYSOPRMonitor\*.properties"; DestDir: "{app}\monitoring-services\IBMQSYSOPRMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsQSYSOPRMonitorSelected
 Source: "installer\resources\monitoring-services\WinFSErrorMonitor\*.properties"; DestDir: "{app}\monitoring-services\WinFSErrorMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsWinFSErrorMonitorSelected
 Source: "installer\resources\monitoring-services\WinFSCardinalityMonitor\*.properties"; DestDir: "{app}\monitoring-services\WinFSCardinalityMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsWinFSCardinalityMonitorSelected
 Source: "installer\resources\monitoring-services\WinMonitor\*.properties"; DestDir: "{app}\monitoring-services\WinMonitor"; Excludes: "email.properties"; Flags: onlyifdoesntexist skipifsourcedoesntexist; Check: IsWinMonitorSelected
@@ -259,8 +264,8 @@ Type: files; Name: "{app}\services\IPMonitoring_ServerUpTimeMonitor_*.exe"
 Type: files; Name: "{app}\services\IPMonitoring_IBMSubSystemMonitoring_*.exe"
 Type: files; Name: "{app}\services\IPMonitoring_IBMSystemMatrix_*.exe"
 Type: files; Name: "{app}\services\IPMonitoring_IBMUserProfileChecker_*.exe"
-Type: files; Name: "{app}\services\IPMonitoring_NetWorkEnabler_*.exe"
-Type: files; Name: "{app}\services\IPMonitoring_QSYSOPRMonitoring_*.exe"
+Type: files; Name: "{app}\services\IPMonitoring_IBMNetworkEnabler_*.exe"
+Type: files; Name: "{app}\services\IPMonitoring_IBMQSYSOPRMonitor_*.exe"
 Type: files; Name: "{app}\services\IPMonitoring_WinFSErrorMonitor_*.exe"
 Type: files; Name: "{app}\services\IPMonitoring_WinFSCardinalityMonitor_*.exe"
 Type: files; Name: "{app}\services\IPMonitoring_WinMonitor_*.exe"
@@ -280,8 +285,8 @@ Type: dirifempty; Name: "{app}\monitoring-services\ServerUpTimeMonitor"
 Type: dirifempty; Name: "{app}\monitoring-services\IBMSubSystemMonitoring"
 Type: dirifempty; Name: "{app}\monitoring-services\IBMSystemMatrix"
 Type: dirifempty; Name: "{app}\monitoring-services\IBMUserProfileChecker"
-Type: dirifempty; Name: "{app}\monitoring-services\NetWorkEnabler"
-Type: dirifempty; Name: "{app}\monitoring-services\QSYSOPRMonitoring"
+Type: dirifempty; Name: "{app}\monitoring-services\IBMNetworkEnabler"
+Type: dirifempty; Name: "{app}\monitoring-services\IBMQSYSOPRMonitor"
 Type: dirifempty; Name: "{app}\monitoring-services\WinFSErrorMonitor"
 Type: dirifempty; Name: "{app}\monitoring-services\WinFSCardinalityMonitor"
 Type: dirifempty; Name: "{app}\monitoring-services\WinMonitor"
@@ -1296,8 +1301,8 @@ begin
                          WasServiceInstalled('InstalledSubSystemMonitor', 'IPMonitoring_IBMSubSystemMonitoring') or
                          WasServiceInstalled('InstalledSystemMatrix', 'IPMonitoring_IBMSystemMatrix') or
                          WasServiceInstalled('InstalledUserProfileChecker', 'IPMonitoring_IBMUserProfileChecker') or
-                         WasServiceInstalled('InstalledNetWorkEnabler', 'IPMonitoring_NetWorkEnabler') or
-                         WasServiceInstalled('InstalledQSYSOPRMonitor', 'IPMonitoring_QSYSOPRMonitoring') or
+                         WasServiceInstalled('InstalledNetWorkEnabler', 'IPMonitoring_IBMNetworkEnabler') or
+                         WasServiceInstalled('InstalledQSYSOPRMonitor', 'IPMonitoring_IBMQSYSOPRMonitor') or
                          WasServiceInstalled('InstalledWinFSErrorMonitor', 'IPMonitoring_WinFSErrorMonitor') or
                          WasServiceInstalled('InstalledWinFSCardinalityMonitor', 'IPMonitoring_WinFSCardinalityMonitor') or
                          WasServiceInstalled('InstalledWinMonitor', 'IPMonitoring_WinMonitor') or
@@ -1499,7 +1504,7 @@ begin
   ChkNetWorkEnabler.Top := TopPos;
   ChkNetWorkEnabler.Width := Page.SurfaceWidth - 30;
   ChkNetWorkEnabler.Height := 21;
-  ChkNetWorkEnabler.Checked := WasServiceInstalled('InstalledNetWorkEnabler', 'IPMonitoring_NetWorkEnabler');
+  ChkNetWorkEnabler.Checked := WasServiceInstalled('InstalledNetWorkEnabler', 'IPMonitoring_IBMNetworkEnabler');
   
   TopPos := TopPos + 28;
   
@@ -1511,7 +1516,7 @@ begin
   ChkQSYSOPRMonitor.Top := TopPos;
   ChkQSYSOPRMonitor.Width := Page.SurfaceWidth - 30;
   ChkQSYSOPRMonitor.Height := 21;
-  ChkQSYSOPRMonitor.Checked := WasServiceInstalled('InstalledQSYSOPRMonitor', 'IPMonitoring_QSYSOPRMonitoring');
+  ChkQSYSOPRMonitor.Checked := WasServiceInstalled('InstalledQSYSOPRMonitor', 'IPMonitoring_IBMQSYSOPRMonitor');
 
   TopPos := TopPos + 28;
 
@@ -2510,8 +2515,8 @@ begin
     Exec('sc.exe', 'stop IPMonitoring_IBMSubSystemMonitoring' + ClientSuffix, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
     Exec('sc.exe', 'stop IPMonitoring_IBMSystemMatrix' + ClientSuffix, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
     Exec('sc.exe', 'stop IPMonitoring_IBMUserProfileChecker' + ClientSuffix, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-    Exec('sc.exe', 'stop IPMonitoring_NetWorkEnabler' + ClientSuffix, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-    Exec('sc.exe', 'stop IPMonitoring_QSYSOPRMonitoring' + ClientSuffix, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Exec('sc.exe', 'stop IPMonitoring_IBMNetworkEnabler' + ClientSuffix, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Exec('sc.exe', 'stop IPMonitoring_IBMQSYSOPRMonitor' + ClientSuffix, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
     Exec('sc.exe', 'stop IPMonitoring_WinMonitor' + ClientSuffix, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
     Exec('sc.exe', 'stop IPMonitoring_LogKeywordMonitor' + ClientSuffix, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
     Exec('sc.exe', 'stop IPMonitoring_IBMFileMemberMonitor' + ClientSuffix, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
@@ -2532,8 +2537,8 @@ begin
       Exec('sc.exe', 'stop IPMonitoring_IBMSubSystemMonitoring', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
       Exec('sc.exe', 'stop IPMonitoring_IBMSystemMatrix', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
       Exec('sc.exe', 'stop IPMonitoring_IBMUserProfileChecker', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-      Exec('sc.exe', 'stop IPMonitoring_NetWorkEnabler', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-      Exec('sc.exe', 'stop IPMonitoring_QSYSOPRMonitoring', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+      Exec('sc.exe', 'stop IPMonitoring_IBMNetworkEnabler', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+      Exec('sc.exe', 'stop IPMonitoring_IBMQSYSOPRMonitor', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
       Exec('sc.exe', 'stop IPMonitoring_WinMonitor', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
       Exec('sc.exe', 'stop IPMonitoring_LogKeywordMonitor', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
       Exec('sc.exe', 'stop IPMonitoring_IBMFileMemberMonitor', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
@@ -2578,8 +2583,8 @@ begin
   WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\IBMSubSystemMonitoring\IBMSubSystemMonitor.jar'), 15, 1000);
   WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\IBMSystemMatrix\IBMSystemMatrix.jar'), 15, 1000);
   WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\IBMUserProfileChecker\IBMUserProfileChecker.jar'), 15, 1000);
-  WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\NetWorkEnabler\NetWorkEnabler.jar'), 15, 1000);
-  WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\QSYSOPRMonitoring\QSYSOPRMonitoring.jar'), 15, 1000);
+  WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\IBMNetworkEnabler\IBMNetworkEnabler.jar'), 15, 1000);
+  WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\IBMQSYSOPRMonitor\IBMQSYSOPRMonitor.jar'), 15, 1000);
   WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\WinMonitor\WinMonitor.jar'), 15, 1000);
   WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\LogKeywordMonitor\LogKeywordMonitor.jar'), 15, 1000);
   WaitForFileUnlock(ExpandConstant('{app}\monitoring-services\IBMFileMemberMonitor\IBMFileMemberMonitor.jar'), 15, 1000);
@@ -2594,8 +2599,8 @@ begin
   WaitForFileUnlock(ExpandConstant('{app}\services\IPMonitoring_IBMSubSystemMonitoring.exe'), 8, 500);
   WaitForFileUnlock(ExpandConstant('{app}\services\IPMonitoring_IBMSystemMatrix.exe'), 8, 500);
   WaitForFileUnlock(ExpandConstant('{app}\services\IPMonitoring_IBMUserProfileChecker.exe'), 8, 500);
-  WaitForFileUnlock(ExpandConstant('{app}\services\IPMonitoring_NetWorkEnabler.exe'), 8, 500);
-  WaitForFileUnlock(ExpandConstant('{app}\services\IPMonitoring_QSYSOPRMonitoring.exe'), 8, 500);
+  WaitForFileUnlock(ExpandConstant('{app}\services\IPMonitoring_IBMNetworkEnabler.exe'), 8, 500);
+  WaitForFileUnlock(ExpandConstant('{app}\services\IPMonitoring_IBMQSYSOPRMonitor.exe'), 8, 500);
   WaitForFileUnlock(ExpandConstant('{app}\services\IPMonitoring_WinMonitor.exe'), 8, 500);
   WaitForFileUnlock(ExpandConstant('{app}\services\IPMonitoring_LogKeywordMonitor.exe'), 8, 500);
   WaitForFileUnlock(ExpandConstant('{app}\services\IPMonitoring_IBMFileMemberMonitor.exe'), 8, 500);
@@ -2737,8 +2742,8 @@ begin
   ChkSubSystemMonitor.Checked := WasServiceInstalled('InstalledSubSystemMonitor', 'IPMonitoring_IBMSubSystemMonitoring');
   ChkSystemMatrix.Checked := WasServiceInstalled('InstalledSystemMatrix', 'IPMonitoring_IBMSystemMatrix');
   ChkUserProfileChecker.Checked := WasServiceInstalled('InstalledUserProfileChecker', 'IPMonitoring_IBMUserProfileChecker');
-  ChkNetWorkEnabler.Checked := WasServiceInstalled('InstalledNetWorkEnabler', 'IPMonitoring_NetWorkEnabler');
-  ChkQSYSOPRMonitor.Checked := WasServiceInstalled('InstalledQSYSOPRMonitor', 'IPMonitoring_QSYSOPRMonitoring');
+  ChkNetWorkEnabler.Checked := WasServiceInstalled('InstalledNetWorkEnabler', 'IPMonitoring_IBMNetworkEnabler');
+  ChkQSYSOPRMonitor.Checked := WasServiceInstalled('InstalledQSYSOPRMonitor', 'IPMonitoring_IBMQSYSOPRMonitor');
   ChkWinFSErrorMonitor.Checked := WasServiceInstalled('InstalledWinFSErrorMonitor', 'IPMonitoring_WinFSErrorMonitor');
   ChkWinFSCardinalityMonitor.Checked := WasServiceInstalled('InstalledWinFSCardinalityMonitor', 'IPMonitoring_WinFSCardinalityMonitor');
   ChkWinMonitor.Checked := WasServiceInstalled('InstalledWinMonitor', 'IPMonitoring_WinMonitor');
@@ -3247,14 +3252,14 @@ begin
   end;
   if ChkNetWorkEnabler.Checked then
   begin
-    if WasServiceInstalled('InstalledNetWorkEnabler', 'IPMonitoring_NetWorkEnabler') then
+    if WasServiceInstalled('InstalledNetWorkEnabler', 'IPMonitoring_IBMNetworkEnabler') then
       S := S + Space + '• Network Enabler (Port ' + NetWorkEnablerPortEdit.Text + ') - Upgrade' + NewLine
     else
       S := S + Space + '• Network Enabler (Port ' + NetWorkEnablerPortEdit.Text + ') - Install' + NewLine;
   end;
   if ChkQSYSOPRMonitor.Checked then
   begin
-    if WasServiceInstalled('InstalledQSYSOPRMonitor', 'IPMonitoring_QSYSOPRMonitoring') then
+    if WasServiceInstalled('InstalledQSYSOPRMonitor', 'IPMonitoring_IBMQSYSOPRMonitor') then
       S := S + Space + '• QSYSOPR Monitor (Port ' + QSYSOPRMonitorPortEdit.Text + ') - Upgrade' + NewLine
     else
       S := S + Space + '• QSYSOPR Monitor (Port ' + QSYSOPRMonitorPortEdit.Text + ') - Install' + NewLine;
@@ -4102,8 +4107,12 @@ begin
       ConfigPage.Values[1] := ExistingGrafanaPort;
     end;
 
-    // Reload all client-scoped defaults now that the client ID is known
-    ApplyClientSettingsFromRegistry;
+    // Reload all client-scoped defaults now that the client ID is known.
+    // Skip for a brand-new client: its registry subkey doesn't exist yet, so
+    // GetClientRegistryValue would fall back to the shared base key and leak
+    // the previous client's OAuth/port/etc. values into this client's fields.
+    if not IsNewClientInstallation then
+      ApplyClientSettingsFromRegistry;
   end;
   
   // Validate Core Services page - IBM monitors require Prometheus/Grafana
@@ -4584,6 +4593,46 @@ begin
   SaveStringToFile(PropsFile, Output, False);
 end;
 
+// =============================================================================
+// DPAPI encryption (machine scope) - blob format matches CredentialProtector
+// in the monitor JARs. Secret is passed via environment variable, never on a
+// command line. On failure the plaintext is kept (services accept both).
+// =============================================================================
+function SetEnvironmentVariable(lpName, lpValue: string): Boolean;
+  external 'SetEnvironmentVariableW@kernel32.dll stdcall';
+
+function DpapiEncrypt(Value: string): string;
+var
+  OutFile, Cmd: string;
+  ResultCode: Integer;
+  Blob: AnsiString;
+begin
+  Result := Value;
+  if (Value = '') or (Copy(Value, 1, 6) = 'DPAPI(') then
+    Exit;
+
+  OutFile := ExpandConstant('{tmp}\dpapi_out.txt');
+  DeleteFile(OutFile);
+  SetEnvironmentVariable('IP_DPAPI_VALUE', Value);
+  SetEnvironmentVariable('IP_DPAPI_OUT', OutFile);
+
+  Cmd := '-NoProfile -ExecutionPolicy Bypass -Command "' +
+         'Add-Type -AssemblyName System.Security; ' +
+         '[IO.File]::WriteAllText($env:IP_DPAPI_OUT, ''DPAPI('' + ' +
+         '[Convert]::ToBase64String([Security.Cryptography.ProtectedData]::Protect(' +
+         '[Text.Encoding]::UTF8.GetBytes($env:IP_DPAPI_VALUE), $null, ' +
+         '[Security.Cryptography.DataProtectionScope]::LocalMachine)) + '')'')"';
+
+  if Exec('powershell.exe', Cmd, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and
+     (ResultCode = 0) and LoadStringFromFile(OutFile, Blob) then
+    Result := Trim(String(Blob))
+  else
+    Log('DPAPI encryption failed (exit code ' + IntToStr(ResultCode) + ') - storing value as entered');
+
+  DeleteFile(OutFile);
+  SetEnvironmentVariable('IP_DPAPI_VALUE', '');
+end;
+
 // Generate email.properties content - supports both SMTP and OAuth2
 procedure GenerateEmailProperties(ServicePath: string);
 var
@@ -4615,13 +4664,13 @@ begin
   Content := Content + 'mail.smtp.auth=' + GetSmtpAuth('') + CRLF;
   Content := Content + 'mail.smtp.starttls.enable=' + GetSmtpStartTls('') + CRLF;
   Content := Content + 'mail.smtp.username=' + GetSmtpUsername('') + CRLF;
-  Content := Content + 'mail.smtp.password=' + GetSmtpPassword('') + CRLF;
+  Content := Content + 'mail.smtp.password=' + DpapiEncrypt(GetSmtpPassword('')) + CRLF;
   Content := Content + CRLF;
   Content := Content + '# OAuth2 Configuration (used when mail.auth.method=OAUTH2)' + CRLF;
   Content := Content + '# Microsoft 365 / Azure AD OAuth2 settings' + CRLF;
   Content := Content + 'mail.oauth2.tenant.id=' + TenantId + CRLF;
   Content := Content + 'mail.oauth2.client.id=' + GetOAuthClientId('') + CRLF;
-  Content := Content + 'mail.oauth2.client.secret=' + GetOAuthClientSecret('') + CRLF;
+  Content := Content + 'mail.oauth2.client.secret=' + DpapiEncrypt(GetOAuthClientSecret('')) + CRLF;
   Content := Content + 'mail.oauth2.scope=' + Scope + CRLF;
   Content := Content + 'mail.oauth2.token.url=' + TokenUrl + CRLF;
   Content := Content + 'mail.oauth2.graph.mail.url=' + GraphUrl + CRLF;
@@ -4917,6 +4966,60 @@ begin
   end
   else
     Log('AddPrometheusTarget: FAILED to load ' + Path);
+end;
+
+procedure StopServiceBeforeCopy(ServiceExe: string);
+var
+  Code: Integer;
+  D, FullPath: string;
+begin
+  D := ExpandConstant('{app}');
+  FullPath := D + '\services\' + ServiceExe;
+  if not FileExists(FullPath) then
+    Exit;
+  Log('Pre-copy stop: ' + ServiceExe);
+  Exec(FullPath, 'stop', '', SW_HIDE, ewWaitUntilTerminated, Code);
+  Sleep(500);
+end;
+
+// Fix: stop all services that [Files] is about to overwrite BEFORE ssInstall copies
+// them, so a running WinSW-wrapped JAR/exe doesn't hold a file lock during upgrade.
+procedure StopAllServicesBeforeFileCopy;
+var
+  Suffix: string;
+begin
+  Suffix := '';
+  if ClientInstanceId <> '' then
+    Suffix := '_' + ClientInstanceId;
+
+  if IsMonitoringServerRole then
+  begin
+    StopServiceBeforeCopy('IPMonitoringPrometheus.exe');
+    StopServiceBeforeCopy('IPMonitoringGrafana.exe');
+    StopServiceBeforeCopy('IPMonitoring-Loki.exe');
+  end;
+  if ChkPromtail.Checked or IsLogAgentRole then
+    StopServiceBeforeCopy('IPMonitoring-LogAgent.exe');
+
+  if not IsLogAgentRole then
+  begin
+    if ChkIFSErrorMonitor.Checked then StopServiceBeforeCopy('IPMonitoring_IBMIFSErrorMonitor' + Suffix + '.exe');
+    if ChkRealTimeIFSMonitor.Checked then StopServiceBeforeCopy('IPMonitoring_IBMRealTimeIFSMonitor' + Suffix + '.exe');
+    if ChkJobQueCountMonitor.Checked then StopServiceBeforeCopy('IPMonitoring_IBMJobQueCountMonitor' + Suffix + '.exe');
+    if ChkJobQueStatusMonitor.Checked then StopServiceBeforeCopy('IPMonitoring_IBMJobQueStatusMonitor' + Suffix + '.exe');
+    if ChkServerUpTimeMonitor.Checked then StopServiceBeforeCopy('IPMonitoring_ServerUpTimeMonitor' + Suffix + '.exe');
+    if ChkSubSystemMonitor.Checked then StopServiceBeforeCopy('IPMonitoring_IBMSubSystemMonitoring' + Suffix + '.exe');
+    if ChkSystemMatrix.Checked then StopServiceBeforeCopy('IPMonitoring_IBMSystemMatrix' + Suffix + '.exe');
+    if ChkUserProfileChecker.Checked then StopServiceBeforeCopy('IPMonitoring_IBMUserProfileChecker' + Suffix + '.exe');
+    if ChkNetWorkEnabler.Checked then StopServiceBeforeCopy('IPMonitoring_IBMNetworkEnabler' + Suffix + '.exe');
+    if ChkQSYSOPRMonitor.Checked then StopServiceBeforeCopy('IPMonitoring_IBMQSYSOPRMonitor' + Suffix + '.exe');
+    if ChkWinMonitor.Checked then StopServiceBeforeCopy('IPMonitoring_WinMonitor' + Suffix + '.exe');
+    if ChkWinFSErrorMonitor.Checked then StopServiceBeforeCopy('IPMonitoring_WinFSErrorMonitor' + Suffix + '.exe');
+    if ChkWinFSCardinalityMonitor.Checked then StopServiceBeforeCopy('IPMonitoring_WinFSCardinalityMonitor' + Suffix + '.exe');
+    if ChkLogKeywordMonitor.Checked then StopServiceBeforeCopy('IPMonitoring_LogKeywordMonitor' + Suffix + '.exe');
+    if ChkFileMemberMonitor.Checked then StopServiceBeforeCopy('IPMonitoring_IBMFileMemberMonitor' + Suffix + '.exe');
+    if ChkJobDurationMonitor.Checked then StopServiceBeforeCopy('IPMonitoring_IBMJobDurationMonitor' + Suffix + '.exe');
+  end;
 end;
 
 procedure InstallAndStartService(ServiceExe: string);
@@ -5215,8 +5318,12 @@ begin
       // but the error message will alert the user
       Log('CRITICAL: Port conflict detected during ssInstall: ' + PortError);
     end;
+
+    // Stop any running services BEFORE [Files] copies new JAR/exe content,
+    // otherwise an upgrade can silently fail to overwrite a locked file.
+    StopAllServicesBeforeFileCopy;
   end;
-  
+
   if CurStep = ssPostInstall then
   begin
     D := ExpandConstant('{app}');
@@ -5244,10 +5351,10 @@ begin
           UninstallServiceIfPresent('IPMonitoring_IBMSystemMatrix');
         if WasServiceInstalled('InstalledUserProfileChecker', 'IPMonitoring_IBMUserProfileChecker') and not ChkUserProfileChecker.Checked then
           UninstallServiceIfPresent('IPMonitoring_IBMUserProfileChecker');
-        if WasServiceInstalled('InstalledNetWorkEnabler', 'IPMonitoring_NetWorkEnabler') and not ChkNetWorkEnabler.Checked then
-          UninstallServiceIfPresent('IPMonitoring_NetWorkEnabler');
-        if WasServiceInstalled('InstalledQSYSOPRMonitor', 'IPMonitoring_QSYSOPRMonitoring') and not ChkQSYSOPRMonitor.Checked then
-          UninstallServiceIfPresent('IPMonitoring_QSYSOPRMonitoring');
+        if WasServiceInstalled('InstalledNetWorkEnabler', 'IPMonitoring_IBMNetworkEnabler') and not ChkNetWorkEnabler.Checked then
+          UninstallServiceIfPresent('IPMonitoring_IBMNetworkEnabler');
+        if WasServiceInstalled('InstalledQSYSOPRMonitor', 'IPMonitoring_IBMQSYSOPRMonitor') and not ChkQSYSOPRMonitor.Checked then
+          UninstallServiceIfPresent('IPMonitoring_IBMQSYSOPRMonitor');
         // Loki only applies on Monitoring Server role
         if WasServiceInstalled('InstalledLoki', 'IPMonitoring-Loki') and not ChkLoki.Checked then
           UninstallServiceIfPresent('IPMonitoring-Loki');
@@ -5394,28 +5501,28 @@ begin
     if ChkIFSErrorMonitor.Checked then
       InstallJavaMonitor('IBMIFSErrorMonitor', 'IPMonitoring_IBMIFSErrorMonitor',
         'IP Monitoring - IFS Error Monitor', 'IBM IFS Error Log Monitor',
-        'IBMIFSErrorMonitor.jar', 'monitor.properties',
+        'IBMIFSErrorMonitor.jar', 'ibmrealtimeifsmonitor.properties',
         'ibm-ifs-error-monitor', GetIFSErrorMonitorPort(''), True);
 
     // ===== Install IBM Real-Time IFS Monitor if selected =====
     if ChkRealTimeIFSMonitor.Checked then
       InstallJavaMonitor('IBMRealTimeIFSMonitor', 'IPMonitoring_IBMRealTimeIFSMonitor',
         'IP Monitoring - Real-Time IFS Monitor', 'IBM Real-Time IFS File Monitor',
-        'IBMRealTimeIFSMonitor.jar', 'ifsmonitor.properties',
+        'IBMRealTimeIFSMonitor.jar', 'ibmifsmonitor.properties',
         'ibm-realtime-ifs-monitor', GetRealTimeIFSMonitorPort(''), True);
 
     // ===== Install IBM Job Queue Count Monitor if selected =====
     if ChkJobQueCountMonitor.Checked then
       InstallJavaMonitor('IBMJobQueCountMonitor', 'IPMonitoring_IBMJobQueCountMonitor',
         'IP Monitoring - Job Queue Count Monitor', 'IBM Job Queue Count Monitor',
-        'IBMJobQueCountMonitor.jar', 'jobqueuemonitor.properties',
+        'IBMJobQueCountMonitor.jar', 'ibmjobqueuemonitor.properties',
         'ibm-jobqueue-count-monitor', GetJobQueCountMonitorPort(''), True);
 
     // ===== Install IBM Job Queue Status Monitor if selected =====
     if ChkJobQueStatusMonitor.Checked then
       InstallJavaMonitor('IBMJobQueStatusMonitor', 'IPMonitoring_IBMJobQueStatusMonitor',
         'IP Monitoring - Job Queue Status Monitor', 'IBM Job Queue Status Monitor',
-        'IBMJobQueStatusMonitor.jar', 'joblist.properties',
+        'IBMJobQueStatusMonitor.jar', 'ibmjobquestatusmonitor.properties',
         'ibm-jobqueue-status-monitor', GetJobQueStatusMonitorPort(''), True);
 
     // ===== Install Server UpTime Monitor if selected =====
@@ -5429,28 +5536,28 @@ begin
     if ChkSubSystemMonitor.Checked then
       InstallJavaMonitor('IBMSubSystemMonitoring', 'IPMonitoring_IBMSubSystemMonitoring',
         'IP Monitoring - IBM SubSystem Monitor', 'IBM SubSystem Monitor',
-        'IBMSubSystemMonitor.jar', 'subsystem.properties',
+        'IBMSubSystemMonitor.jar', 'ibmsubsystemmonitor.properties',
         'ibm-subsystem-monitor', GetSubSystemMonitorPort(''), True);
     
     // ===== Install IBM System Matrix Monitor if selected =====
     if ChkSystemMatrix.Checked then
       InstallJavaMonitor('IBMSystemMatrix', 'IPMonitoring_IBMSystemMatrix',
         'IP Monitoring - IBM System Matrix Monitor', 'IBM System Matrix Monitor',
-        'IBMSystemMatrix.jar', 'systemmonitor.properties',
+        'IBMSystemMatrix.jar', 'ibmmatrixmonitor.properties',
         'ibm-system-matrix', GetSystemMatrixPort(''), True);
     
     // ===== Install IBM User Profile Checker if selected =====
     if ChkUserProfileChecker.Checked then
       InstallJavaMonitor('IBMUserProfileChecker', 'IPMonitoring_IBMUserProfileChecker',
         'IP Monitoring - IBM User Profile Checker', 'IBM User Profile Checker',
-        'IBMUserProfileChecker.jar', 'userprofilecheck.properties',
+        'IBMUserProfileChecker.jar', 'ibmuserprofilechecker.properties',
         'ibm-user-profile-checker', GetUserProfileCheckerPort(''), True);
     
     // ===== Install Network Enabler Monitor if selected =====
     if ChkNetWorkEnabler.Checked then
-      InstallJavaMonitor('NetWorkEnabler', 'IPMonitoring_NetWorkEnabler',
+      InstallJavaMonitor('IBMNetworkEnabler', 'IPMonitoring_IBMNetworkEnabler',
         'IP Monitoring - Network Enabler Monitor', 'Network Enabler Monitor',
-        'NetWorkEnabler.jar', 'networkenable.properties',
+        'IBMNetworkEnabler.jar', 'ibmnetworkenabler.properties',
         'network-enabler', GetNetWorkEnablerPort(''), False);
     
     // ===== Install Windows System Monitor if selected =====
@@ -5466,9 +5573,9 @@ begin
     
     // ===== Install QSYSOPR Monitor if selected =====
     if ChkQSYSOPRMonitor.Checked then
-      InstallJavaMonitor('QSYSOPRMonitoring', 'IPMonitoring_QSYSOPRMonitoring',
+      InstallJavaMonitor('IBMQSYSOPRMonitor', 'IPMonitoring_IBMQSYSOPRMonitor',
         'IP Monitoring - QSYSOPR Monitor', 'QSYSOPR Message Queue Monitor',
-        'QSYSOPRMonitoring.jar', 'job_failure.properties',
+        'IBMQSYSOPRMonitor.jar', 'ibmqsysoprmonitor.properties',
         'qsysopr-monitor', GetQSYSOPRMonitorPort(''), True);
     
     // ===== Install Windows FS Error Monitor if selected =====
@@ -5504,7 +5611,7 @@ begin
     if ChkFileMemberMonitor.Checked then
       InstallJavaMonitor('IBMFileMemberMonitor', 'IPMonitoring_IBMFileMemberMonitor',
         'IP Monitoring - IBM File Member Monitor', 'IBM i File Member Count Monitor',
-        'IBMFileMemberMonitor.jar', 'filemembermonitor.properties',
+        'IBMFileMemberMonitor.jar', 'ibmfilemembermonitor.properties',
         'ibm-file-member-monitor', GetFileMemberMonitorPort(''), True);
 
     // ===== Install IBM Job Duration Monitor if selected and JAR is present =====
@@ -5513,7 +5620,7 @@ begin
       if FileExists(ExpandConstant('{app}\monitoring-services\IBMJobDurationMonitor\IBMJobDurationMonitor.jar')) then
         InstallJavaMonitor('IBMJobDurationMonitor', 'IPMonitoring_IBMJobDurationMonitor',
           'IP Monitoring - IBM Job Duration Monitor', 'IBM i Job Duration Monitor',
-          'IBMJobDurationMonitor.jar', 'jobdurationmonitor.properties',
+          'IBMJobDurationMonitor.jar', 'ibmjobdurationmonitor.properties',
           'ibm-job-duration-monitor', GetJobDurationMonitorPort(''), True)
       else
         Log('IBMJobDurationMonitor.jar not found - skipping service installation');
@@ -5659,8 +5766,8 @@ begin
     ServiceBasenames[5] := 'IPMonitoring_IBMSubSystemMonitoring';
     ServiceBasenames[6] := 'IPMonitoring_IBMSystemMatrix';
     ServiceBasenames[7] := 'IPMonitoring_IBMUserProfileChecker';
-    ServiceBasenames[8] := 'IPMonitoring_NetWorkEnabler';
-    ServiceBasenames[9] := 'IPMonitoring_QSYSOPRMonitoring';
+    ServiceBasenames[8] := 'IPMonitoring_IBMNetworkEnabler';
+    ServiceBasenames[9] := 'IPMonitoring_IBMQSYSOPRMonitor';
     ServiceBasenames[10] := 'IPMonitoring_WinFSErrorMonitor';
     ServiceBasenames[11] := 'IPMonitoring_WinFSCardinalityMonitor';
     ServiceBasenames[12] := 'IPMonitoring_WinMonitor';

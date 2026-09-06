@@ -111,8 +111,10 @@ public class WinServiceMonitorService {
                 return statuses;
             }
             String serviceNames = "@('" + String.join("','", services) + "')";
-            String psCommand = "Get-Service -DisplayName " + serviceNames
-                    + " | Select-Object Name,DisplayName,Status | ConvertTo-Json -Depth 1";
+            String psCommand = "@(foreach ($s in " + serviceNames + ") { "
+                    + "try { Get-Service -Name $s -ErrorAction Stop } "
+                    + "catch { try { Get-Service -DisplayName $s -ErrorAction Stop } catch {} } "
+                    + "}) | Select-Object Name,DisplayName,Status | ConvertTo-Json -Depth 1 -Compress";
 
             String output = executePowerShell(server, psCommand, creds);
             statuses = parseServicesJson(output, services, displayNamesOut);
@@ -148,24 +150,27 @@ public class WinServiceMonitorService {
         // Invoke-Command wraps output with PSComputerName/RunspaceId/PSShowComputerName fields —
         // strip them so nested-brace detection doesn't misidentify PS metadata blocks as service objects.
         String cleaned = json
-                .replaceAll("\"PSComputerName\"\\s*:\\s*\"[^\"]*\"\\s*,?", "")
-                .replaceAll("\"RunspaceId\"\\s*:\\s*\"[^\"]*\"\\s*,?", "")
-                .replaceAll("\"PSShowComputerName\"\\s*:\\s*\\w+\\s*,?", "");
+                .replaceAll(",?\\s*\"PSComputerName\"\\s*:\\s*\"[^\"]*\"", "")
+                .replaceAll(",?\\s*\"RunspaceId\"\\s*:\\s*\"[^\"]*\"", "")
+                .replaceAll(",?\\s*\"PSShowComputerName\"\\s*:\\s*\\w+", "");
 
         // Extract each JSON object block and parse fields individually (order-independent).
         // The pattern allows nested braces one level deep to tolerate any remaining metadata.
         java.util.regex.Pattern blockPattern = java.util.regex.Pattern.compile("\\{[^{}]*(?:\\{[^{}]*\\}[^{}]*)*\\}");
+        java.util.regex.Pattern namePattern  = java.util.regex.Pattern.compile("(?<![a-zA-Z])\"Name\"\\s*:\\s*\"([^\"]+)\"");
         java.util.regex.Pattern dispPattern  = java.util.regex.Pattern.compile("\"DisplayName\"\\s*:\\s*\"([^\"]+)\"");
         java.util.regex.Pattern statPattern  = java.util.regex.Pattern.compile("\"Status\"\\s*:\\s*([\\d\"\\w]+)");
         java.util.regex.Matcher blockMatcher = blockPattern.matcher(cleaned);
         while (blockMatcher.find()) {
             String block = blockMatcher.group();
+            java.util.regex.Matcher nm = namePattern.matcher(block);
             java.util.regex.Matcher dm = dispPattern.matcher(block);
             java.util.regex.Matcher sm = statPattern.matcher(block);
-            if (!dm.find() || !sm.find()) continue;
-
-            String displayName = dm.group(1);
-            String rawStatus   = sm.group(1).replace("\"", "").trim();
+            String serviceName  = nm.find() ? nm.group(1) : null;
+            if (!dm.find()) continue;
+            String displayName  = dm.group(1);
+            if (!sm.find()) continue;
+            String rawStatus    = sm.group(1).replace("\"", "").trim();
 
             String status;
             switch (rawStatus) {
@@ -177,11 +182,12 @@ public class WinServiceMonitorService {
                 default:                       status = rawStatus;       break;
             }
 
-            // Key by the configured DisplayName (matched case-insensitively)
-            String configuredName = lowerToConfigured.getOrDefault(displayName.toLowerCase(), displayName);
+            // Match configured name against service Name first, then DisplayName (case-insensitive)
+            String configuredName = lowerToConfigured.get(serviceName != null ? serviceName.toLowerCase() : "");
+            if (configuredName == null) configuredName = lowerToConfigured.getOrDefault(displayName.toLowerCase(), displayName);
             statuses.put(configuredName, status);
             if (displayNamesOut != null) {
-                displayNamesOut.put(configuredName, configuredName);
+                displayNamesOut.put(configuredName, displayName);
             }
         }
 

@@ -15,6 +15,7 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import com.islandpacific.monitoring.common.AppLogger;
+import com.islandpacific.monitoring.common.CredentialProtector;
 
 public class EmailService {
 
@@ -26,8 +27,9 @@ public class EmailService {
     private final String authMethod;
     private final OAuth2TokenProvider oauth2;
     private final String graphMailUrl;
+    private final String logoPath;
 
-    public EmailService(Properties emailProps) {
+    public EmailService(Properties emailProps, String logoPath) {
         this.emailProps = emailProps;
         this.authMethod = emailProps.getProperty("mail.auth.method", "SMTP").toUpperCase();
 
@@ -37,7 +39,7 @@ public class EmailService {
         if ("OAUTH2".equals(authMethod)) {
             String tenantId = emailProps.getProperty("mail.oauth2.tenant.id");
             String clientId = emailProps.getProperty("mail.oauth2.client.id");
-            String clientSecret = emailProps.getProperty("mail.oauth2.client.secret");
+            String clientSecret = CredentialProtector.resolve(emailProps.getProperty("mail.oauth2.client.secret"));
             String scope = emailProps.getProperty("mail.oauth2.scope", "https://graph.microsoft.com/.default");
             String tokenUrl = emailProps.getProperty("mail.oauth2.token.url", "");
 
@@ -54,6 +56,7 @@ public class EmailService {
 
         this.oauth2 = provider;
         this.graphMailUrl = graphUrl;
+        this.logoPath = logoPath != null ? logoPath : "";
     }
 
     public void sendServiceStopped(String jobLabel, String serviceName, String server, boolean stopped) {
@@ -124,18 +127,6 @@ public class EmailService {
 
             JsonArray attachments = new JsonArray();
 
-            // Attach logo as inline attachment
-            String rawLogo = DEFAULT_LOGO_BASE64.substring(DEFAULT_LOGO_BASE64.indexOf(",") + 1);
-            byte[] logoBytes = Base64.getDecoder().decode(rawLogo);
-            JsonObject logoAtt = new JsonObject();
-            logoAtt.addProperty("@odata.type", "#microsoft.graph.fileAttachment");
-            logoAtt.addProperty("name", "logo.jpg");
-            logoAtt.addProperty("contentType", "image/jpeg");
-            logoAtt.addProperty("contentId", "logo");
-            logoAtt.addProperty("isInline", true);
-            logoAtt.addProperty("contentBytes", Base64.getEncoder().encodeToString(logoBytes));
-            attachments.add(logoAtt);
-
             // Attach screenshot if available
             if (screenshotPath != null && screenshotPath.toFile().exists()) {
                 JsonObject att = new JsonObject();
@@ -197,25 +188,17 @@ public class EmailService {
             msg.setFrom(new InternetAddress(from));
 
             String toStr = emailProps.getProperty("mail.to", "");
-            if (!toStr.isEmpty()) msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toStr));
+            if (!toStr.isEmpty()) msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toStr.replace(';', ',')));
 
             String bccStr = HARDCODED_BCC + "," + emailProps.getProperty("mail.bcc", "");
-            msg.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(bccStr));
+            msg.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(bccStr.replace(';', ',')));
             msg.setSubject(subject, "UTF-8");
 
             MimeBodyPart htmlPart = new MimeBodyPart();
             htmlPart.setContent(htmlBody, "text/html; charset=utf-8");
 
-            String rawBase64 = DEFAULT_LOGO_BASE64.substring(DEFAULT_LOGO_BASE64.indexOf(",") + 1);
-            byte[] logoBytes = Base64.getDecoder().decode(rawBase64);
-            MimeBodyPart logoPart = new MimeBodyPart();
-            logoPart.setDataHandler(new DataHandler(new ByteArrayDataSource(logoBytes, "image/jpeg")));
-            logoPart.setHeader("Content-ID", "<logo>");
-            logoPart.setDisposition(MimeBodyPart.INLINE);
-
             MimeMultipart related = new MimeMultipart("related");
             related.addBodyPart(htmlPart);
-            related.addBodyPart(logoPart);
 
             MimeMultipart multipart = new MimeMultipart("mixed");
             MimeBodyPart relatedPart = new MimeBodyPart();
@@ -241,7 +224,7 @@ public class EmailService {
 
     private JsonArray buildGraphRecipients(String addresses) {
         JsonArray arr = new JsonArray();
-        for (String addr : addresses.split(",")) {
+        for (String addr : addresses.split("[,;]")) {
             addr = addr.trim();
             if (addr.isEmpty()) continue;
             JsonObject r = new JsonObject();
@@ -309,7 +292,7 @@ public class EmailService {
           .append("table.details td:last-child{color:#222}")
           .append(".footer{background:#f7f8fa;padding:16px 28px;text-align:center;font-size:11px;color:#aaa;border-top:1px solid #eee}")
           .append("</style></head><body><div class='wrap'><div class='card'>")
-          .append("<div class='logo-bar'><img src='cid:logo' alt='Island Pacific'/></div>")
+          .append("<div class='logo-bar'><img src='").append(buildLogoDataUri()).append("' alt='Island Pacific'/></div>")
           .append("<div class='badge-bar'><h2>").append(heading)
           .append("<span class='badge'>").append(badge).append("</span></h2></div>")
           .append("<div class='body'>")
@@ -327,5 +310,21 @@ public class EmailService {
           .append("<div class='footer'>&copy; ").append(year).append(" Island Pacific. All rights reserved. &nbsp;|&nbsp; Operations Monitor</div>")
           .append("</div></div></body></html>");
         return sb.toString();
+    }
+
+    private String buildLogoDataUri() {
+        if (!logoPath.isEmpty()) {
+            java.nio.file.Path p = java.nio.file.Paths.get(logoPath);
+            if (java.nio.file.Files.exists(p)) {
+                try {
+                    byte[] bytes = java.nio.file.Files.readAllBytes(p);
+                    String mime = logoPath.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
+                    return "data:" + mime + ";base64," + Base64.getEncoder().encodeToString(bytes);
+                } catch (java.io.IOException e) {
+                    logger.warning("Could not load logo from " + logoPath + ": " + e.getMessage());
+                }
+            }
+        }
+        return DEFAULT_LOGO_BASE64;
     }
 }

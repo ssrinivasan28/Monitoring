@@ -16,8 +16,8 @@ public class MainFileMemberMonitoringApp {
     private static HTTPServer prometheusServer;
 
     public static void main(String[] args) {
-        String fileMemberMonitorConfigFile = "filemembermonitor.properties";
-        String emailConfigFile = "email.properties";
+        String emailConfigFile = args.length >= 1 ? args[0] : "email.properties";
+        String fileMemberMonitorConfigFile = args.length >= 2 ? args[1] : "ibmfilemembermonitor.properties";
 
         try {
             // Load configuration first to read log.level
@@ -45,8 +45,8 @@ public class MainFileMemberMonitoringApp {
             logger.info("IBM i File Member Service initialized.");
 
             logger.info("Initializing Email Service...");
-            // FIX: Pass the entire email properties object to EmailService constructor
-            emailService = new EmailService(config.getEmailProperties());
+            String logoPath = config.getFileMemberProps().getProperty("logo.path", "");
+            emailService = new EmailService(config.getEmailProperties(), logoPath);
             logger.info("Email Service initialized.");
 
             if (config.isFileMemberMonitorEnabled()) {
@@ -86,7 +86,7 @@ public class MainFileMemberMonitoringApp {
 
         } catch (IOException e) {
             logger.log(Level.SEVERE, "Failed to load configuration files: " + e.getMessage(), e);
-            logger.log(Level.SEVERE, "Application will exit. Please ensure 'filemembermonitor.properties' and 'email.properties' are in the working directory.");
+            logger.log(Level.SEVERE, "Application will exit. Please ensure 'ibmfilemembermonitor.properties' and 'email.properties' are in the working directory.");
         } catch (Exception e) {
             logger.log(Level.SEVERE, "An unhandled error occurred during application startup or runtime: " + e.getMessage(), e);
             logger.log(Level.SEVERE, "Application will exit.", e);

@@ -2,7 +2,38 @@
   "permissions": {
     "allow": [
       "Bash(wc -l /c/RD/Monitoring/Monitoring/src/main/java/com/islandpacific/monitoring/*/*.java)",
-      "Bash(grep -l \"class.*Monitor\" /c/RD/Monitoring/Monitoring/src/main/java/com/islandpacific/monitoring/*/*.java)"
+      "Bash(grep -l \"class.*Monitor\" /c/RD/Monitoring/Monitoring/src/main/java/com/islandpacific/monitoring/*/*.java)",
+      "PowerShell(New-Item -ItemType Directory -Force C:\\\\RD\\\\Monitoring\\\\Monitoring\\\\installer\\\\resources\\\\monitoring-services\\\\FolderLogKeywordMonitor, C:\\\\RD\\\\Monitoring\\\\Monitoring\\\\installer\\\\resources\\\\monitoring-services\\\\CredTool | Out-Null; Copy-Item C:\\\\RD\\\\Monitoring\\\\Monitoring\\\\target\\\\monitors\\\\FolderLogKeywordMonitor.jar C:\\\\RD\\\\Monitoring\\\\Monitoring\\\\installer\\\\resources\\\\monitoring-services\\\\FolderLogKeywordMonitor\\\\; Copy-Item C:\\\\RD\\\\Monitoring\\\\Monitoring\\\\target\\\\monitors\\\\CredTool.jar C:\\\\RD\\\\Monitoring\\\\Monitoring\\\\installer\\\\resources\\\\monitoring-services\\\\CredTool\\\\; $iscc = \"C:\\\\Program Files \\(x86\\)\\\\Inno Setup 6\\\\ISCC.exe\"; if \\(-not \\(Test-Path $iscc\\)\\) { $iscc = \"C:\\\\Program Files\\\\Inno Setup 6\\\\ISCC.exe\" }; & $iscc /Qp \"/OC:\\\\RD\\\\Monitoring\\\\Monitoring\\\\target\\\\iss-check\" C:\\\\RD\\\\Monitoring\\\\Monitoring\\\\WindowsMonitoringSetup.iss; \"EXIT: $LASTEXITCODE\")",
+      "Bash(rm IBMIFSErrorMonitor/WinFSErrorMonitor.jar)",
+      "Bash(rm IBMSubSystemMonitoring/IBMSubSystemMonitoring.jar)",
+      "Bash(rm IBMSystemMatrix/IBMSystemMatrix.jar)",
+      "Bash(rm QSYSOPRMonitoring/QSYSOPRMonitoring.jar)",
+      "Bash(rm NetWorkEnabler/NetWorkEnabler.jar)",
+      "Bash(ls \"C:/Program Files/Island Pacific/IBM i Monitoring Agent/monitoring-services/\" 2>/dev/null)",
+      "Read(//c/Program Files/Island Pacific/IBM i Monitoring Agent/monitoring-services/**)",
+      "PowerShell(& \"C:\\\\Program Files \\(x86\\)\\\\Inno Setup 6\\\\ISCC.exe\" \"c:\\\\RD\\\\Monitoring\\\\Monitoring\\\\IBMiMonitoringSetup.iss\" 2>&1)",
+      "PowerShell(Copy-Item \"c:\\\\RD\\\\Monitoring\\\\Monitoring\\\\apiurlmonitor.properties\" -Destination \"c:\\\\RD\\\\Monitoring\\\\Monitoring\\\\installer\\\\resources\\\\monitoring-services\\\\APIMonitor\\\\\" -Force)",
+      "PowerShell(Copy-Item \"c:\\\\RD\\\\Monitoring\\\\Monitoring\\\\email.properties\" -Destination \"c:\\\\RD\\\\Monitoring\\\\Monitoring\\\\installer\\\\resources\\\\monitoring-services\\\\APIMonitor\\\\\" -Force)",
+      "Bash(find . -iname \"AppServerMonitors*.iss\")",
+      "Bash(find . -iname \"*.iss\" -newer pom.xml)",
+      "Bash(grep -n \"log.directory\\\\|log.folder\\\\|logs\\\\\\\\\\\\\\\\\" AppServerMonitors.iss)",
+      "Bash(powershell -NoProfile -Command \"if \\(Test-Path 'C:\\\\Logs'\\) { Get-ChildItem -Path 'C:\\\\Logs' -Recurse -File | Select-Object -First 20 FullName, Length, LastWriteTime } else { Write-Output 'C:\\\\Logs does not exist' }\")",
+      "Bash(powershell -NoProfile -Command \"Select-String -Path 'C:\\\\Logs\\\\Errors\\\\*.log' -Pattern 'ERROR|FATAL|Exception|FAILED' -List | Select-Object Path | Select-Object -First 5\")",
+      "Bash(powershell -NoProfile -Command \"Get-ChildItem -Path 'logs' -Filter 'folderkeywordmonitoring_*.log' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1 FullName\")",
+      "Bash(powershell -NoProfile -Command \"Get-ChildItem -Path . -Recurse -Filter 'folderkeywordmonitoring_*.log' -ErrorAction SilentlyContinue | Select-Object FullName, LastWriteTime\")",
+      "Bash(powershell -NoProfile -Command \"Get-Service -Name 'IPMonitoring_FolderLogKeywordMonitor' -ErrorAction SilentlyContinue | Select-Object Name, Status; Get-CimInstance Win32_Service -Filter \\\\\"Name='IPMonitoring_FolderLogKeywordMonitor'\\\\\" -ErrorAction SilentlyContinue | Select-Object PathName\")",
+      "Bash(powershell -NoProfile -Command \"Get-CimInstance Win32_Service -Filter \\\\\"Name='IPMonitoring_FolderLogKeywordMonitor'\\\\\" | Select-Object PathName, Name | Format-List\")",
+      "Bash(D='/c/Program Files/Island Pacific/AppServerMonitors/monitoring-services/FolderLogKeywordMonitor' *)",
+      "Read(//c/Program Files/Island Pacific/AppServerMonitors/monitoring-services/FolderLogKeywordMonitor/**)",
+      "Bash(powershell -NoProfile -Command \"sc.exe query IPMonitoring_FolderLogKeywordMonitor\")",
+      "Bash(powershell -NoProfile -Command \"Get-Service -Name 'IPMonitoring_FolderLogKeywordMonitor' -ErrorAction SilentlyContinue; Get-CimInstance Win32_Service -Filter \\\\\"Name='IPMonitoring_FolderLogKeywordMonitor'\\\\\" -ErrorAction SilentlyContinue\")",
+      "Read(//c/Program Files/Island Pacific/AppServerMonitors/services/**)",
+      "Read(//c/Program Files/Island Pacific/AppServerMonitors/monitoring-services/LogKeywordMonitor/**)",
+      "Read(//c/Program Files/Island Pacific/AppServerMonitors/services/logs/**)",
+      "Bash(powershell -NoProfile -Command \"Get-Process -Id 21656 -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, StartTime, Responding\")",
+      "Read(//c/Program Files/Island Pacific/AppServerMonitors/monitoring-services/**)",
+      "Bash(cat \"/c/Program Files/Island Pacific/AppServerMonitors/services/IPMonitoring_FolderLogKeywordMonitor.xml\")",
+      "Bash(\"/c/Program Files \\(x86\\)/Inno Setup 6/ISCC.exe\" AppServerMonitors.iss)"
     ]
   }
 }

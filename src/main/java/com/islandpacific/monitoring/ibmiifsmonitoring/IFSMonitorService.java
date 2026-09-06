@@ -32,6 +32,11 @@ public class IFSMonitorService {
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> newFileCounts;
     private final ConcurrentHashMap<String, IFSMonitorConfig.SmbCredentials> globalSmbCredentials;
 
+    // Locations currently in an access-error state for which an alert has already
+    // been sent. Used to send only ONE email per outage instead of one per retry;
+    // an entry is cleared once the folder becomes accessible again.
+    private final Set<String> locationsInAccessError = ConcurrentHashMap.newKeySet();
+
     private static final Pattern FILE_EXTENSION_PATTERN = Pattern.compile("\\.([a-zA-Z0-9]{1,5})(?:\\s.*)?$");
 
     /**
@@ -66,19 +71,12 @@ public class IFSMonitorService {
      */
     public void monitorFolder(IFSMonitorConfig.MonitoringConfig config) {
         String locationName = config.getName();
-        String folderPathString = config.getPathString(); // Use the original string for logging
+        String folderPathString = config.getPathString();
         int minFiles = config.getMinFiles();
         int maxFiles = config.getMaxFiles();
         String monitorServerName = config.getMonitorServerName();
 
-        Logger currentLogger = config.getLocationLogger();
-        // Defensive null check for currentLogger
-        if (currentLogger == null) {
-            mainLogger.severe(String.format(
-                    "Critical Error: Location logger is null for monitoring config '%s' (Path: %s). Using main logger for this scan cycle.",
-                    locationName, folderPathString));
-            currentLogger = mainLogger; // Fallback to main logger to avoid NPE
-        }
+        Logger currentLogger = mainLogger;
 
         Set<String> processedPathsForLocation = config.getProcessedFilePaths();
         String stateFilePath = config.getProcessedFilesStateFilePath();
@@ -95,51 +93,37 @@ public class IFSMonitorService {
 
         try {
             if (config.isSmbPath()) {
-                // SMB path handling using smbj
                 String server = config.getServerIp();
                 String share = config.getShareName();
                 String pathInShare = config.getSharePath();
 
+                IFSMonitorConfig.SmbCredentials creds = globalSmbCredentials.get(server);
+                if (creds == null) {
+                    currentLogger.severe(String.format(
+                            "No SMB credentials for server %s (location '%s'). Cannot monitor.",
+                            server, locationName));
+                    handleAccessError(locationName, folderPathString, monitorServerName,
+                            "No credentials configured for server " + server, "Configuration Error", -3);
+                    return;
+                }
+
                 SMBClient client = new SMBClient();
                 try (Connection connection = client.connect(server)) {
-                    AuthenticationContext ac = null;
-                    IFSMonitorConfig.SmbCredentials creds = globalSmbCredentials.get(server);
-                    if (creds != null) {
-                        ac = creds.toAuthenticationContext();
-                        currentLogger
-                                .info(String.format("Using provided SMB credentials for server %s for location '%s'.",
-                                        server, locationName));
-                    } else {
-                        currentLogger.warning(String.format(
-                                "SMB path '%s' for location '%s' has no global credentials defined for server %s. Attempting anonymous access, which may fail.",
-                                folderPathString, locationName, server));
-                    }
-
+                    AuthenticationContext ac = creds.toAuthenticationContext();
                     Session smbjSession = connection.authenticate(ac);
                     try (DiskShare diskShare = (DiskShare) smbjSession.connectShare(share)) {
-                        // Check if the share path exists and is a directory within the share
                         if (!diskShare.folderExists(pathInShare)) {
                             currentLogger.warning(String.format(
-                                    "SMB folder does not exist or is not a directory: smb://%s/%s/%s. Cannot monitor.",
-                                    server, share, pathInShare));
-                            // IFSMonitorMetrics.setFileCount(locationName, -1);
-                            // String subject = String.format("CRITICAL ALERT on %s: SMB Folder Inaccessible
-                            // - %s", monitorServerName, locationName);
-                            // String body = String.format("Observation from server %s: The SMB folder at
-                            // smb://%s/%s/%s does not exist or is inaccessible. Please verify the path and
-                            // permissions.", monitorServerName, server, share, pathInShare);
-                            // emailService.sendEmail(locationName, folderPathString, subject, body,
-                            // "High");
-                            IFSMonitorMetrics.incrementTooFewFilesAlert(locationName);
+                                    "SMB folder does not exist: smb://%s/%s/%s", server, share, pathInShare));
+                            handleAccessError(locationName, folderPathString, monitorServerName,
+                                    "Folder does not exist: smb://" + server + "/" + share + "/" + pathInShare,
+                                    "Folder Not Found", -1);
                             return;
                         }
 
                         for (FileIdBothDirectoryInformation fileInfo : diskShare.list(pathInShare)) {
-                            // FILE_ATTRIBUTE_DIRECTORY has a value of 16 (0x10)
-                            if ((fileInfo.getFileAttributes() & 16L) == 0) { // If the directory bit is NOT set, it's a
-                                                                             // regular file
+                            if ((fileInfo.getFileAttributes() & 16L) == 0) {
                                 String fileName = fileInfo.getFileName();
-                                // Apply file extension filtering if configured
                                 if (configuredFileExtensions.isEmpty()
                                         || isFileExtensionMatch(fileName, configuredFileExtensions)) {
                                     allMatchingFileNames.add(fileName);
@@ -149,53 +133,36 @@ public class IFSMonitorService {
                     }
                 } catch (SMBException e) {
                     currentLogger.log(Level.SEVERE, String.format(
-                            "SMB access denied or error for location '%s' (%s): %s. Please check credentials and network access.",
+                            "SMB access error for location '%s' (%s): %s",
                             locationName, folderPathString, e.getMessage()), e);
                     handleAccessError(locationName, folderPathString, monitorServerName, e.getMessage(),
                             "Permission Denied", -3);
                     return;
                 } catch (IOException e) {
-                    currentLogger.log(Level.SEVERE,
-                            String.format("Error during SMB client operation for location '%s' (%s): %s", locationName,
-                                    folderPathString, e.getMessage()),
-                            e);
-                    handleAccessError(locationName, folderPathString, monitorServerName, e.getMessage(), "Access Error",
-                            -2);
+                    currentLogger.log(Level.SEVERE, String.format(
+                            "SMB I/O error for location '%s' (%s): %s",
+                            locationName, folderPathString, e.getMessage()), e);
+                    handleAccessError(locationName, folderPathString, monitorServerName, e.getMessage(),
+                            "Access Error", -2);
                     return;
                 } finally {
-                    client.close(); // Ensure SMBClient is closed
+                    client.close();
                 }
 
             } else {
-                // Local/OS-managed path handling using java.nio.file
                 Path folderPath = config.getLocalPath();
 
                 if (!Files.exists(folderPath)) {
-                    currentLogger
-                            .warning(String.format("Local folder does not exist: %s. Cannot monitor.", folderPath));
-                    IFSMonitorMetrics.setFileCount(locationName, -1);
-                    // String subject = String.format("CRITICAL ALERT on %s: Local Folder
-                    // Inaccessible - %s", monitorServerName, locationName);
-                    // String body = String.format("Observation from server %s: The local folder at
-                    // %s does not exist or is inaccessible. Please verify the path and
-                    // permissions.", monitorServerName, folderPath);
-                    // emailService.sendEmail(locationName, folderPathString, subject, body,
-                    // "High");
-                    IFSMonitorMetrics.incrementTooFewFilesAlert(locationName);
+                    currentLogger.warning(String.format("Local folder does not exist: %s", folderPath));
+                    handleAccessError(locationName, folderPathString, monitorServerName,
+                            "Folder does not exist: " + folderPath, "Folder Not Found", -1);
                     return;
                 }
 
                 if (!Files.isDirectory(folderPath)) {
-                    currentLogger
-                            .warning(String.format("Local path is not a directory: %s. Cannot monitor.", folderPath));
-                    IFSMonitorMetrics.setFileCount(locationName, -1);
-                    // String subject = String.format("CRITICAL ALERT on %s: Local Path Not a
-                    // Directory - %s", monitorServerName, locationName);
-                    // String body = String.format("Observation from server %s: The path %s is not a
-                    // directory. Please verify the path.", monitorServerName, folderPath);
-                    // emailService.sendEmail(locationName, folderPathString, subject, body,
-                    // "High");
-                    IFSMonitorMetrics.incrementTooFewFilesAlert(locationName);
+                    currentLogger.warning(String.format("Local path is not a directory: %s", folderPath));
+                    handleAccessError(locationName, folderPathString, monitorServerName,
+                            "Path is not a directory: " + folderPath, "Configuration Error", -1);
                     return;
                 }
 
@@ -255,6 +222,13 @@ public class IFSMonitorService {
         int minFiles = config.getMinFiles();
         int maxFiles = config.getMaxFiles();
         String monitorServerName = config.getMonitorServerName();
+
+        // Reaching here means the folder was accessed successfully. Clear any prior
+        // access-error state so the next outage sends a fresh alert.
+        if (locationsInAccessError.remove(locationName)) {
+            currentLogger.info(String.format(
+                    "IFS location '%s' is accessible again; access-error alert state cleared.", locationName));
+        }
 
         int currentTotal = allMatchingFileNames.size();
         // This logic for new files and processedPathsForLocation is still needed for
@@ -351,21 +325,25 @@ public class IFSMonitorService {
      */
     private void handleAccessError(String locationName, String folderPathString, String monitorServerName,
             String errorMessage, String errorType, int metricCode) {
-        // String subject = String.format("CRITICAL ALERT on %s: IFS Folder %s - %s",
-        // monitorServerName, errorType, locationName);
-        // String body = String.format("Observation from server %s: A critical error
-        // occurred while trying to access the IFS folder at %s: %s. Please investigate
-        // immediately.", monitorServerName, folderPathString, errorMessage);
+        IFSMonitorMetrics.setFileCount(locationName, metricCode);
+        IFSMonitorMetrics.incrementTooFewFilesAlert(locationName);
+        // metricCode -1 = folder not found; silently skip, no alert
+        if (metricCode == -1) return;
 
-        // emailService.sendEmail(
-        // locationName,
-        // folderPathString,
-        // subject,
-        // body,
-        // "High" // Always send high importance for access errors
-        // );
-        IFSMonitorMetrics.setFileCount(locationName, metricCode); // Indicate error state
-        IFSMonitorMetrics.incrementTooFewFilesAlert(locationName); // Log as a "too few" type alert for monitoring
-                                                                   // dashboards
+        // Send only ONE email per outage: if this location was already alerted and
+        // has not recovered since, suppress the repeat on this retry.
+        if (!locationsInAccessError.add(locationName)) {
+            mainLogger.info(String.format(
+                    "Access error for '%s' persists (%s); alert already sent for this outage, suppressing repeat email.",
+                    locationName, errorType));
+            return;
+        }
+
+        String subject = String.format("CRITICAL ALERT on %s: IFS Folder %s - %s",
+                monitorServerName, errorType, locationName);
+        String body = String.format(
+                "Observation from server %s: A critical error occurred while accessing the IFS folder at %s: %s. Please investigate immediately.",
+                monitorServerName, folderPathString, errorMessage);
+        emailService.sendEmail(locationName, folderPathString, subject, body, "High");
     }
 }
