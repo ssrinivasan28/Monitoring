@@ -11,9 +11,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
 @AutoConfigureMockMvc
-public class SpaWebControllerTest {
+public class SpaWebControllerTest extends AbstractIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
