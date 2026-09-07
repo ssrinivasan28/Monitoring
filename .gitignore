@@ -1,4 +1,4 @@
-﻿# =========================
+# =========================
 # Eclipse / IDE metadata
 # =========================
 .metadata/
@@ -20,6 +20,8 @@ installer/
 # Build outputs
 # =========================
 target/
+node_modules/
+
 
 # =========================
 # OS / temporary files
