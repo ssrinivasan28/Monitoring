@@ -11,8 +11,21 @@ import java.util.Base64;
  */
 public interface SecretProtector {
 
+    String REDACTED = "[REDACTED]";
+
     String resolve(String value);
     String protect(String plaintext);
+
+    static boolean containsSecret(String value) {
+        if (value == null) return false;
+        String lower = value.toLowerCase();
+        return lower.contains("password") || lower.contains("bearer ") || lower.contains("dpapi(");
+    }
+
+    static String redact(String value) {
+        return REDACTED;
+    }
+
 
     @Component
     class DefaultSecretProtector implements SecretProtector {
