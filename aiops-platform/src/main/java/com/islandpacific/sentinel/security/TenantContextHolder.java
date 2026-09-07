@@ -17,6 +17,18 @@ public class TenantContextHolder {
         return Optional.ofNullable(CONTEXT_HOLDER.get());
     }
 
+    public static UUID getTenantId() {
+        return getContext().map(TenantContext::getTenantId).orElse(null);
+    }
+
+    public static void setTenantId(UUID tenantId) {
+        if (tenantId == null) {
+            clear();
+        } else {
+            setContext(new TenantContext(UUID.randomUUID(), tenantId, "client-instance", "STAFF_ADMIN"));
+        }
+    }
+
     public static UUID getRequiredTenantId() {
         return getContext()
                 .map(TenantContext::getTenantId)
@@ -26,4 +38,6 @@ public class TenantContextHolder {
     public static void clear() {
         CONTEXT_HOLDER.remove();
     }
+
+
 }
