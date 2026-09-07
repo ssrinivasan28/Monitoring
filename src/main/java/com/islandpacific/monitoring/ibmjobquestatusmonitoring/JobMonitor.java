@@ -122,7 +122,7 @@ public class JobMonitor {
 
                 }
                 // Handle RECOVERY transition
-                else if (currentStatusActive && !lastStatusActive) {
+                else if (currentStatusActive && !lastStatusActive && jobInfo != null) {
                     String currentStatusStr = jobInfo.getJobStatus();
                     String sbsName = jobInfo.getSubsystemName() != null ? jobInfo.getSubsystemName()
                             : expectedSubsystem;

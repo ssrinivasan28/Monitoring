@@ -31,8 +31,6 @@ public class WinDailyReportService {
     private static final Color COLOR_CPU    = new Color(0x2196F3);
     private static final Color COLOR_MEM    = new Color(0xFF9800);
     private static final Color COLOR_DISK   = new Color(0x9C27B0);
-    private static final Color COLOR_NET_RX = new Color(0x4CAF50);
-    private static final Color COLOR_NET_TX = new Color(0xF44336);
 
     private final WinDailyMetricStore store;
     private final String clientName;
@@ -196,7 +194,6 @@ public class WinDailyReportService {
     private JFreeChart buildDiskChart(List<WinMetricRecord> recs, Set<String> drives) {
         TimeSeriesCollection dataset = new TimeSeriesCollection();
         Color[] palette = {COLOR_DISK, new Color(0x00BCD4), new Color(0xFF5722), new Color(0x8BC34A), new Color(0x607D8B)};
-        int idx = 0;
         for (String drive : drives) {
             TimeSeries series = new TimeSeries(drive);
             for (WinMetricRecord r : recs) {
@@ -204,7 +201,6 @@ public class WinDailyReportService {
                 if (s != null) series.addOrUpdate(new Millisecond(Date.from(r.timestamp)), s.pct);
             }
             dataset.addSeries(series);
-            idx++;
         }
         JFreeChart chart = ChartFactory.createTimeSeriesChart("Disk Usage (%)", "Time", "%",
                 dataset, drives.size() > 1, false, false);

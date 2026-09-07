@@ -219,6 +219,10 @@ public class EmailService {
         }
     }
 
+    String buildHtmlContent(SubsystemInfo subsystemInfo, boolean embedLogoAsDataUri) {
+        return buildHtmlContent(subsystemInfo);
+    }
+
     private String buildHtmlContent(SubsystemInfo subsystemInfo) {
         String logoDataUri = buildLogoDataUri();
         StringBuilder sb = new StringBuilder();

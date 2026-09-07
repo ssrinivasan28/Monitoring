@@ -262,6 +262,11 @@ public class EmailService {
         }
     }
 
+    String buildDisabledAlertHtml(Map<String, String> disabledUsers,
+            String eventTimestamp, String systemName, String clientName, boolean embedLogoAsDataUri) {
+        return buildDisabledAlertHtml(disabledUsers, eventTimestamp, systemName, clientName);
+    }
+
     private String buildDisabledAlertHtml(Map<String, String> disabledUsers,
             String eventTimestamp,
             String systemName,

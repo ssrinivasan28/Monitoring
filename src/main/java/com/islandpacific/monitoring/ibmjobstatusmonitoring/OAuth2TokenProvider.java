@@ -36,6 +36,10 @@ public class OAuth2TokenProvider {
                 : "https://login.microsoftonline.com/" + tenantId + "/oauth2/v2.0/token";
     }
 
+    public String getTenantId() {
+        return tenantId;
+    }
+
     public synchronized String getAccessToken() throws IOException {
         long now = System.currentTimeMillis() / 1000;
         if (cachedToken != null && now < tokenExpiryEpochSeconds - EXPIRY_BUFFER_SECONDS) {

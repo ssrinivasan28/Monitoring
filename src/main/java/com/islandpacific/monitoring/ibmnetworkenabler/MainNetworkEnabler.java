@@ -194,7 +194,6 @@ public class MainNetworkEnabler {
         return false;
     }
 
-    @SuppressWarnings("deprecation")
     private static void callQZLSCHSIAPI(AS400 system, String userProfile) throws Exception {
         ProgramCall programCall = new ProgramCall(system);
         ProgramParameter[] parmList = new ProgramParameter[4];

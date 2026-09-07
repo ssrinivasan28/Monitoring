@@ -116,15 +116,6 @@ public class FileMemberMonitorConfig {
         }
     }
 
-    private boolean isValidLong(String str) {
-        try {
-            Long.parseLong(str);
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
-
     // IBM i Connection Properties
     public String getIbmiHost() { return fileMemberMonitorProps.getProperty("ibmi.host"); }
     public String getIbmiUser() { return fileMemberMonitorProps.getProperty("ibmi.user"); }
