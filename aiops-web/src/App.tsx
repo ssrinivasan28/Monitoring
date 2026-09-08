@@ -25,10 +25,10 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0F172A', color: 'white' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-main)', color: 'var(--text-main)' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.5rem' }}>Loading IP Sentinel Shell...</div>
-          <div style={{ fontSize: '0.85rem', color: '#94A3B8' }}>Verifying tenant session & entitlements</div>
+          <div style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--brand-primary)' }}>Loading IP Sentinel Shell...</div>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Verifying tenant session & entitlements</div>
         </div>
       </div>
     );

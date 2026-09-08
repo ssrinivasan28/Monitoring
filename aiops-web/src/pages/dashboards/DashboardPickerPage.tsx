@@ -1,22 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  listDashboards, 
-  deleteCustomDashboard, 
-  importGrafanaDashboard, 
-  saveCustomDashboard, 
-  DashboardDefinition 
+import {
+  listDashboards,
+  deleteCustomDashboard,
+  importGrafanaDashboard,
+  saveCustomDashboard,
+  DashboardDefinition
 } from '../../services/dashboardService';
-import { 
-  LayoutDashboard, 
-  Plus, 
-  Upload, 
-  Trash2, 
-  Eye, 
-  Search, 
-  Filter, 
-  CheckCircle, 
-  AlertCircle, 
+import {
+  LayoutDashboard,
+  Plus,
+  Upload,
+  Trash2,
+  Eye,
+  Search,
+  AlertCircle,
   FileJson,
   Layers
 } from 'lucide-react';
@@ -135,78 +133,52 @@ export const DashboardPickerPage: React.FC = () => {
     return matchesSearch && matchesCategory;
   });
 
+  const jsonEditorStyle: React.CSSProperties = {
+    width: '100%',
+    backgroundColor: '#0D1B2E',
+    border: '1px solid var(--border-color)',
+    borderRadius: 'var(--radius-sm)',
+    padding: '0.75rem',
+    color: '#7dd3fc',
+    fontFamily: 'var(--font-mono)',
+    fontSize: '0.75rem',
+  };
+
   return (
-    <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Header */}
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'white', margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <LayoutDashboard size={24} color="#0057B8" /> Dashboard Catalog & Engine
+          <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <LayoutDashboard size={22} strokeWidth={1.75} color="var(--brand-primary)" /> Dashboard Catalog & Engine
           </h1>
-          <div style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: '0.25rem' }}>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
             Config-driven dashboard definitions for IBM i, Windows, Network services & custom Grafana imports
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <button
-            onClick={() => setShowImportModal(true)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.55rem 0.95rem',
-              backgroundColor: '#1E293B',
-              color: '#38BDF8',
-              border: '1px solid #0284C7',
-              borderRadius: 'var(--radius-sm)',
-              cursor: 'pointer',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-            }}
-          >
+          <button onClick={() => setShowImportModal(true)} className="btn btn-secondary">
             <Upload size={14} /> Import Grafana JSON
           </button>
 
-          <button
-            onClick={() => setShowCreateModal(true)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.55rem 0.95rem',
-              backgroundColor: '#0057B8',
-              color: 'white',
-              border: 'none',
-              borderRadius: 'var(--radius-sm)',
-              cursor: 'pointer',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-            }}
-          >
+          <button onClick={() => setShowCreateModal(true)} className="btn btn-primary">
             <Plus size={14} /> New Custom Dashboard
           </button>
         </div>
       </div>
 
       {/* Filter / Search Bar */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', backgroundColor: '#1E293B', padding: '0.85rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid #334155' }}>
+      <div className="card" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', padding: '0.85rem 1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: '240px' }}>
-          <Search size={16} color="#64748B" />
+          <Search size={16} strokeWidth={1.75} color="var(--text-muted)" />
           <input
             type="text"
             placeholder="Search dashboards by title, category, or ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              backgroundColor: '#0F172A',
-              border: '1px solid #334155',
-              borderRadius: 'var(--radius-sm)',
-              padding: '0.45rem 0.75rem',
-              color: 'white',
-              fontSize: '0.85rem',
-            }}
+            className="form-control"
+            style={{ width: '100%' }}
           />
         </div>
 
@@ -216,15 +188,14 @@ export const DashboardPickerPage: React.FC = () => {
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
+              className="pill"
               style={{
-                padding: '0.35rem 0.75rem',
-                borderRadius: 'var(--radius-full)',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                border: selectedCategory === cat ? '1px solid #0057B8' : '1px solid #334155',
-                backgroundColor: selectedCategory === cat ? '#0057B8' : '#0F172A',
-                color: selectedCategory === cat ? 'white' : '#94A3B8',
+                border: selectedCategory === cat ? '1px solid var(--brand-primary)' : '1px solid var(--border-color)',
+                backgroundColor: selectedCategory === cat ? 'var(--brand-primary)' : 'white',
+                color: selectedCategory === cat ? 'white' : 'var(--text-muted)',
                 cursor: 'pointer',
+                fontSize: '0.75rem',
+                padding: '0.35rem 0.75rem',
               }}
             >
               {cat}
@@ -235,15 +206,15 @@ export const DashboardPickerPage: React.FC = () => {
 
       {/* Catalog Grid */}
       {loading ? (
-        <div style={{ padding: '3rem', textAlign: 'center', color: '#94A3B8' }}>
+        <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
           Loading dashboard catalog...
         </div>
       ) : error ? (
-        <div style={{ padding: '1.5rem', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 'var(--radius-md)', color: '#991B1B' }}>
-          {error}
+        <div style={{ padding: '1.5rem', backgroundColor: 'var(--color-danger-bg)', border: '1px solid #FECACA', borderRadius: 'var(--radius-md)', color: '#991B1B', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <AlertCircle size={16} /> {error}
         </div>
       ) : filteredDashboards.length === 0 ? (
-        <div style={{ padding: '3rem', textAlign: 'center', color: '#64748B', backgroundColor: '#1E293B', borderRadius: 'var(--radius-md)', border: '1px dashed #334155' }}>
+        <div className="card-flat" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)', borderStyle: 'dashed' }}>
           No dashboards match your filter criteria.
         </div>
       ) : (
@@ -252,65 +223,40 @@ export const DashboardPickerPage: React.FC = () => {
             <div
               key={dash.id}
               onClick={() => navigate(`/dashboards/view/${dash.id}`)}
+              className="card"
               style={{
-                backgroundColor: '#1E293B',
-                border: '1px solid #334155',
-                borderRadius: 'var(--radius-md)',
-                padding: '1.25rem',
                 cursor: 'pointer',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 gap: '1rem',
-                transition: 'all 0.2s ease',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#0057B8')}
-              onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#334155')}
             >
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <span
-                    style={{
-                      fontSize: '0.7rem',
-                      fontWeight: 700,
-                      padding: '0.15rem 0.5rem',
-                      borderRadius: 'var(--radius-full)',
-                      backgroundColor: '#0F172A',
-                      color: '#38BDF8',
-                      border: '1px solid #0284C7',
-                    }}
-                  >
+                  <span className="badge badge-primary">
                     {dash.category || 'General'}
                   </span>
                   {dash.custom ? (
-                    <span
-                      style={{
-                        fontSize: '0.65rem',
-                        fontWeight: 700,
-                        padding: '0.15rem 0.45rem',
-                        borderRadius: 'var(--radius-full)',
-                        backgroundColor: '#F5A300',
-                        color: '#0F172A',
-                      }}
-                    >
+                    <span className="badge badge-accent">
                       Custom
                     </span>
                   ) : (
-                    <span style={{ fontSize: '0.65rem', color: '#64748B' }}>Bundled</span>
+                    <span style={{ fontSize: '0.65rem', color: 'var(--color-text-dim)' }}>Bundled</span>
                   )}
                 </div>
 
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', margin: 0, marginBottom: '0.4rem' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-main)', margin: 0, marginBottom: '0.4rem' }}>
                   {dash.title}
                 </h3>
-                <div style={{ fontSize: '0.75rem', color: '#94A3B8', fontFamily: 'monospace' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-dim)', fontFamily: 'var(--font-mono)' }}>
                   ID: {dash.id}
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #334155', paddingTop: '0.75rem' }}>
-                <span style={{ fontSize: '0.8rem', color: '#CBD5E1', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <Layers size={14} color="#F5A300" /> {(dash.panels || []).length} Panels
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.75rem' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Layers size={14} strokeWidth={1.75} color="var(--brand-accent)" /> {(dash.panels || []).length} Panels
                 </span>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -318,18 +264,12 @@ export const DashboardPickerPage: React.FC = () => {
                     <button
                       onClick={(e) => handleDelete(dash.id, dash.title, e)}
                       title="Delete Custom Dashboard"
-                      style={{
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        color: '#EF4444',
-                        cursor: 'pointer',
-                        padding: '0.3rem',
-                      }}
+                      style={{ color: '#ef4444', padding: '0.3rem' }}
                     >
                       <Trash2 size={16} />
                     </button>
                   )}
-                  <span style={{ fontSize: '0.8rem', color: '#0057B8', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--brand-primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
                     Open <Eye size={14} />
                   </span>
                 </div>
@@ -341,15 +281,15 @@ export const DashboardPickerPage: React.FC = () => {
 
       {/* Modal: Import Grafana JSON */}
       {showImportModal && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.75)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
-          <div style={{ backgroundColor: '#1E293B', width: '100%', maxWidth: '650px', borderRadius: 'var(--radius-md)', border: '1px solid #334155', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(13, 27, 46, 0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '650px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <FileJson size={18} color="#38BDF8" /> Import Grafana Dashboard JSON
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <FileJson size={18} strokeWidth={1.75} color="var(--brand-primary)" /> Import Grafana Dashboard JSON
               </h2>
-              <button onClick={() => setShowImportModal(false)} style={{ backgroundColor: 'transparent', border: 'none', color: '#94A3B8', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setShowImportModal(false)} style={{ color: 'var(--text-muted)' }}>✕</button>
             </div>
-            <p style={{ fontSize: '0.8rem', color: '#94A3B8', margin: 0 }}>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
               Paste raw exported Grafana dashboard JSON below. It will automatically be converted into an IP Sentinel config-driven dashboard definition.
             </p>
             <textarea
@@ -357,25 +297,16 @@ export const DashboardPickerPage: React.FC = () => {
               placeholder="Paste Grafana JSON here..."
               value={grafanaJsonText}
               onChange={(e) => setGrafanaJsonText(e.target.value)}
-              style={{
-                width: '100%',
-                backgroundColor: '#0F172A',
-                border: '1px solid #334155',
-                borderRadius: 'var(--radius-sm)',
-                padding: '0.75rem',
-                color: '#38BDF8',
-                fontFamily: 'monospace',
-                fontSize: '0.75rem',
-              }}
+              style={jsonEditorStyle}
             />
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-              <button onClick={() => setShowImportModal(false)} style={{ padding: '0.5rem 1rem', backgroundColor: '#334155', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}>
+              <button onClick={() => setShowImportModal(false)} className="btn btn-secondary">
                 Cancel
               </button>
               <button
                 onClick={handleImportGrafana}
                 disabled={importing || !grafanaJsonText.trim()}
-                style={{ padding: '0.5rem 1rem', backgroundColor: '#0057B8', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}
+                className="btn btn-primary"
               >
                 {importing ? 'Importing...' : 'Import Dashboard'}
               </button>
@@ -386,40 +317,31 @@ export const DashboardPickerPage: React.FC = () => {
 
       {/* Modal: New Custom Dashboard */}
       {showCreateModal && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.75)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
-          <div style={{ backgroundColor: '#1E293B', width: '100%', maxWidth: '650px', borderRadius: 'var(--radius-md)', border: '1px solid #334155', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(13, 27, 46, 0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '650px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Plus size={18} color="#F5A300" /> Create Custom Dashboard Definition
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Plus size={18} strokeWidth={1.75} color="var(--brand-accent)" /> Create Custom Dashboard Definition
               </h2>
-              <button onClick={() => setShowCreateModal(false)} style={{ backgroundColor: 'transparent', border: 'none', color: '#94A3B8', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setShowCreateModal(false)} style={{ color: 'var(--text-muted)' }}>✕</button>
             </div>
-            <p style={{ fontSize: '0.8rem', color: '#94A3B8', margin: 0 }}>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
               Edit the JSON definition for your custom dashboard:
             </p>
             <textarea
               rows={14}
               value={customJsonText}
               onChange={(e) => setCustomJsonText(e.target.value)}
-              style={{
-                width: '100%',
-                backgroundColor: '#0F172A',
-                border: '1px solid #334155',
-                borderRadius: 'var(--radius-sm)',
-                padding: '0.75rem',
-                color: '#38BDF8',
-                fontFamily: 'monospace',
-                fontSize: '0.75rem',
-              }}
+              style={jsonEditorStyle}
             />
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-              <button onClick={() => setShowCreateModal(false)} style={{ padding: '0.5rem 1rem', backgroundColor: '#334155', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}>
+              <button onClick={() => setShowCreateModal(false)} className="btn btn-secondary">
                 Cancel
               </button>
               <button
                 onClick={handleCreateCustom}
                 disabled={savingCustom || !customJsonText.trim()}
-                style={{ padding: '0.5rem 1rem', backgroundColor: '#0057B8', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}
+                className="btn btn-primary"
               >
                 {savingCustom ? 'Saving...' : 'Save & Open'}
               </button>

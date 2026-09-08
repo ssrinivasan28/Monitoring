@@ -353,7 +353,7 @@ export const DatasourcesPage: React.FC = () => {
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.6)',
+            backgroundColor: 'rgba(13, 27, 46, 0.5)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

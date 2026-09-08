@@ -52,12 +52,11 @@ export const ResetPasswordPage: React.FC = () => {
     <div
       style={{
         minHeight: '100vh',
-        backgroundColor: '#0F172A',
+        backgroundColor: 'var(--bg-main)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '1.5rem',
-        backgroundImage: 'radial-gradient(circle at 50% 0%, #0057B8 0%, #0F172A 70%)',
       }}
     >
       <div
@@ -65,8 +64,9 @@ export const ResetPasswordPage: React.FC = () => {
           width: '100%',
           maxWidth: '440px',
           backgroundColor: '#FFFFFF',
-          borderRadius: 'var(--radius-lg)',
-          boxShadow: 'var(--shadow-lg)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-md)',
+          boxShadow: 'var(--shadow-card)',
           overflow: 'hidden',
           padding: '2rem',
         }}

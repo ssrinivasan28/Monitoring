@@ -47,22 +47,20 @@ export const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '1rem',
-        backgroundColor: '#1E293B',
-        color: 'white',
       }}
     >
       {/* Tenant Context Selector */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-        <Building2 size={18} color="#60A5FA" />
-        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#94A3B8' }}>Tenant Context:</span>
+        <Building2 size={18} strokeWidth={1.75} color="var(--brand-primary)" />
+        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Tenant Context:</span>
         {tenants.length > 1 ? (
           <select
             value={activeTenantId || ''}
             onChange={(e) => setActiveTenantId(e.target.value)}
             style={{
-              backgroundColor: '#0F172A',
-              color: 'white',
-              border: '1px solid #334155',
+              backgroundColor: 'white',
+              color: 'var(--text-main)',
+              border: '1px solid var(--border-color)',
               borderRadius: 'var(--radius-sm)',
               padding: '0.35rem 0.65rem',
               fontSize: '0.85rem',
@@ -77,7 +75,7 @@ export const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
             ))}
           </select>
         ) : (
-          <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'white' }}>
+          <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-main)' }}>
             {activeTenant ? `${activeTenant.name} (${activeTenant.id.substring(0, 8)})` : 'Active Tenant'}
           </span>
         )}
@@ -86,8 +84,8 @@ export const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
       {/* Time Range & Refresh Control */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <Clock size={16} color="#94A3B8" />
-          <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>Time Range:</span>
+          <Clock size={16} strokeWidth={1.75} color="var(--text-muted)" />
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Time Range:</span>
           <select
             value={currentOption.seconds}
             onChange={(e) => {
@@ -96,9 +94,9 @@ export const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
               if (found) onRangeChange(found);
             }}
             style={{
-              backgroundColor: '#0F172A',
-              color: 'white',
-              border: '1px solid #334155',
+              backgroundColor: 'white',
+              color: 'var(--text-main)',
+              border: '1px solid var(--border-color)',
               borderRadius: 'var(--radius-sm)',
               padding: '0.35rem 0.65rem',
               fontSize: '0.85rem',
@@ -116,11 +114,8 @@ export const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
 
         <button
           onClick={onManualRefresh}
-          className="btn"
+          className="btn btn-primary"
           style={{
-            backgroundColor: '#0057B8',
-            color: 'white',
-            border: 'none',
             padding: '0.35rem 0.75rem',
             fontSize: '0.8rem',
             display: 'flex',

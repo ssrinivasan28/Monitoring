@@ -124,7 +124,7 @@ export const AiAssistantPage: React.FC = () => {
                     padding: '0.85rem 1.1rem',
                     borderRadius: 'var(--radius-md)',
                     backgroundColor: m.sender === 'user' ? '#0057B8' : '#F1F5F9',
-                    color: m.sender === 'user' ? 'white' : '#0F172A',
+                    color: m.sender === 'user' ? 'white' : 'var(--text-main)',
                     fontSize: '0.9rem',
                     lineHeight: 1.5,
                   }}

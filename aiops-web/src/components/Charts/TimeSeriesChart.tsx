@@ -355,7 +355,7 @@ export const TimeSeriesChart: React.FC<TimeSeriesChartProps> = ({
                     }}
                   />
                   <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{s.label}:</span>
-                  <span className="tabular-nums" style={{ fontWeight: 700, color: '#0F172A' }}>
+                  <span className="tabular-nums" style={{ fontWeight: 700, color: 'var(--text-main)' }}>
                     {displayVal}
                   </span>
                 </div>

@@ -2,22 +2,17 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTenants } from '../../context/TenantContext';
-import { TimeRangeSelector, TimeRangeOption, TIME_RANGE_OPTIONS } from '../../components/Charts/TimeRangeSelector';
+import { TimeRangeSelector, TimeRangeOption } from '../../components/Charts/TimeRangeSelector';
 import { TimeSeriesChart } from '../../components/Charts/TimeSeriesChart';
 import { StatCard, ThresholdStep } from '../../components/Charts/StatCard';
 import { StatusTable, ServiceStatusItem } from '../../components/Charts/StatusTable';
-import { getDashboard, DashboardDefinition, PanelDefinition } from '../../services/dashboardService';
+import { getDashboard, DashboardDefinition } from '../../services/dashboardService';
 import { queryPromqlInstant, queryPromqlRange, queryLogqlRange, transformMatrixToUPlot, UPlotDataBundle } from '../../services/queryService';
-import { 
-  ArrowLeft, 
-  RefreshCw, 
-  Code, 
-  AlertCircle, 
-  CheckCircle, 
-  Sliders, 
-  Layers, 
-  Search,
-  ExternalLink 
+import {
+  ArrowLeft,
+  RefreshCw,
+  Code,
+  AlertCircle,
 } from 'lucide-react';
 
 interface DynamicDashboardViewProps {
@@ -170,7 +165,7 @@ export const DynamicDashboardView: React.FC<DynamicDashboardViewProps> = ({ init
 
   if (loading) {
     return (
-      <div style={{ padding: '2rem', textAlign: 'center', color: '#94A3B8' }}>
+      <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
         <RefreshCw size={24} className="spin" style={{ marginBottom: '0.5rem' }} />
         <div>Loading dashboard definition...</div>
       </div>
@@ -179,17 +174,14 @@ export const DynamicDashboardView: React.FC<DynamicDashboardViewProps> = ({ init
 
   if (error || !dashboard) {
     return (
-      <div style={{ padding: '2rem' }}>
-        <div style={{ padding: '1.5rem', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 'var(--radius-md)', color: '#991B1B' }}>
+      <div>
+        <div style={{ padding: '1.5rem', backgroundColor: 'var(--color-danger-bg)', border: '1px solid #FECACA', borderRadius: 'var(--radius-md)', color: '#991B1B' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
             <AlertCircle size={20} />
             <span>Dashboard Load Error</span>
           </div>
           <div>{error || 'Dashboard definition not found.'}</div>
-          <button
-            onClick={() => navigate('/dashboards')}
-            style={{ marginTop: '1rem', padding: '0.5rem 1rem', backgroundColor: '#0057B8', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}
-          >
+          <button onClick={() => navigate('/dashboards')} className="btn btn-primary" style={{ marginTop: '1rem' }}>
             Back to Dashboard Catalog
           </button>
         </div>
@@ -198,73 +190,40 @@ export const DynamicDashboardView: React.FC<DynamicDashboardViewProps> = ({ init
   }
 
   return (
-    <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Header Bar */}
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <Link
             to="/dashboards"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#94A3B8', textDecoration: 'none', fontSize: '0.875rem' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.875rem' }}
           >
             <ArrowLeft size={16} /> Catalog
           </Link>
 
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'white', margin: 0 }}>
+              <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
                 {dashboard.title}
               </h1>
-              <span
-                style={{
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  padding: '0.2rem 0.6rem',
-                  borderRadius: 'var(--radius-full)',
-                  backgroundColor: '#1E293B',
-                  color: '#38BDF8',
-                  border: '1px solid #0284C7',
-                }}
-              >
+              <span className="badge badge-primary">
                 {dashboard.category || 'General'}
               </span>
               {dashboard.custom && (
-                <span
-                  style={{
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    padding: '0.2rem 0.6rem',
-                    borderRadius: 'var(--radius-full)',
-                    backgroundColor: '#F5A300',
-                    color: '#0F172A',
-                  }}
-                >
+                <span className="badge badge-accent">
                   Custom
                 </span>
               )}
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#94A3B8', marginTop: '0.25rem' }}>
-              Config-driven dashboard engine • Tenant: <strong style={{ color: 'white' }}>{activeTenant?.name || tenantIdStr}</strong>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+              Config-driven dashboard engine • Tenant: <strong style={{ color: 'var(--text-main)' }}>{activeTenant?.name || tenantIdStr}</strong>
             </div>
           </div>
         </div>
 
         {/* Right Controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <button
-            onClick={() => setShowJsonModal(true)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.5rem 0.85rem',
-              backgroundColor: '#0F172A',
-              color: '#38BDF8',
-              border: '1px solid #0284C7',
-              borderRadius: 'var(--radius-sm)',
-              cursor: 'pointer',
-              fontSize: '0.85rem',
-            }}
-          >
+          <button onClick={() => setShowJsonModal(true)} className="btn btn-secondary">
             <Code size={14} /> View JSON
           </button>
         </div>
@@ -293,12 +252,9 @@ export const DynamicDashboardView: React.FC<DynamicDashboardViewProps> = ({ init
           return (
             <div
               key={panel.id}
+              className="card"
               style={{
                 gridColumn: `span ${colSpan}`,
-                backgroundColor: '#1E293B',
-                border: '1px solid #334155',
-                borderRadius: 'var(--radius-md)',
-                padding: '1rem',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '0.75rem',
@@ -307,21 +263,21 @@ export const DynamicDashboardView: React.FC<DynamicDashboardViewProps> = ({ init
             >
               {/* Panel Header */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'white', margin: 0 }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>
                   {panel.title}
                 </h3>
-                <span style={{ fontSize: '0.7rem', color: '#64748B', fontFamily: 'monospace' }}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-dim)', fontFamily: 'var(--font-mono)' }}>
                   {panel.type}
                 </span>
               </div>
 
               {/* Panel Content / Isolated Fallback */}
               {pResult.loading ? (
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', fontSize: '0.85rem' }}>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                   <RefreshCw size={16} className="spin" style={{ marginRight: '0.4rem' }} /> Querying...
                 </div>
               ) : pResult.error ? (
-                <div style={{ padding: '0.75rem', backgroundColor: '#451A1A', border: '1px solid #7F1D1D', borderRadius: 'var(--radius-sm)', color: '#FCA5A5', fontSize: '0.8rem' }}>
+                <div style={{ padding: '0.75rem', backgroundColor: 'var(--color-danger-bg)', border: '1px solid #FECACA', borderRadius: 'var(--radius-sm)', color: '#b91c1c', fontSize: '0.8rem' }}>
                   <div style={{ fontWeight: 600, marginBottom: '0.2rem' }}>Panel Query Error</div>
                   <div>{pResult.error}</div>
                 </div>
@@ -339,11 +295,11 @@ export const DynamicDashboardView: React.FC<DynamicDashboardViewProps> = ({ init
                   tenantId={tenantIdStr}
                 />
               ) : panel.type === 'logs' ? (
-                <div style={{ flex: 1, backgroundColor: '#0F172A', borderRadius: 'var(--radius-sm)', padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.75rem', color: '#CBD5E1', overflowY: 'auto', maxHeight: '300px' }}>
+                <div style={{ flex: 1, backgroundColor: '#0D1B2E', borderRadius: 'var(--radius-sm)', padding: '0.75rem', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#CBD5E1', overflowY: 'auto', maxHeight: '300px' }}>
                   {Array.isArray(pResult.data) && pResult.data.length > 0 ? (
                     pResult.data.map((stream: any, idx: number) => (
                       <div key={idx} style={{ marginBottom: '0.5rem' }}>
-                        <div style={{ color: '#F5A300', fontWeight: 600 }}>{JSON.stringify(stream.stream || {})}</div>
+                        <div style={{ color: 'var(--brand-accent)', fontWeight: 600 }}>{JSON.stringify(stream.stream || {})}</div>
                         {(stream.values || []).map(([ts, line]: any, lIdx: number) => (
                           <div key={lIdx} style={{ paddingLeft: '0.5rem', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
                             <span style={{ color: '#64748B' }}>{new Date(parseInt(ts) / 1000000).toISOString()}</span> {line}
@@ -371,29 +327,26 @@ export const DynamicDashboardView: React.FC<DynamicDashboardViewProps> = ({ init
 
       {/* View JSON Definition Modal */}
       {showJsonModal && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.75)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
-          <div style={{ backgroundColor: '#1E293B', width: '100%', maxWidth: '700px', borderRadius: 'var(--radius-md)', border: '1px solid #334155', display: 'flex', flexDirection: 'column', maxHeight: '80vh' }}>
-            <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', margin: 0 }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(13, 27, 46, 0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '700px', display: 'flex', flexDirection: 'column', maxHeight: '80vh', padding: 0 }}>
+            <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>
                 JSON Definition — {dashboard.title}
               </h2>
               <button
                 onClick={() => setShowJsonModal(false)}
-                style={{ backgroundColor: 'transparent', border: 'none', color: '#94A3B8', cursor: 'pointer', fontSize: '1.2rem' }}
+                style={{ color: 'var(--text-muted)', fontSize: '1.2rem' }}
               >
                 ✕
               </button>
             </div>
             <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1 }}>
-              <pre style={{ backgroundColor: '#0F172A', padding: '1rem', borderRadius: 'var(--radius-sm)', color: '#38BDF8', fontSize: '0.8rem', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+              <pre style={{ backgroundColor: '#0D1B2E', padding: '1rem', borderRadius: 'var(--radius-sm)', color: '#7dd3fc', fontSize: '0.8rem', fontFamily: 'var(--font-mono)', whiteSpace: 'pre-wrap' }}>
                 {JSON.stringify(dashboard, null, 2)}
               </pre>
             </div>
-            <div style={{ padding: '1rem', borderTop: '1px solid #334155', textAlign: 'right' }}>
-              <button
-                onClick={() => setShowJsonModal(false)}
-                style={{ padding: '0.5rem 1rem', backgroundColor: '#0057B8', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}
-              >
+            <div style={{ padding: '1rem', borderTop: '1px solid var(--border-subtle)', textAlign: 'right' }}>
+              <button onClick={() => setShowJsonModal(false)} className="btn btn-primary">
                 Close
               </button>
             </div>

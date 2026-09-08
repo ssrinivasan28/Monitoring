@@ -6,23 +6,12 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
   const [mobileOpen, setMobileOpen] = useState<boolean>(false);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <Header onToggleMobileSidebar={() => setMobileOpen(!mobileOpen)} />
-      
-      <div style={{ display: 'flex', flex: 1, position: 'relative' }}>
-        <Sidebar mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} />
-        
-        <main
-          style={{
-            flex: 1,
-            padding: '1.75rem',
-            backgroundColor: '#F8FAFC',
-            overflowY: 'auto',
-            minWidth: 0,
-          }}
-        >
-          {children}
-        </main>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-main)' }}>
+      <Sidebar mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} />
+
+      <div className="app-main">
+        <Header onToggleMobileSidebar={() => setMobileOpen(!mobileOpen)} />
+        <main className="app-main-body">{children}</main>
       </div>
     </div>
   );
