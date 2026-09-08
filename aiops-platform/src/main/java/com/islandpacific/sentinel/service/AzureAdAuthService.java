@@ -55,7 +55,7 @@ public class AzureAdAuthService {
         Optional<User> userOpt = userRepository.findByEmail(email);
         User user;
         if (userOpt.isEmpty()) {
-            user = new User(email, "Island Pacific Staff Admin", "azure_ad", false, "ACTIVE");
+            user = new User(email, "Island Pacific Staff Admin", "azure_ad");
             user = userRepository.save(user);
         } else {
             user = userOpt.get();
