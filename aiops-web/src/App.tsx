@@ -14,6 +14,8 @@ import { AiAssistantPage } from './pages/AiAssistantPage';
 import { AuditLogsPage } from './pages/AuditLogsPage';
 import { DatasourcesPage } from './pages/DatasourcesPage';
 import { TenantsPage } from './pages/TenantsPage';
+import { DashboardPickerPage } from './pages/dashboards/DashboardPickerPage';
+import { DynamicDashboardView } from './pages/dashboards/DynamicDashboardView';
 import { WindowsMonitorDashboard } from './pages/dashboards/WindowsMonitorDashboard';
 import { WinServiceMonitorDashboard } from './pages/dashboards/WinServiceMonitorDashboard';
 import { LogExplorerPage } from './pages/LogExplorerPage';
@@ -59,11 +61,28 @@ export const App: React.FC = () => {
                 </ProtectedRoute>
               }
             />
+            {/* Dashboard Catalog & Engine Routes */}
+            <Route
+              path="/dashboards"
+              element={
+                <ProtectedRoute>
+                  <DashboardPickerPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboards/view/:id"
+              element={
+                <ProtectedRoute>
+                  <DynamicDashboardView />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/dashboards/windows"
               element={
                 <ProtectedRoute>
-                  <WindowsMonitorDashboard />
+                  <DynamicDashboardView initialId="windows-monitor" />
                 </ProtectedRoute>
               }
             />
@@ -71,7 +90,7 @@ export const App: React.FC = () => {
               path="/dashboards/win-service"
               element={
                 <ProtectedRoute>
-                  <WinServiceMonitorDashboard />
+                  <DynamicDashboardView initialId="win-service-monitor" />
                 </ProtectedRoute>
               }
             />

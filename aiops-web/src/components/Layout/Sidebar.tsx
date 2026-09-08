@@ -36,6 +36,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
       visible: true,
     },
     {
+      to: '/dashboards',
+      label: 'Dashboards Catalog',
+      icon: <LayoutDashboard size={18} color="#0057B8" />,
+      gated: false,
+      visible: true,
+    },
+    {
       to: '/dashboards/windows',
       label: 'Windows Monitor',
       icon: <LayoutDashboard size={18} color="#60A5FA" />,
