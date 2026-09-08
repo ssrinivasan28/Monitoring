@@ -39,51 +39,7 @@ export const FleetPage: React.FC = () => {
       setFleetData(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load fleet overview');
-      // Fallback mock data if API fails or empty in dev mode
-      setFleetData([
-        {
-          tenantId: 'd3b07384-d113-4602-9a00-111111111111',
-          name: 'Acme Retail IBM i',
-          clientInstanceId: 'ACME-PROD-01',
-          band: 'RED',
-          score: 96.5,
-          worstInput: 'asp',
-          inputs: [
-            { key: 'asp', name: 'IBM i ASP', value: 96.5, band: 'RED', stale: false },
-            { key: 'disk', name: 'Windows Disk', value: 45.0, band: 'GREEN', stale: false },
-            { key: 'cpu', name: 'CPU Utilization', value: 30.0, band: 'GREEN', stale: false },
-            { key: 'mem_jobq', name: 'Memory / Job-Q', value: 25.0, band: 'GREEN', stale: false }
-          ]
-        },
-        {
-          tenantId: 'e4c07384-d113-4602-9a00-222222222222',
-          name: 'Global Logistics WinServer',
-          clientInstanceId: 'GLOG-WIN-02',
-          band: 'AMBER',
-          score: 82.0,
-          worstInput: 'disk',
-          inputs: [
-            { key: 'asp', name: 'IBM i ASP', value: null, band: 'UNKNOWN', stale: true },
-            { key: 'disk', name: 'Windows Disk', value: 82.0, band: 'AMBER', stale: false },
-            { key: 'cpu', name: 'CPU Utilization', value: 65.0, band: 'GREEN', stale: false },
-            { key: 'mem_jobq', name: 'Memory / Job-Q', value: 78.0, band: 'AMBER', stale: false }
-          ]
-        },
-        {
-          tenantId: 'f5d07384-d113-4602-9a00-333333333333',
-          name: 'SmartRetail Systems',
-          clientInstanceId: 'SMARTRETAIL-01',
-          band: 'GREEN',
-          score: 42.1,
-          worstInput: 'cpu',
-          inputs: [
-            { key: 'asp', name: 'IBM i ASP', value: 42.1, band: 'GREEN', stale: false },
-            { key: 'disk', name: 'Windows Disk', value: 38.0, band: 'GREEN', stale: false },
-            { key: 'cpu', name: 'CPU Utilization', value: 45.0, band: 'GREEN', stale: false },
-            { key: 'mem_jobq', name: 'Memory / Job-Q', value: 20.0, band: 'GREEN', stale: false }
-          ]
-        }
-      ]);
+      setFleetData([]);
     } finally {
       setLoading(false);
     }
@@ -330,6 +286,12 @@ export const FleetPage: React.FC = () => {
           <Activity size={36} color="#0057B8" className="spin" style={{ margin: '0 auto 1rem' }} />
           <h3>Computing Capacity Headroom...</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Executing deterministic queries via Audited Query Gateway</p>
+        </div>
+      ) : error ? (
+        <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
+          <AlertOctagon size={36} color="#EF4444" style={{ margin: '0 auto 1rem' }} />
+          <h3>Unable to Load Fleet Overview</h3>
+          <p style={{ color: '#EF4444', fontSize: '0.875rem' }}>{error}</p>
         </div>
       ) : filteredAndSortedFleet.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>

@@ -1,28 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '../services/apiClient';
-import { FileText, Search, ShieldCheck, Filter } from 'lucide-react';
+import { FileText, Search, Filter, AlertTriangle } from 'lucide-react';
 
 export const AuditLogsPage: React.FC = () => {
   const { activeTenantId } = useAuth();
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
   const loadLogs = async () => {
     setLoading(true);
+    setError(null);
     try {
       const url = activeTenantId
         ? `/api/v1/governance/audit/query?tenantId=${activeTenantId}`
         : '/api/v1/governance/audit/query';
       const data = await apiRequest<any[]>(url);
       setLogs(Array.isArray(data) ? data : []);
-    } catch (_) {
-      // Demo fallback audit logs if endpoint empty
-      setLogs([
-        { id: '1', timestamp: new Date().toISOString(), actorUserId: 'staff-user-01', query: 'count(up)', latencyMs: 14, source: 'prometheus-primary' },
-        { id: '2', timestamp: new Date(Date.now() - 3600000).toISOString(), actorUserId: 'staff-user-01', query: '{job="qsysopr"} |= "CPF9801"', latencyMs: 28, source: 'loki-main' },
-      ]);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load audit logs');
+      setLogs([]);
     } finally {
       setLoading(false);
     }
@@ -74,25 +73,47 @@ export const AuditLogsPage: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {logs.map((log, idx) => (
-              <tr key={log.id || idx} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                <td style={{ padding: '0.85rem 1.25rem', fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>
-                  {log.timestamp}
-                </td>
-                <td style={{ padding: '0.85rem 1.25rem', fontWeight: 600 }}>
-                  {log.actorUserId || 'system'}
-                </td>
-                <td style={{ padding: '0.85rem 1.25rem', fontFamily: 'var(--font-mono)', color: '#0057B8' }}>
-                  {log.query}
-                </td>
-                <td style={{ padding: '0.85rem 1.25rem' }}>
-                  <span className="badge badge-gray">{log.source || 'central'}</span>
-                </td>
-                <td style={{ padding: '0.85rem 1.25rem', fontFamily: 'var(--font-mono)' }}>
-                  {log.latencyMs ? `${log.latencyMs} ms` : '-'}
+            {loading ? (
+              <tr>
+                <td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  Loading audit logs...
                 </td>
               </tr>
-            ))}
+            ) : error ? (
+              <tr>
+                <td colSpan={5} style={{ padding: '2rem', textAlign: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#EF4444', fontWeight: 600 }}>
+                    <AlertTriangle size={16} /> {error}
+                  </div>
+                </td>
+              </tr>
+            ) : logs.length === 0 ? (
+              <tr>
+                <td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  No audit log entries found.
+                </td>
+              </tr>
+            ) : (
+              logs.map((log, idx) => (
+                <tr key={log.id || idx} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                  <td style={{ padding: '0.85rem 1.25rem', fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>
+                    {log.timestamp}
+                  </td>
+                  <td style={{ padding: '0.85rem 1.25rem', fontWeight: 600 }}>
+                    {log.actorUserId || 'system'}
+                  </td>
+                  <td style={{ padding: '0.85rem 1.25rem', fontFamily: 'var(--font-mono)', color: '#0057B8' }}>
+                    {log.query}
+                  </td>
+                  <td style={{ padding: '0.85rem 1.25rem' }}>
+                    <span className="badge badge-gray">{log.source || 'central'}</span>
+                  </td>
+                  <td style={{ padding: '0.85rem 1.25rem', fontFamily: 'var(--font-mono)' }}>
+                    {log.latencyMs ? `${log.latencyMs} ms` : '-'}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

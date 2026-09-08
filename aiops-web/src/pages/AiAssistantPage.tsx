@@ -26,11 +26,11 @@ export const AiAssistantPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const data = await apiRequest<{ response: string }>('/api/v1/assistant/query', {
+      const data = await apiRequest<{ answer: string }>('/api/v1/assistant/chat', {
         method: 'POST',
         body: JSON.stringify({ prompt: userText }),
       });
-      setMessages((prev) => [...prev, { sender: 'assistant', text: data.response || 'Analysis complete.' }]);
+      setMessages((prev) => [...prev, { sender: 'assistant', text: data.answer || 'Analysis complete.' }]);
     } catch (err: any) {
       setMessages((prev) => [
         ...prev,

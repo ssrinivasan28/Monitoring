@@ -6,7 +6,7 @@ import { Users, Shield, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react
 import { EntitlementTier } from '../types';
 
 export const TenantsPage: React.FC = () => {
-  const { tenants, refreshTenants } = useTenants();
+  const { tenants, loading: tenantsLoading, error: tenantsError, refreshTenants } = useTenants();
   const { setEntitlementTier: setGlobalTier, activeTenantId } = useAuth();
 
   const [message, setMessage] = useState<string | null>(null);
@@ -74,7 +74,7 @@ export const TenantsPage: React.FC = () => {
         </div>
       )}
 
-      {error && (
+      {(error || tenantsError) && (
         <div
           style={{
             backgroundColor: 'var(--color-danger-bg)',
@@ -90,7 +90,7 @@ export const TenantsPage: React.FC = () => {
           }}
         >
           <AlertCircle size={18} />
-          <span>{error}</span>
+          <span>{error || tenantsError}</span>
         </div>
       )}
 
@@ -105,7 +105,19 @@ export const TenantsPage: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {tenants.map((t) => (
+            {tenantsLoading ? (
+              <tr>
+                <td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  Loading tenants...
+                </td>
+              </tr>
+            ) : tenants.length === 0 ? (
+              <tr>
+                <td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  No tenants found.
+                </td>
+              </tr>
+            ) : tenants.map((t) => (
               <tr key={t.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                 <td style={{ padding: '1rem 1.25rem', fontWeight: 600 }}>{t.name}</td>
                 <td style={{ padding: '1rem 1.25rem', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: '#475569' }}>

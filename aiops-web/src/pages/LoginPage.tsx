@@ -59,9 +59,7 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      // If no token provided in demo field, pass mock staff bearer token
-      const tokenToUse = azureToken.trim() || 'MOCK_AZURE_AD_STAFF_TOKEN';
-      await authService.staffAzureAdLogin(tokenToUse);
+      await authService.staffAzureAdLogin(azureToken.trim());
       await refreshUser();
       navigate('/fleet');
     } catch (err: any) {
@@ -218,18 +216,19 @@ export const LoginPage: React.FC = () => {
               </p>
               <div style={{ marginBottom: 20 }}>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 6 }}>
-                  Azure AD Token (Optional for Demo)
+                  Azure AD Token
                 </label>
                 <input
                   type="text"
+                  required
                   style={authInputStyle}
-                  placeholder="Enter OIDC ID Token or leave blank for default SSO"
+                  placeholder="Enter your Azure AD OIDC ID Token"
                   value={azureToken}
                   onChange={(e) => setAzureToken(e.target.value)}
                 />
               </div>
 
-              <button type="submit" disabled={loading} className="login-submit-btn">
+              <button type="submit" disabled={loading || !azureToken.trim()} className="login-submit-btn">
                 {loading ? 'Authenticating with Azure AD...' : 'Sign in with Azure AD SSO'}
                 <ArrowRight size={18} />
               </button>

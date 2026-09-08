@@ -6,6 +6,7 @@ import { apiRequest } from '../services/apiClient';
 interface TenantContextType {
   tenants: Tenant[];
   loading: boolean;
+  error: string | null;
   refreshTenants: () => Promise<void>;
 }
 
@@ -15,10 +16,12 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const { user } = useAuth();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   const refreshTenants = async () => {
     if (!user) return;
     setLoading(true);
+    setError(null);
     try {
       if (user.staff) {
         // Staff can list all tenants
@@ -35,19 +38,10 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           },
         ]);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Could not load tenant list:', err);
-      // Fallback default list for dev/demo display
-      if (user.tenantId) {
-        setTenants([
-          { id: user.tenantId, name: `Current Tenant (${user.tenantId.substring(0, 8)})`, tier: 'BASIC', active: true }
-        ]);
-      } else {
-        setTenants([
-          { id: '11111111-1111-1111-1111-111111111111', name: 'Acme Retail Corp', tier: 'PRO', active: true },
-          { id: '22222222-2222-2222-2222-222222222222', name: 'Global Logistics Inc', tier: 'BASIC', active: true },
-        ]);
-      }
+      setError(err.message || 'Failed to load tenant list');
+      setTenants([]);
     } finally {
       setLoading(false);
     }
@@ -58,7 +52,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [user]);
 
   return (
-    <TenantContext.Provider value={{ tenants, loading, refreshTenants }}>
+    <TenantContext.Provider value={{ tenants, loading, error, refreshTenants }}>
       {children}
     </TenantContext.Provider>
   );
