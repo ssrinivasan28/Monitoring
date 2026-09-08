@@ -1,3 +1,6 @@
+server:
+  port: ${SERVER_PORT:8080}
+
 spring:
   application:
     name: aiops-platform
@@ -25,6 +28,12 @@ logging:
     com.islandpacific.sentinel: DEBUG
 
 sentinel:
+  tenant-id: ${SENTINEL_TENANT_ID:default-tenant}
+  auth:
+    azure:
+      tenant-id: ${AZURE_AD_TENANT_ID:}
+      client-id: ${AZURE_AD_CLIENT_ID:}
+      client-secret: ${AZURE_AD_CLIENT_SECRET:}
   datasource:
     central:
       enabled: true

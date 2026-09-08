@@ -149,6 +149,22 @@ function Invoke-MavenBuild {
         if ($LASTEXITCODE -ne 0) {
             throw "Maven build failed with exit code: $LASTEXITCODE"
         }
+
+        # Build AIOps Platform
+        $aiopsDir = Join-Path $ProjectRoot "aiops-platform"
+        if (Test-Path $aiopsDir) {
+            Write-Step "Building AIOps Platform..."
+            Push-Location $aiopsDir
+            try {
+                & mvn clean package -DskipTests
+                if ($LASTEXITCODE -ne 0) {
+                    throw "AIOps Platform Maven build failed with exit code: $LASTEXITCODE"
+                }
+            }
+            finally {
+                Pop-Location
+            }
+        }
         
         $duration = (Get-Date) - $startTime
         Write-Success "Maven build completed in $($duration.TotalSeconds.ToString('F1')) seconds"
@@ -270,6 +286,21 @@ function Copy-MonitoringJars {
         }
     }
     
+    # Copy AIOps Platform artifacts if available
+    $aiopsJar = Join-Path $ProjectRoot "aiops-platform\target\aiops-platform-0.0.1-SNAPSHOT.jar"
+    $aiopsYml = Join-Path $ProjectRoot "aiops-platform\src\main\resources\application.yml"
+    $aiopsDstDir = Join-Path $ResourcesDir "aiops-platform"
+    if (Test-Path $aiopsJar) {
+        if (-not (Test-Path $aiopsDstDir)) { New-Item -ItemType Directory -Path $aiopsDstDir -Force | Out-Null }
+        Copy-Item $aiopsJar -Destination $aiopsDstDir -Force
+        Write-Info "  [OK] aiops-platform-0.0.1-SNAPSHOT.jar -> aiops-platform\"
+    }
+    if (Test-Path $aiopsYml) {
+        if (-not (Test-Path $aiopsDstDir)) { New-Item -ItemType Directory -Path $aiopsDstDir -Force | Out-Null }
+        Copy-Item $aiopsYml -Destination $aiopsDstDir -Force
+        Write-Info "  [OK] application.yml -> aiops-platform\"
+    }
+
     Write-Success "Copied $copiedCount JAR files to installer resources"
 }
 
@@ -463,6 +494,25 @@ function Start-Build {
         }
 
         Invoke-InnoSetupCompile -InnoSetupPath $innoSetupPath
+
+        # Compile standalone IP Sentinel installer if it exists
+        $sentinelIss = Join-Path $ProjectRoot "IPSentinelSetup.iss"
+        if (Test-Path $sentinelIss) {
+            Write-Step "Compiling IP Sentinel AIOps Platform installer..."
+            $sentinelOutput = & $innoSetupPath $sentinelIss 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "IPSentinelSetup.iss compilation failed (non-fatal)"
+                $sentinelOutput | ForEach-Object { Write-Info $_ }
+            } else {
+                Write-Success "IPSentinelSetup.exe compiled"
+                $sentinelExe = Join-Path $OutputDir "IPSentinelSetup.exe"
+                if (Test-Path $sentinelExe) {
+                    $sentinelSize = ((Get-Item $sentinelExe).Length / 1MB).ToString("F2")
+                    Write-Info "  Location: $sentinelExe"
+                    Write-Info "  Size: $sentinelSize MB"
+                }
+            }
+        }
 
         # Compile standalone ServiceScheduler installer if it exists
         $ssIss = Join-Path $ProjectRoot "ServiceScheduler.iss"
