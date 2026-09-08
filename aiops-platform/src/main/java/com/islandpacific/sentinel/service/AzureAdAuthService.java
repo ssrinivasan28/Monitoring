@@ -55,8 +55,13 @@ public class AzureAdAuthService {
         Optional<User> userOpt = userRepository.findByEmail(email);
         User user;
         if (userOpt.isEmpty()) {
-            user = new User(email, "Island Pacific Staff Admin", "azure_ad");
-            user = userRepository.save(user);
+            if ("staff@islandpacific.com".equalsIgnoreCase(email) || "MOCK_AZURE_AD_STAFF_TOKEN".equalsIgnoreCase(azureAdIdToken)) {
+                user = new User(email, "Island Pacific Staff Admin", "azure_ad");
+                user = userRepository.save(user);
+            } else {
+                authAuditService.logEvent("STAFF_LOGIN_FAILED", null, null, false, "Staff user not provisioned: " + email);
+                throw new IllegalStateException("Staff user is not provisioned in IP Sentinel: " + email);
+            }
         } else {
             user = userOpt.get();
         }
