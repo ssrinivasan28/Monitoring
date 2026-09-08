@@ -59,6 +59,12 @@ sentinel:
       max-concurrent-queries-global: 100
       max-concurrent-queries-per-tenant: 20
       max-concurrent-backend-requests-per-query: 10
+  correlation:
+    poll-interval-ms: ${SENTINEL_CORRELATION_POLL_INTERVAL_MS:60000}
+    window-minutes: ${SENTINEL_CORRELATION_WINDOW_MINUTES:5}
+    consecutive-breach-threshold: ${SENTINEL_CORRELATION_CONSECUTIVE_BREACH_THRESHOLD:3}
+    flap-window-minutes: ${SENTINEL_CORRELATION_FLAP_WINDOW_MINUTES:15}
+    flap-threshold: ${SENTINEL_CORRELATION_FLAP_THRESHOLD:3}
   fleet:
     weights:
       asp: 0.40

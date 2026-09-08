@@ -11,4 +11,5 @@ import java.util.UUID;
 public interface IncidentSignalRepository extends JpaRepository<IncidentSignal, UUID> {
     List<IncidentSignal> findByTenantId(UUID tenantId);
     List<IncidentSignal> findByTenantIdAndIncidentId(UUID tenantId, UUID incidentId);
+    boolean existsByTenantIdAndAlertId(UUID tenantId, UUID alertId);
 }

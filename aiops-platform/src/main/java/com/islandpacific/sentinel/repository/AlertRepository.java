@@ -14,4 +14,5 @@ public interface AlertRepository extends JpaRepository<Alert, UUID> {
     List<Alert> findByTenantId(UUID tenantId);
     Optional<Alert> findByTenantIdAndId(UUID tenantId, UUID id);
     List<Alert> findByTenantIdAndFiredAtBetween(UUID tenantId, Instant start, Instant end);
+    List<Alert> findByTenantIdAndClearedAtIsNullOrderByFiredAtAsc(UUID tenantId);
 }
