@@ -11,9 +11,12 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { FleetPage } from './pages/FleetPage';
 import { IncidentsPage } from './pages/IncidentsPage';
 import { AiAssistantPage } from './pages/AiAssistantPage';
-import { DatasourcesPage } from './pages/DatasourcesPage';
 import { AuditLogsPage } from './pages/AuditLogsPage';
+import { DatasourcesPage } from './pages/DatasourcesPage';
 import { TenantsPage } from './pages/TenantsPage';
+import { WindowsMonitorDashboard } from './pages/dashboards/WindowsMonitorDashboard';
+import { WinServiceMonitorDashboard } from './pages/dashboards/WinServiceMonitorDashboard';
+import { LogExplorerPage } from './pages/LogExplorerPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -53,6 +56,30 @@ export const App: React.FC = () => {
               element={
                 <ProtectedRoute>
                   <FleetPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboards/windows"
+              element={
+                <ProtectedRoute>
+                  <WindowsMonitorDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboards/win-service"
+              element={
+                <ProtectedRoute>
+                  <WinServiceMonitorDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/logs"
+              element={
+                <ProtectedRoute>
+                  <LogExplorerPage />
                 </ProtectedRoute>
               }
             />

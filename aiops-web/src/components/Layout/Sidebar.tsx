@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
   LayoutDashboard, 
+  Activity,
   AlertTriangle, 
   Bot, 
   FileText, 
@@ -10,7 +11,8 @@ import {
   Users, 
   Lock, 
   ChevronRight,
-  ShieldAlert
+  ShieldAlert,
+  Search
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -30,6 +32,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
       to: '/fleet',
       label: 'Fleet Overview',
       icon: <LayoutDashboard size={18} />,
+      gated: false,
+      visible: true,
+    },
+    {
+      to: '/dashboards/windows',
+      label: 'Windows Monitor',
+      icon: <LayoutDashboard size={18} color="#60A5FA" />,
+      gated: false,
+      visible: true,
+    },
+    {
+      to: '/dashboards/win-service',
+      label: 'Win Service Monitor',
+      icon: <Activity size={18} color="#34D399" />,
+      gated: false,
+      visible: true,
+    },
+    {
+      to: '/logs',
+      label: 'Log Explorer',
+      icon: <Search size={18} color="#FBBF24" />,
       gated: false,
       visible: true,
     },
