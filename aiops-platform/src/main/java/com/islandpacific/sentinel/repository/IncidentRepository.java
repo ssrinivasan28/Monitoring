@@ -16,4 +16,5 @@ public interface IncidentRepository extends JpaRepository<Incident, UUID> {
     Optional<Incident> findByIdAndTenantId(UUID id, UUID tenantId);
     List<Incident> findByTenantIdAndStatus(UUID tenantId, String status);
     List<Incident> findByTenantIdAndOpenedAtBetween(UUID tenantId, Instant start, Instant end);
+    List<Incident> findByTenantIdAndStatusAndRootCauseJsonIsNull(UUID tenantId, String status);
 }

@@ -2,6 +2,10 @@ package com.islandpacific.sentinel.llm.config;
 
 import com.islandpacific.sentinel.llm.provider.*;
 import com.islandpacific.sentinel.security.SecretProtector;
+import com.islandpacific.sentinel.service.GovernanceAuditService;
+import com.islandpacific.sentinel.service.QuotaService;
+import com.islandpacific.sentinel.service.RedactionService;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -25,15 +29,27 @@ public class LlmAutoConfiguration {
         return new LocalModelProvider(properties.getLocal(), secretProtector);
     }
 
-    @Bean
-    @Primary
-    public LlmProvider llmProvider(LlmProperties properties,
+    @Bean(name = "routingLlmProvider")
+    public LlmProvider routingLlmProvider(LlmProperties properties,
                                    ClaudeApiProvider claudeProvider,
                                    LocalModelProvider localProvider) {
         Map<String, LlmProvider> providerMap = new HashMap<>();
         providerMap.put("claude", claudeProvider);
         providerMap.put("local", localProvider);
         return new RoutingLlmProvider(properties, providerMap);
+    }
+
+    /**
+     * Primary LlmProvider seen by callers (e.g. the 1.2 triage agent): wraps routing/fallback with
+     * mandatory quota enforcement, redaction, and audit/cost-metering (0.7 governance).
+     */
+    @Bean
+    @Primary
+    public LlmProvider llmProvider(@Qualifier("routingLlmProvider") LlmProvider routingLlmProvider,
+                                    RedactionService redactionService,
+                                    QuotaService quotaService,
+                                    GovernanceAuditService auditService) {
+        return new GovernanceLlmProviderDecorator(routingLlmProvider, redactionService, quotaService, auditService);
     }
 
     @Bean

@@ -65,6 +65,10 @@ sentinel:
     consecutive-breach-threshold: ${SENTINEL_CORRELATION_CONSECUTIVE_BREACH_THRESHOLD:3}
     flap-window-minutes: ${SENTINEL_CORRELATION_FLAP_WINDOW_MINUTES:15}
     flap-threshold: ${SENTINEL_CORRELATION_FLAP_THRESHOLD:3}
+  triage:
+    poll-interval-ms: ${SENTINEL_TRIAGE_POLL_INTERVAL_MS:60000}
+    max-tool-iterations: ${SENTINEL_TRIAGE_MAX_TOOL_ITERATIONS:6}
+    max-schema-retries: ${SENTINEL_TRIAGE_MAX_SCHEMA_RETRIES:1}
   fleet:
     weights:
       asp: 0.40
