@@ -458,6 +458,9 @@ input:checked + .toggle-slider:before {
   margin: 0 auto;
 }
 
+.incident-row:hover { background: var(--brand-primary-light); }
+.incident-row a:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; border-radius: 2px; }
+
 .pill {
   display: inline-flex;
   align-items: center;

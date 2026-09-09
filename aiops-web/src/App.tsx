@@ -10,6 +10,7 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 
 import { FleetPage } from './pages/FleetPage';
 import { IncidentsPage } from './pages/IncidentsPage';
+import { IncidentDetailPage } from './pages/IncidentDetailPage';
 import { AiAssistantPage } from './pages/AiAssistantPage';
 import { AuditLogsPage } from './pages/AuditLogsPage';
 import { DatasourcesPage } from './pages/DatasourcesPage';
@@ -107,6 +108,14 @@ export const App: React.FC = () => {
               element={
                 <ProtectedRoute>
                   <IncidentsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/incidents/:id"
+              element={
+                <ProtectedRoute>
+                  <IncidentDetailPage />
                 </ProtectedRoute>
               }
             />
