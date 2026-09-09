@@ -1,6 +1,8 @@
 package com.islandpacific.sentinel.controller;
 
 import com.islandpacific.sentinel.entity.Incident;
+import com.islandpacific.sentinel.integration.teams.TeamsNotificationService;
+import com.islandpacific.sentinel.integration.teams.TeamsSyncOutcome;
 import com.islandpacific.sentinel.query.QueryAuditService;
 import com.islandpacific.sentinel.repository.IncidentRepository;
 import com.islandpacific.sentinel.security.TenantContext;
@@ -30,15 +32,18 @@ public class IncidentController {
     private final IncidentRepository incidentRepository;
     private final IncidentQueryService incidentQueryService;
     private final QueryAuditService auditService;
+    private final TeamsNotificationService teamsNotificationService;
 
     @Autowired
     public IncidentController(
             IncidentRepository incidentRepository,
             IncidentQueryService incidentQueryService,
-            QueryAuditService auditService) {
+            QueryAuditService auditService,
+            TeamsNotificationService teamsNotificationService) {
         this.incidentRepository = incidentRepository;
         this.incidentQueryService = incidentQueryService;
         this.auditService = auditService;
+        this.teamsNotificationService = teamsNotificationService;
     }
 
     /** Tenant-scoped, ranked (severity desc, then recency) incident list. Optional status/platform filters. */
@@ -104,6 +109,41 @@ public class IncidentController {
                 "status", incident.getStatus(),
                 "message", "Incident acknowledged successfully"
         ));
+    }
+
+    /** Manual "Push to Teams" (1.4 console). Shares its path with the 1.6 automatic sweep/status-change updates. */
+    @PostMapping("/{id}/push-teams")
+    @PreAuthorize("hasAnyRole('STAFF_ADMIN', 'STAFF_OPERATOR', 'CUSTOMER_ADMIN')")
+    public ResponseEntity<?> pushIncidentToTeams(@PathVariable("id") UUID id) {
+        UUID tenantId = TenantContextHolder.getRequiredTenantId();
+        Incident incident = incidentRepository.findByIdAndTenantId(id, tenantId).orElse(null);
+
+        if (incident == null) {
+            return ResponseEntity.status(404).body(Map.of(
+                    "status", 404,
+                    "error", "Not Found",
+                    "message", "Incident not found"
+            ));
+        }
+
+        TeamsSyncOutcome outcome = teamsNotificationService.pushIncidentCard(tenantId, incident);
+        return switch (outcome.getStatus()) {
+            case CREATED, UPDATED -> ResponseEntity.ok(Map.of(
+                    "id", incident.getId(),
+                    "teamsStatus", outcome.getStatus().name(),
+                    "message", "Pushed to Teams"
+            ));
+            case SKIPPED_NOT_CONFIGURED -> ResponseEntity.status(400).body(Map.of(
+                    "status", 400,
+                    "error", "Bad Request",
+                    "message", outcome.getMessage()
+            ));
+            case FAILED -> ResponseEntity.status(502).body(Map.of(
+                    "status", 502,
+                    "error", "Bad Gateway",
+                    "message", outcome.getMessage()
+            ));
+        };
     }
 
     private void recordAudit(UUID tenantId, String queryType, String query, long startMs) {

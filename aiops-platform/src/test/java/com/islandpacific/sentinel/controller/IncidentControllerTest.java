@@ -1,5 +1,8 @@
 package com.islandpacific.sentinel.controller;
 
+import com.islandpacific.sentinel.entity.Incident;
+import com.islandpacific.sentinel.integration.teams.TeamsNotificationService;
+import com.islandpacific.sentinel.integration.teams.TeamsSyncOutcome;
 import com.islandpacific.sentinel.query.QueryAuditService;
 import com.islandpacific.sentinel.repository.IncidentRepository;
 import com.islandpacific.sentinel.security.TenantContextHolder;
@@ -13,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,6 +29,7 @@ public class IncidentControllerTest {
     private IncidentRepository incidentRepository;
     private IncidentQueryService incidentQueryService;
     private QueryAuditService auditService;
+    private TeamsNotificationService teamsNotificationService;
     private IncidentController controller;
 
     private final UUID tenantId = UUID.fromString("22222222-2222-2222-2222-222222222222");
@@ -34,7 +39,8 @@ public class IncidentControllerTest {
         incidentRepository = mock(IncidentRepository.class);
         incidentQueryService = mock(IncidentQueryService.class);
         auditService = mock(QueryAuditService.class);
-        controller = new IncidentController(incidentRepository, incidentQueryService, auditService);
+        teamsNotificationService = mock(TeamsNotificationService.class);
+        controller = new IncidentController(incidentRepository, incidentQueryService, auditService, teamsNotificationService);
         TenantContextHolder.setTenantId(tenantId);
     }
 
@@ -119,5 +125,57 @@ public class IncidentControllerTest {
 
         assertEquals(404, response.getStatusCode().value());
         assertNull(response.getBody());
+    }
+
+    @Test
+    void pushIncidentToTeams_notFound_returns404AndSkipsTeamsCall() {
+        UUID incidentId = UUID.randomUUID();
+        when(incidentRepository.findByIdAndTenantId(incidentId, tenantId)).thenReturn(Optional.empty());
+
+        ResponseEntity<?> response = controller.pushIncidentToTeams(incidentId);
+
+        assertEquals(404, response.getStatusCode().value());
+        verify(teamsNotificationService, never()).pushIncidentCard(any(), any());
+    }
+
+    @Test
+    void pushIncidentToTeams_created_returns200() {
+        Incident incident = new Incident(tenantId, "high", "open", "Disk pressure");
+        incident.setId(UUID.randomUUID());
+        when(incidentRepository.findByIdAndTenantId(incident.getId(), tenantId)).thenReturn(Optional.of(incident));
+        when(teamsNotificationService.pushIncidentCard(tenantId, incident)).thenReturn(TeamsSyncOutcome.created());
+
+        ResponseEntity<?> response = controller.pushIncidentToTeams(incident.getId());
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(Map.of(
+                        "id", incident.getId(),
+                        "teamsStatus", "CREATED",
+                        "message", "Pushed to Teams"),
+                response.getBody());
+    }
+
+    @Test
+    void pushIncidentToTeams_notConfigured_returns400() {
+        Incident incident = new Incident(tenantId, "high", "open", "Disk pressure");
+        incident.setId(UUID.randomUUID());
+        when(incidentRepository.findByIdAndTenantId(incident.getId(), tenantId)).thenReturn(Optional.of(incident));
+        when(teamsNotificationService.pushIncidentCard(tenantId, incident)).thenReturn(TeamsSyncOutcome.skippedNotConfigured());
+
+        ResponseEntity<?> response = controller.pushIncidentToTeams(incident.getId());
+
+        assertEquals(400, response.getStatusCode().value());
+    }
+
+    @Test
+    void pushIncidentToTeams_failed_returns502() {
+        Incident incident = new Incident(tenantId, "high", "open", "Disk pressure");
+        incident.setId(UUID.randomUUID());
+        when(incidentRepository.findByIdAndTenantId(incident.getId(), tenantId)).thenReturn(Optional.of(incident));
+        when(teamsNotificationService.pushIncidentCard(tenantId, incident)).thenReturn(TeamsSyncOutcome.failed("Microsoft Graph request failed"));
+
+        ResponseEntity<?> response = controller.pushIncidentToTeams(incident.getId());
+
+        assertEquals(502, response.getStatusCode().value());
     }
 }
