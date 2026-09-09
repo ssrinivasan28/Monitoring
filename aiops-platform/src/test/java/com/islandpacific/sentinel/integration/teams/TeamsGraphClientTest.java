@@ -144,4 +144,60 @@ class TeamsGraphClientTest {
         verify(restTemplate).exchange(urlCaptor.capture(), eq(HttpMethod.PATCH), any(HttpEntity.class), eq(Void.class));
         assertThat(urlCaptor.getValue()).contains("/teams/team-1/channels/chan-1/messages/msg-123");
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void getUserPrincipalName_success_returnsUpn() {
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(Map.class)))
+                .thenReturn(ResponseEntity.ok(Map.of("userPrincipalName", "jane@acme.com", "mail", "jane@acme.com")));
+
+        String upn = client.getUserPrincipalName(config, "test-token", "aad-object-id-1");
+
+        assertThat(upn).isEqualTo("jane@acme.com");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void getUserPrincipalName_usesUsersEndpointAndBearerToken() {
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(Map.class)))
+                .thenReturn(ResponseEntity.ok(Map.of("userPrincipalName", "jane@acme.com")));
+
+        client.getUserPrincipalName(config, "test-token", "aad-object-id-1");
+
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<HttpEntity> entityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        verify(restTemplate).exchange(urlCaptor.capture(), eq(HttpMethod.GET), entityCaptor.capture(), eq(Map.class));
+
+        assertThat(urlCaptor.getValue()).contains("/users/aad-object-id-1");
+        assertThat(entityCaptor.getValue().getHeaders().getFirst(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer test-token");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void getUserPrincipalName_fallsBackToMailWhenUpnMissing() {
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(Map.class)))
+                .thenReturn(ResponseEntity.ok(Map.of("mail", "jane@acme.com")));
+
+        assertThat(client.getUserPrincipalName(config, "test-token", "aad-object-id-1")).isEqualTo("jane@acme.com");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void getUserPrincipalName_missingBothFields_throwsTeamsIntegrationException() {
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(Map.class)))
+                .thenReturn(ResponseEntity.ok(Map.of()));
+
+        assertThatThrownBy(() -> client.getUserPrincipalName(config, "test-token", "aad-object-id-1"))
+                .isInstanceOf(TeamsIntegrationException.class);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void getUserPrincipalName_userNotFound_throwsTeamsIntegrationException() {
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(Map.class)))
+                .thenThrow(HttpClientErrorException.create(HttpStatus.NOT_FOUND, "Not Found", new HttpHeaders(), new byte[0], null));
+
+        assertThatThrownBy(() -> client.getUserPrincipalName(config, "test-token", "unknown-aad-id"))
+                .isInstanceOf(TeamsIntegrationException.class);
+    }
 }

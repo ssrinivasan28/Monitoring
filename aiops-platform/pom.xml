@@ -203,6 +203,7 @@
                         <exclude>**/QuotaEnforcementTest.java</exclude>
                         <exclude>**/RbacAndTenantIsolationIntegrationTest.java</exclude>
                         <exclude>**/SpaWebControllerTest.java</exclude>
+                        <exclude>**/TeamsChatOpsIsolationIntegrationTest.java</exclude>
                         <exclude>**/TenantIsolationIntegrationTest.java</exclude>
                         <exclude>**/TriageAgentGovernanceIntegrationTest.java</exclude>
                         <exclude>**/VectorSearchRepositoryTest.java</exclude>

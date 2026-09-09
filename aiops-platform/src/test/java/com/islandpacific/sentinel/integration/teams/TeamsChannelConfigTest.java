@@ -60,4 +60,30 @@ class TeamsChannelConfigTest {
         assertThatThrownBy(() -> TeamsChannelConfig.fromJson(mapper, "{not-json", secretProtector))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void fromJson_noChatOpsSecret_leavesItNull() {
+        String json = "{\"aadTenantId\":\"aad-1\",\"clientId\":\"client-1\",\"clientSecret\":\"plain-secret\","
+                + "\"teamId\":\"team-1\",\"channelId\":\"chan-1\"}";
+
+        TeamsChannelConfig config = TeamsChannelConfig.fromJson(mapper, json, secretProtector);
+
+        assertThat(config.getChatOpsHmacSecret()).isNull();
+    }
+
+    @Test
+    void fromJson_chatOpsSecretPresent_resolvesPlaintextAndDpapiWrapped() {
+        String plainJson = "{\"aadTenantId\":\"aad-1\",\"clientId\":\"client-1\",\"clientSecret\":\"plain-secret\","
+                + "\"teamId\":\"team-1\",\"channelId\":\"chan-1\",\"chatOpsHmacSecret\":\"webhook-secret\"}";
+        assertThat(TeamsChannelConfig.fromJson(mapper, plainJson, secretProtector).getChatOpsHmacSecret())
+                .isEqualTo("webhook-secret");
+
+        String protectedSecret = secretProtector.protect("dpapi-wrapped-webhook-secret");
+        String dpapiJson = String.format(
+                "{\"aadTenantId\":\"aad-1\",\"clientId\":\"client-1\",\"clientSecret\":\"plain-secret\","
+                        + "\"teamId\":\"team-1\",\"channelId\":\"chan-1\",\"chatOpsHmacSecret\":\"%s\"}",
+                protectedSecret);
+        assertThat(TeamsChannelConfig.fromJson(mapper, dpapiJson, secretProtector).getChatOpsHmacSecret())
+                .isEqualTo("dpapi-wrapped-webhook-secret");
+    }
 }

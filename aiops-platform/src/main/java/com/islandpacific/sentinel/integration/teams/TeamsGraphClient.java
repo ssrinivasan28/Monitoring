@@ -78,6 +78,33 @@ public class TeamsGraphClient {
                 restTemplate.exchange(url, HttpMethod.PATCH, entity(buildMessageBody(card), accessToken), Void.class));
     }
 
+    /**
+     * 2.3 - resolves the Teams-verified Azure AD object id of an inbound ChatOps sender to their
+     * user principal name (email), so it can be matched against IP Sentinel's {@code User.email}.
+     * Uses the same app-only token as the outbound card calls above (the app registration needs
+     * {@code User.Read.All} application permission granted). Never logs the access token.
+     */
+    @SuppressWarnings("unchecked")
+    public String getUserPrincipalName(TeamsChannelConfig config, String accessToken, String aadObjectId) {
+        String url = properties.getGraphBaseUrl() + "/users/" + aadObjectId + "?$select=userPrincipalName,mail";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+        ResponseEntity<Map> response = executeWithRetry(() ->
+                restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers), Map.class));
+
+        Map<?, ?> body = response.getBody();
+        Object upn = body != null ? body.get("userPrincipalName") : null;
+        Object mail = body != null ? body.get("mail") : null;
+        if (upn != null && !String.valueOf(upn).isBlank()) {
+            return String.valueOf(upn);
+        }
+        if (mail != null && !String.valueOf(mail).isBlank()) {
+            return String.valueOf(mail);
+        }
+        throw new TeamsIntegrationException("Microsoft Graph did not return a userPrincipalName or mail for aadObjectId " + aadObjectId);
+    }
+
     private HttpEntity<Map<String, Object>> entity(Map<String, Object> body, String accessToken) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

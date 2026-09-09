@@ -75,6 +75,10 @@ public class SecurityConfig {
                     "/actuator/prometheus"
                 ).permitAll()
 
+                // 2.3 Teams ChatOps webhook: Teams cannot present an IP Sentinel bearer token, so this
+                // endpoint authenticates itself via a per-tenant HMAC signature (TeamsChatOpsController).
+                .requestMatchers("/api/v1/integrations/teams/chatops/*").permitAll()
+
                 // Administrative auth endpoints (require authentication)
                 .requestMatchers(
                     "/api/v1/auth/invite",
