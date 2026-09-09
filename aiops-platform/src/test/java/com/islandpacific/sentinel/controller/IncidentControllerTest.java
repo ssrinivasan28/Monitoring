@@ -1,6 +1,8 @@
 package com.islandpacific.sentinel.controller;
 
 import com.islandpacific.sentinel.entity.Incident;
+import com.islandpacific.sentinel.integration.itsm.ItsmSyncOutcome;
+import com.islandpacific.sentinel.integration.itsm.ItsmSyncService;
 import com.islandpacific.sentinel.integration.teams.TeamsNotificationService;
 import com.islandpacific.sentinel.integration.teams.TeamsSyncOutcome;
 import com.islandpacific.sentinel.query.QueryAuditService;
@@ -30,6 +32,7 @@ public class IncidentControllerTest {
     private IncidentQueryService incidentQueryService;
     private QueryAuditService auditService;
     private TeamsNotificationService teamsNotificationService;
+    private ItsmSyncService itsmSyncService;
     private IncidentController controller;
 
     private final UUID tenantId = UUID.fromString("22222222-2222-2222-2222-222222222222");
@@ -40,7 +43,8 @@ public class IncidentControllerTest {
         incidentQueryService = mock(IncidentQueryService.class);
         auditService = mock(QueryAuditService.class);
         teamsNotificationService = mock(TeamsNotificationService.class);
-        controller = new IncidentController(incidentRepository, incidentQueryService, auditService, teamsNotificationService);
+        itsmSyncService = mock(ItsmSyncService.class);
+        controller = new IncidentController(incidentRepository, incidentQueryService, auditService, teamsNotificationService, itsmSyncService);
         TenantContextHolder.setTenantId(tenantId);
     }
 
@@ -125,6 +129,77 @@ public class IncidentControllerTest {
 
         assertEquals(404, response.getStatusCode().value());
         assertNull(response.getBody());
+    }
+
+    @Test
+    void resolveIncident_notFound_returns404() {
+        UUID incidentId = UUID.randomUUID();
+        when(incidentRepository.findByIdAndTenantId(incidentId, tenantId)).thenReturn(Optional.empty());
+
+        ResponseEntity<?> response = controller.resolveIncident(incidentId);
+
+        assertEquals(404, response.getStatusCode().value());
+    }
+
+    @Test
+    void resolveIncident_found_setsStatusResolvedAndResolvedAt() {
+        Incident incident = new Incident(tenantId, "high", "ack", "Disk pressure");
+        incident.setId(UUID.randomUUID());
+        when(incidentRepository.findByIdAndTenantId(incident.getId(), tenantId)).thenReturn(Optional.of(incident));
+
+        ResponseEntity<?> response = controller.resolveIncident(incident.getId());
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals("resolved", incident.getStatus());
+        assertNotNull(incident.getResolvedAt());
+        verify(incidentRepository).save(incident);
+    }
+
+    @Test
+    void pushIncidentToItsm_notFound_returns404AndSkipsItsmCall() {
+        UUID incidentId = UUID.randomUUID();
+        when(incidentRepository.findByIdAndTenantId(incidentId, tenantId)).thenReturn(Optional.empty());
+
+        ResponseEntity<?> response = controller.pushIncidentToItsm(incidentId);
+
+        assertEquals(404, response.getStatusCode().value());
+        verify(itsmSyncService, never()).syncIncident(any(), any());
+    }
+
+    @Test
+    void pushIncidentToItsm_created_returns200() {
+        Incident incident = new Incident(tenantId, "high", "open", "Disk pressure");
+        incident.setId(UUID.randomUUID());
+        when(incidentRepository.findByIdAndTenantId(incident.getId(), tenantId)).thenReturn(Optional.of(incident));
+        when(itsmSyncService.syncIncident(tenantId, incident)).thenReturn(ItsmSyncOutcome.created());
+
+        ResponseEntity<?> response = controller.pushIncidentToItsm(incident.getId());
+
+        assertEquals(200, response.getStatusCode().value());
+    }
+
+    @Test
+    void pushIncidentToItsm_notConfigured_returns400() {
+        Incident incident = new Incident(tenantId, "high", "open", "Disk pressure");
+        incident.setId(UUID.randomUUID());
+        when(incidentRepository.findByIdAndTenantId(incident.getId(), tenantId)).thenReturn(Optional.of(incident));
+        when(itsmSyncService.syncIncident(tenantId, incident)).thenReturn(ItsmSyncOutcome.skippedNotConfigured());
+
+        ResponseEntity<?> response = controller.pushIncidentToItsm(incident.getId());
+
+        assertEquals(400, response.getStatusCode().value());
+    }
+
+    @Test
+    void pushIncidentToItsm_failed_returns502() {
+        Incident incident = new Incident(tenantId, "high", "open", "Disk pressure");
+        incident.setId(UUID.randomUUID());
+        when(incidentRepository.findByIdAndTenantId(incident.getId(), tenantId)).thenReturn(Optional.of(incident));
+        when(itsmSyncService.syncIncident(tenantId, incident)).thenReturn(ItsmSyncOutcome.failed("ServiceNow unreachable"));
+
+        ResponseEntity<?> response = controller.pushIncidentToItsm(incident.getId());
+
+        assertEquals(502, response.getStatusCode().value());
     }
 
     @Test
