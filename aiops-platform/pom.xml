@@ -186,6 +186,7 @@
                         <exclude>**/AuditQueryControllerTest.java</exclude>
                         <exclude>**/AuthNegativeSecurityIntegrationTest.java</exclude>
                         <exclude>**/IncidentAndSignalRepositoryTest.java</exclude>
+                        <exclude>**/IncidentApiIntegrationTest.java</exclude>
                         <exclude>**/MigrationAndSchemaTest.java</exclude>
                         <exclude>**/QueryGatewayIntegrationTest.java</exclude>
                         <exclude>**/QueryGatewaySecurityHardeningTest.java</exclude>

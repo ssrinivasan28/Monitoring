@@ -16,4 +16,5 @@ public interface IncidentTimelineRepository extends Repository<IncidentTimeline,
     Optional<IncidentTimeline> findById(UUID id);
     List<IncidentTimeline> findByTenantId(UUID tenantId);
     List<IncidentTimeline> findByTenantIdAndIncidentId(UUID tenantId, UUID incidentId);
+    List<IncidentTimeline> findByTenantIdAndIncidentIdOrderByAtAsc(UUID tenantId, UUID incidentId);
 }
