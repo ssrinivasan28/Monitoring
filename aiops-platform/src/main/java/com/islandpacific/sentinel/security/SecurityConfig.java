@@ -66,7 +66,15 @@ public class SecurityConfig {
                     "/api/v1/auth/federated/login",
                     "/api/v1/auth/refresh"
                 ).permitAll()
-                
+
+                // Self-monitoring: liveness/readiness probes and Prometheus scrape target.
+                // No auth, matching the existing 21-monitor suite's /metrics convention (internal network trust).
+                .requestMatchers(
+                    "/actuator/health",
+                    "/actuator/health/**",
+                    "/actuator/prometheus"
+                ).permitAll()
+
                 // Administrative auth endpoints (require authentication)
                 .requestMatchers(
                     "/api/v1/auth/invite",

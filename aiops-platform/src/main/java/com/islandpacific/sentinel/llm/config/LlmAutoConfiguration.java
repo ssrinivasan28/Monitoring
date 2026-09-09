@@ -5,6 +5,8 @@ import com.islandpacific.sentinel.security.SecretProtector;
 import com.islandpacific.sentinel.service.GovernanceAuditService;
 import com.islandpacific.sentinel.service.QuotaService;
 import com.islandpacific.sentinel.service.RedactionService;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -55,5 +57,12 @@ public class LlmAutoConfiguration {
     @Bean
     public EmbeddingProvider embeddingProvider(LlmProperties properties, SecretProtector secretProtector) {
         return new OpenAiCompatibleEmbeddingProvider(properties.getEmbedding(), secretProtector);
+    }
+
+    @Bean
+    public Gauge llmAvailabilityGauge(MeterRegistry registry, LlmProvider llmProvider) {
+        return Gauge.builder("sentinel_llm_available", llmProvider, p -> p.isAvailable() ? 1 : 0)
+                .description("1 if at least one configured LLM provider is currently available, 0 if AI capabilities are fully degraded")
+                .register(registry);
     }
 }
