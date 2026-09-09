@@ -18,6 +18,7 @@ import com.islandpacific.sentinel.repository.IncidentTimelineRepository;
 import com.islandpacific.sentinel.repository.TenantRepository;
 import com.islandpacific.sentinel.security.TenantContext;
 import com.islandpacific.sentinel.security.TenantContextHolder;
+import com.islandpacific.sentinel.service.ModelPricing;
 import com.islandpacific.sentinel.service.RedactionService;
 import com.islandpacific.sentinel.tool.ToolExecutionResult;
 import com.islandpacific.sentinel.tool.ToolRegistryService;
@@ -28,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -170,13 +172,14 @@ public class TriageAgentService {
         List<LlmMessage> conversation = new ArrayList<>();
         conversation.add(LlmMessage.user(buildIncidentPrompt(incident, signals)));
 
+        InvestigationBudget budget = new InvestigationBudget(properties.getMaxWallClockMs(), properties.getMaxCostPerInvestigation());
         RootCauseResult result = null;
         boolean validated = false;
 
         for (int attempt = 0; attempt <= properties.getMaxSchemaRetries() && !validated; attempt++) {
             LlmResponse finalResponse;
             try {
-                finalResponse = runConversation(tenantId, conversation, tools);
+                finalResponse = runConversation(tenantId, incident.getId(), conversation, tools, budget);
             } catch (AiUnavailableException e) {
                 log.info("LLM unavailable while triaging incident {} (tenant {}); leaving incident un-triaged",
                         incident.getId(), tenantId);
@@ -184,7 +187,7 @@ public class TriageAgentService {
             }
 
             if (finalResponse == null) {
-                // Exceeded max tool-call iterations without a final answer - treat like malformed output.
+                // Exceeded a hard cap (iterations, wall-clock, or cost budget) without a final answer.
                 conversation.add(LlmMessage.user(
                         "You have used all available tool calls. Reply now with ONLY the final JSON object."));
                 continue;
@@ -211,43 +214,72 @@ public class TriageAgentService {
         } else {
             persistRootCause(tenantId, incident, result);
         }
+        recordStopReasonIfAny(tenantId, incident, budget);
     }
 
     /**
      * Drives the LLM tool-calling loop until it returns a final (non-tool-call) response, executing
-     * each requested tool call through the governed ToolRegistryService in between.
+     * each requested tool call through the governed ToolRegistryService in between. Bounded by three
+     * independent hard caps (1.9): max tool iterations (below), plus wall-clock and cost/token budget
+     * enforced via {@code budget}.
      *
-     * @return the final response, or {@code null} if the max tool-iteration budget was exhausted
+     * @return the final response, or {@code null} if a hard cap was exhausted without a final answer
      * @throws AiUnavailableException if the LLM reports itself unavailable at any point
      */
-    private LlmResponse runConversation(UUID tenantId, List<LlmMessage> conversation, List<LlmTool> tools) {
+    private LlmResponse runConversation(UUID tenantId, UUID incidentId, List<LlmMessage> conversation,
+                                         List<LlmTool> tools, InvestigationBudget budget) {
+        int toolCallsMade = 0;
         for (int iteration = 0; iteration < properties.getMaxToolIterations(); iteration++) {
+            if (budget.checkCaps(toolCallsMade) != null) {
+                return null;
+            }
+
             LlmRequest request = new LlmRequest(new ArrayList<>(conversation));
             request.setSystemPrompt(SYSTEM_PROMPT);
             request.setTools(tools);
+            request.setIncidentId(incidentId);
 
             LlmResponse response = llmProvider.chat(request);
             if (!response.isAiAvailable()) {
                 throw new AiUnavailableException();
             }
+            budget.recordCall(response.getModelName(), response.getPromptTokens(), response.getCompletionTokens());
             if (!response.hasToolCalls()) {
                 return response;
             }
 
             conversation.add(LlmMessage.assistantWithTools(response.getText(), response.getToolCalls()));
             for (LlmToolCall call : response.getToolCalls()) {
-                conversation.add(LlmMessage.toolResult(call.getId(), call.getName(), executeToolSafely(tenantId, call)));
+                conversation.add(LlmMessage.toolResult(call.getId(), call.getName(), executeToolSafely(tenantId, incidentId, call)));
+                toolCallsMade++;
             }
         }
+        budget.recordStopReasonIfAbsent("iteration limit (" + properties.getMaxToolIterations() + ") reached");
         return null;
     }
 
-    private String executeToolSafely(UUID tenantId, LlmToolCall call) {
+    private String executeToolSafely(UUID tenantId, UUID incidentId, LlmToolCall call) {
         if (!ALLOWED_TOOLS.contains(call.getName())) {
             return "ERROR: tool '" + call.getName() + "' is not permitted for triage (read-only tools only).";
         }
-        ToolExecutionResult result = toolRegistryService.executeTool(null, tenantId, call.getName(), call.getArguments());
+        ToolExecutionResult result = toolRegistryService.executeTool(null, tenantId, incidentId, call.getName(), call.getArguments());
         return result.isSuccess() ? String.valueOf(result.getResultSummary()) : "ERROR: " + result.getErrorMessage();
+    }
+
+    /** 1.9: records why the investigation stopped gathering evidence, if a hard cap was ever hit. */
+    private void recordStopReasonIfAny(UUID tenantId, Incident incident, InvestigationBudget budget) {
+        String reason = budget.getStopReason();
+        if (reason == null) {
+            return;
+        }
+        try {
+            incidentTimelineRepository.save(new IncidentTimeline(
+                    incident.getId(), tenantId, "triage-agent", "investigation_stopped",
+                    "Investigation stopped: " + reason + "."));
+        } catch (Exception e) {
+            log.error("Failed to persist investigation-stopped timeline note for incident {}: {}",
+                    incident.getId(), e.getMessage(), e);
+        }
     }
 
     private RootCauseResult parseAndValidate(String rawText) {
@@ -343,6 +375,63 @@ public class TriageAgentService {
     private static final class SchemaValidationException extends RuntimeException {
         SchemaValidationException(String message) {
             super(message);
+        }
+    }
+
+    /**
+     * 1.9: tracks the hard stop conditions for one incident investigation - wall-clock elapsed and
+     * cumulative LLM cost - across all of its calls, spanning schema retries. Independent of the
+     * per-conversation iteration cap in {@link #runConversation}. Whichever cap trips first "wins"
+     * and is recorded so the Incident Console can show why an investigation stopped, not just that
+     * it did. Once a cap has tripped, further checks are unblocked so the single forced
+     * "answer now with what you have" retry (existing 1.2 behavior) is never itself capped out.
+     */
+    private static final class InvestigationBudget {
+        private final long startMs = System.currentTimeMillis();
+        private final long maxWallClockMs;
+        private final BigDecimal maxCost;
+        private BigDecimal cumulativeCost = BigDecimal.ZERO;
+        private String stopReason;
+
+        InvestigationBudget(long maxWallClockMs, BigDecimal maxCost) {
+            this.maxWallClockMs = maxWallClockMs;
+            this.maxCost = maxCost;
+        }
+
+        void recordCall(String model, Integer tokensIn, Integer tokensOut) {
+            cumulativeCost = cumulativeCost.add(ModelPricing.calculateCost(
+                    model, tokensIn != null ? tokensIn : 0, tokensOut != null ? tokensOut : 0));
+        }
+
+        /**
+         * Returns (and records, the first time) a reason if a cap is newly exceeded; returns
+         * {@code null} if nothing currently blocks the next call - including when a cap already
+         * tripped earlier, so the forced final-answer retry always gets to run.
+         */
+        String checkCaps(int toolCallsSoFar) {
+            if (stopReason != null) {
+                return null;
+            }
+            String reason = null;
+            if (System.currentTimeMillis() - startMs >= maxWallClockMs) {
+                reason = "wall-clock budget (" + maxWallClockMs + "ms) exceeded after " + toolCallsSoFar + " tool call(s)";
+            } else if (cumulativeCost.compareTo(maxCost) >= 0) {
+                reason = "cost budget ($" + maxCost + ") exceeded after " + toolCallsSoFar + " tool call(s)";
+            }
+            if (reason != null) {
+                stopReason = reason;
+            }
+            return reason;
+        }
+
+        void recordStopReasonIfAbsent(String reason) {
+            if (stopReason == null) {
+                stopReason = reason;
+            }
+        }
+
+        String getStopReason() {
+            return stopReason;
         }
     }
 }

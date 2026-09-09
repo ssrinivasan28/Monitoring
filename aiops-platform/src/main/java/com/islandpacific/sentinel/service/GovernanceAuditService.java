@@ -29,8 +29,15 @@ public class GovernanceAuditService {
 
     @Transactional
     public AgentRun logAgentRun(UUID tenantId, String agent, String promptRedacted, String outputJson, String model, int tokensIn, int tokensOut, BigDecimal cost) {
+        return logAgentRun(tenantId, agent, promptRedacted, outputJson, model, tokensIn, tokensOut, cost, null);
+    }
+
+    /** 1.9: same as above, additionally tagging the row with the incident it investigated (nullable). */
+    @Transactional
+    public AgentRun logAgentRun(UUID tenantId, String agent, String promptRedacted, String outputJson, String model, int tokensIn, int tokensOut, BigDecimal cost, UUID incidentId) {
         AgentRun run = new AgentRun(tenantId, agent, promptRedacted, model, tokensIn, tokensOut, cost);
         run.setOutputJson(outputJson);
+        run.setIncidentId(incidentId);
         run = agentRunRepository.save(run);
 
         // Also record cost ledger entry

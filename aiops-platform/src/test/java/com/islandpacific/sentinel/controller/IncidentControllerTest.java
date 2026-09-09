@@ -8,6 +8,7 @@ import com.islandpacific.sentinel.integration.teams.TeamsSyncOutcome;
 import com.islandpacific.sentinel.query.QueryAuditService;
 import com.islandpacific.sentinel.repository.IncidentRepository;
 import com.islandpacific.sentinel.security.TenantContextHolder;
+import com.islandpacific.sentinel.service.AuditQueryService;
 import com.islandpacific.sentinel.service.incident.IncidentDetailDto;
 import com.islandpacific.sentinel.service.incident.IncidentListResult;
 import com.islandpacific.sentinel.service.incident.IncidentQueryService;
@@ -33,6 +34,7 @@ public class IncidentControllerTest {
     private QueryAuditService auditService;
     private TeamsNotificationService teamsNotificationService;
     private ItsmSyncService itsmSyncService;
+    private AuditQueryService auditQueryService;
     private IncidentController controller;
 
     private final UUID tenantId = UUID.fromString("22222222-2222-2222-2222-222222222222");
@@ -44,7 +46,8 @@ public class IncidentControllerTest {
         auditService = mock(QueryAuditService.class);
         teamsNotificationService = mock(TeamsNotificationService.class);
         itsmSyncService = mock(ItsmSyncService.class);
-        controller = new IncidentController(incidentRepository, incidentQueryService, auditService, teamsNotificationService, itsmSyncService);
+        auditQueryService = mock(AuditQueryService.class);
+        controller = new IncidentController(incidentRepository, incidentQueryService, auditService, teamsNotificationService, itsmSyncService, auditQueryService);
         TenantContextHolder.setTenantId(tenantId);
     }
 
@@ -200,6 +203,31 @@ public class IncidentControllerTest {
         ResponseEntity<?> response = controller.pushIncidentToItsm(incident.getId());
 
         assertEquals(502, response.getStatusCode().value());
+    }
+
+    @Test
+    void getIncidentAgentTrace_notFound_returns404() {
+        UUID incidentId = UUID.randomUUID();
+        when(incidentRepository.findByIdAndTenantId(incidentId, tenantId)).thenReturn(Optional.empty());
+
+        ResponseEntity<?> response = controller.getIncidentAgentTrace(incidentId);
+
+        assertEquals(404, response.getStatusCode().value());
+        verify(auditQueryService, never()).getIncidentAgentTrace(any(), any());
+    }
+
+    @Test
+    void getIncidentAgentTrace_found_returnsTenantScopedTrace() {
+        Incident incident = new Incident(tenantId, "high", "open", "Disk pressure");
+        incident.setId(UUID.randomUUID());
+        when(incidentRepository.findByIdAndTenantId(incident.getId(), tenantId)).thenReturn(Optional.of(incident));
+        Map<String, Object> trace = Map.of("incidentId", incident.getId(), "agentRuns", List.of(), "toolCalls", List.of());
+        when(auditQueryService.getIncidentAgentTrace(tenantId, incident.getId())).thenReturn(trace);
+
+        ResponseEntity<?> response = controller.getIncidentAgentTrace(incident.getId());
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(trace, response.getBody());
     }
 
     @Test

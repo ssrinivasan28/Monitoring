@@ -30,6 +30,10 @@ public class ToolCall {
     @Column(name = "result_summary", columnDefinition = "TEXT")
     private String resultSummary;
 
+    /** 1.9: correlates this tool call to the incident investigation it belongs to (nullable). */
+    @Column(name = "incident_id")
+    private UUID incidentId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -60,6 +64,9 @@ public class ToolCall {
 
     public String getResultSummary() { return resultSummary; }
     public void setResultSummary(String resultSummary) { this.resultSummary = resultSummary; }
+
+    public UUID getIncidentId() { return incidentId; }
+    public void setIncidentId(UUID incidentId) { this.incidentId = incidentId; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

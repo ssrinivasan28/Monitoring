@@ -57,6 +57,14 @@ public class ToolRegistryService {
      * Dispatches tool invocation, enforces tenant scope, and logs to tool_calls table.
      */
     public ToolExecutionResult executeTool(UUID agentRunId, UUID tenantId, String toolName, Map<String, Object> arguments) {
+        return executeTool(agentRunId, tenantId, null, toolName, arguments);
+    }
+
+    /**
+     * Same as above, additionally tagging the audit row with the incident being investigated (1.9),
+     * so an investigation's tool trace is queryable per-incident. {@code incidentId} is nullable.
+     */
+    public ToolExecutionResult executeTool(UUID agentRunId, UUID tenantId, UUID incidentId, String toolName, Map<String, Object> arguments) {
         if (tenantId == null) {
             throw new IllegalArgumentException("Tenant ID is required for tool execution");
         }
@@ -92,6 +100,7 @@ public class ToolRegistryService {
         // Mandatory SOC 2 audit logging to tool_calls
         try {
             ToolCall toolCall = new ToolCall(resolvedAgentRunId, tenantId, toolName, safeArgsJson, summary);
+            toolCall.setIncidentId(incidentId);
             toolCallRepository.save(toolCall);
         } catch (Exception e) {
             log.error("Failed to record tool_calls audit log: {}", e.getMessage(), e);

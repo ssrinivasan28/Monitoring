@@ -9,6 +9,7 @@ import com.islandpacific.sentinel.query.QueryAuditService;
 import com.islandpacific.sentinel.repository.IncidentRepository;
 import com.islandpacific.sentinel.security.TenantContext;
 import com.islandpacific.sentinel.security.TenantContextHolder;
+import com.islandpacific.sentinel.service.AuditQueryService;
 import com.islandpacific.sentinel.service.incident.IncidentDetailDto;
 import com.islandpacific.sentinel.service.incident.IncidentListResult;
 import com.islandpacific.sentinel.service.incident.IncidentQueryService;
@@ -37,6 +38,7 @@ public class IncidentController {
     private final QueryAuditService auditService;
     private final TeamsNotificationService teamsNotificationService;
     private final ItsmSyncService itsmSyncService;
+    private final AuditQueryService auditQueryService;
 
     @Autowired
     public IncidentController(
@@ -44,12 +46,14 @@ public class IncidentController {
             IncidentQueryService incidentQueryService,
             QueryAuditService auditService,
             TeamsNotificationService teamsNotificationService,
-            ItsmSyncService itsmSyncService) {
+            ItsmSyncService itsmSyncService,
+            AuditQueryService auditQueryService) {
         this.incidentRepository = incidentRepository;
         this.incidentQueryService = incidentQueryService;
         this.auditService = auditService;
         this.teamsNotificationService = teamsNotificationService;
         this.itsmSyncService = itsmSyncService;
+        this.auditQueryService = auditQueryService;
     }
 
     /** Tenant-scoped, ranked (severity desc, then recency) incident list. Optional status/platform filters. */
@@ -141,6 +145,28 @@ public class IncidentController {
                 "status", incident.getStatus(),
                 "message", "Incident resolved successfully"
         ));
+    }
+
+    /**
+     * 1.9: the ordered agent_runs + tool_calls trace for this incident's triage investigation -
+     * what the agent looked at, in what order, feeding the 1.4 Incident Console trace view.
+     * Tenant-scoped like {@link #getIncidentById}, not staff-only like {@code /api/v1/audit}.
+     */
+    @GetMapping("/{id}/agent-trace")
+    @PreAuthorize("hasAnyRole('STAFF_ADMIN', 'STAFF_OPERATOR', 'CUSTOMER_ADMIN', 'CUSTOMER_VIEWER')")
+    public ResponseEntity<?> getIncidentAgentTrace(@PathVariable("id") UUID id) {
+        UUID tenantId = TenantContextHolder.getRequiredTenantId();
+        Incident incident = incidentRepository.findByIdAndTenantId(id, tenantId).orElse(null);
+
+        if (incident == null) {
+            return ResponseEntity.status(404).body(Map.of(
+                    "status", 404,
+                    "error", "Not Found",
+                    "message", "Incident not found"
+            ));
+        }
+
+        return ResponseEntity.ok(auditQueryService.getIncidentAgentTrace(tenantId, id));
     }
 
     /** Manual "Push to Teams" (1.4 console). Shares its path with the 1.6 automatic sweep/status-change updates. */

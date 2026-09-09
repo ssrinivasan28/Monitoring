@@ -16,4 +16,7 @@ public interface ToolCallRepository extends Repository<ToolCall, UUID> {
     Optional<ToolCall> findById(UUID id);
     List<ToolCall> findByTenantId(UUID tenantId);
     List<ToolCall> findByTenantIdAndAgentRunId(UUID tenantId, UUID agentRunId);
+
+    /** 1.9: ordered trace of an incident investigation's tool calls, for the per-incident agent-trace endpoint. */
+    List<ToolCall> findByTenantIdAndIncidentIdOrderByCreatedAtAsc(UUID tenantId, UUID incidentId);
 }

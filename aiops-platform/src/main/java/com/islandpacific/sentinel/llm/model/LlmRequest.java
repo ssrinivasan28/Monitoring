@@ -3,6 +3,7 @@ package com.islandpacific.sentinel.llm.model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Standardized request sent to an LlmProvider.
@@ -15,6 +16,8 @@ public class LlmRequest {
     private String model;
     private Integer maxTokens;
     private Double temperature;
+    /** 1.9: the incident this call is investigating, if any (nullable) - tags the audit row it produces. */
+    private UUID incidentId;
 
     public LlmRequest() {
     }
@@ -71,6 +74,14 @@ public class LlmRequest {
         this.temperature = temperature;
     }
 
+    public UUID getIncidentId() {
+        return incidentId;
+    }
+
+    public void setIncidentId(UUID incidentId) {
+        this.incidentId = incidentId;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -81,11 +92,12 @@ public class LlmRequest {
                 Objects.equals(tools, request.tools) &&
                 Objects.equals(model, request.model) &&
                 Objects.equals(maxTokens, request.maxTokens) &&
-                Objects.equals(temperature, request.temperature);
+                Objects.equals(temperature, request.temperature) &&
+                Objects.equals(incidentId, request.incidentId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(systemPrompt, messages, tools, model, maxTokens, temperature);
+        return Objects.hash(systemPrompt, messages, tools, model, maxTokens, temperature, incidentId);
     }
 }

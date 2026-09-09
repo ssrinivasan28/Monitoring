@@ -22,5 +22,8 @@ public interface AgentRunRepository extends Repository<AgentRun, UUID> {
     List<AgentRun> findByTenantIdAndCreatedAtGreaterThanEqual(UUID tenantId, Instant since);
     List<AgentRun> findByCreatedAtGreaterThanEqual(Instant since);
     List<AgentRun> findByTenantIdAndAgentAndCreatedAtGreaterThanEqual(UUID tenantId, String agent, Instant since);
+
+    /** 1.9: ordered trace of an incident investigation's LLM calls, for the per-incident agent-trace endpoint. */
+    List<AgentRun> findByTenantIdAndIncidentIdOrderByCreatedAtAsc(UUID tenantId, UUID incidentId);
 }
 

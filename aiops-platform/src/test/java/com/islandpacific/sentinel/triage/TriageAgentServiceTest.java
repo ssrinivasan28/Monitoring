@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.islandpacific.sentinel.entity.Incident;
 import com.islandpacific.sentinel.entity.IncidentSignal;
 import com.islandpacific.sentinel.entity.IncidentTimeline;
+import com.islandpacific.sentinel.llm.model.LlmRequest;
 import com.islandpacific.sentinel.llm.model.LlmResponse;
 import com.islandpacific.sentinel.llm.model.LlmTool;
 import com.islandpacific.sentinel.llm.model.LlmToolCall;
@@ -18,7 +19,9 @@ import com.islandpacific.sentinel.tool.ToolRegistryService;
 import com.islandpacific.sentinel.triage.model.RootCauseResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -107,7 +110,7 @@ class TriageAgentServiceTest {
             }
             return LlmResponse.success(finalJson, List.of(), "stub", "stub-model");
         });
-        when(toolRegistryService.executeTool(isNull(), eq(tenantId), eq("kb_search"), anyMap()))
+        when(toolRegistryService.executeTool(isNull(), eq(tenantId), eq(incident.getId()), eq("kb_search"), anyMap()))
                 .thenReturn(ToolExecutionResult.success(List.of(), "Found 1 relevant KB chunk(s): Runbook RB-102"));
 
         newService().triageIncident(tenantId, incident.getId());
@@ -119,7 +122,7 @@ class TriageAgentServiceTest {
         assertThat(persisted.getEvidence().get(0).getSource()).isEqualTo("kb_search");
         assertThat(persisted.getEvidence().get(0).getSnippet()).contains("RB-102");
 
-        verify(toolRegistryService).executeTool(isNull(), eq(tenantId), eq("kb_search"), anyMap());
+        verify(toolRegistryService).executeTool(isNull(), eq(tenantId), eq(incident.getId()), eq("kb_search"), anyMap());
         verify(incidentTimelineRepository).save(argThat(t ->
                 "root_cause_suggested".equals(t.getEventType()) && "triage-agent".equals(t.getActor())));
     }
@@ -156,5 +159,103 @@ class TriageAgentServiceTest {
 
         verify(llmProvider, never()).chat(any());
         verify(incidentRepository, never()).save(any());
+    }
+
+    @Test
+    void everyLlmRequestAndToolCallInAMultiStepInvestigationCarriesTheIncidentId() {
+        String finalJson = "{"
+                + "\"root_cause_hypothesis\":\"Disk cleanup job on FS01 stopped running\","
+                + "\"evidence\":[{\"source\":\"kb_search\",\"query\":\"disk usage high FS01\",\"snippet\":\"Runbook RB-102\"}],"
+                + "\"severity\":\"high\",\"suggested_checks\":[],\"confidence\":0.8}";
+
+        AtomicInteger callCount = new AtomicInteger();
+        when(llmProvider.chat(any())).thenAnswer(inv -> {
+            if (callCount.getAndIncrement() == 0) {
+                LlmToolCall call = new LlmToolCall("call-1", "kb_search", Map.of("query", "disk usage high FS01"));
+                return LlmResponse.success("Looking up runbooks", List.of(call), "stub", "stub-model");
+            }
+            return LlmResponse.success(finalJson, List.of(), "stub", "stub-model");
+        });
+        when(toolRegistryService.executeTool(isNull(), eq(tenantId), eq(incident.getId()), eq("kb_search"), anyMap()))
+                .thenReturn(ToolExecutionResult.success(List.of(), "Found 1 relevant KB chunk(s): Runbook RB-102"));
+
+        newService().triageIncident(tenantId, incident.getId());
+
+        assertThat(incident.getRootCauseJson()).isNotNull();
+
+        // Multi-step: the model chose a tool call, then concluded - 2 dynamically-driven LLM calls.
+        ArgumentCaptor<LlmRequest> captor = ArgumentCaptor.forClass(LlmRequest.class);
+        verify(llmProvider, times(2)).chat(captor.capture());
+        assertThat(captor.getAllValues()).allSatisfy(req -> assertThat(req.getIncidentId()).isEqualTo(incident.getId()));
+
+        // The tool call itself is tagged with the same incident id, so the trace is per-incident queryable.
+        verify(toolRegistryService).executeTool(isNull(), eq(tenantId), eq(incident.getId()), eq("kb_search"), anyMap());
+    }
+
+    @Test
+    void wallClockCapStopsInvestigationAndRecordsReasonOnTimeline() {
+        properties.setMaxWallClockMs(0); // trips before the very first call is made
+
+        String finalJson = "{"
+                + "\"root_cause_hypothesis\":\"Best guess from limited evidence\","
+                + "\"evidence\":[{\"source\":\"kb_search\",\"query\":\"q\",\"snippet\":\"s\"}],"
+                + "\"severity\":\"medium\",\"suggested_checks\":[],\"confidence\":0.3}";
+        when(llmProvider.chat(any())).thenReturn(LlmResponse.success(finalJson, List.of(), "stub", "stub-model"));
+
+        newService().triageIncident(tenantId, incident.getId());
+
+        assertThat(incident.getRootCauseJson()).isNotNull();
+        verify(incidentTimelineRepository).save(argThat((IncidentTimeline t) ->
+                "investigation_stopped".equals(t.getEventType())
+                        && t.getNote() != null && t.getNote().contains("wall-clock")));
+    }
+
+    @Test
+    void costBudgetCapStopsInvestigationAfterAccumulatingCostAndRecordsReasonOnTimeline() {
+        properties.setMaxCostPerInvestigation(new BigDecimal("0.001"));
+
+        String finalJson = "{"
+                + "\"root_cause_hypothesis\":\"Best guess from limited evidence\","
+                + "\"evidence\":[{\"source\":\"kb_search\",\"query\":\"q\",\"snippet\":\"s\"}],"
+                + "\"severity\":\"medium\",\"suggested_checks\":[],\"confidence\":0.3}";
+        AtomicInteger callCount = new AtomicInteger();
+        when(llmProvider.chat(any())).thenAnswer(inv -> {
+            if (callCount.getAndIncrement() == 0) {
+                LlmToolCall call = new LlmToolCall("call-1", "kb_search", Map.of("query", "q"));
+                LlmResponse resp = LlmResponse.success("Looking", List.of(call), "stub", "stub-model");
+                resp.setPromptTokens(1000);
+                resp.setCompletionTokens(1000); // default pricing => well over the $0.001 cap
+                return resp;
+            }
+            return LlmResponse.success(finalJson, List.of(), "stub", "stub-model");
+        });
+        when(toolRegistryService.executeTool(isNull(), eq(tenantId), eq(incident.getId()), eq("kb_search"), anyMap()))
+                .thenReturn(ToolExecutionResult.success(List.of(), "ok"));
+
+        newService().triageIncident(tenantId, incident.getId());
+
+        assertThat(incident.getRootCauseJson()).isNotNull();
+        verify(incidentTimelineRepository).save(argThat((IncidentTimeline t) ->
+                "investigation_stopped".equals(t.getEventType())
+                        && t.getNote() != null && t.getNote().contains("cost budget")));
+    }
+
+    @Test
+    void iterationCapStopsInvestigationAndRecordsReasonOnTimeline() {
+        properties.setMaxToolIterations(1);
+        // Model never stops asking for another tool call - the cap must still end the investigation.
+        when(llmProvider.chat(any())).thenAnswer(inv -> {
+            LlmToolCall call = new LlmToolCall("call-x", "kb_search", Map.of("query", "q"));
+            return LlmResponse.success("still looking", List.of(call), "stub", "stub-model");
+        });
+        when(toolRegistryService.executeTool(isNull(), eq(tenantId), eq(incident.getId()), eq("kb_search"), anyMap()))
+                .thenReturn(ToolExecutionResult.success(List.of(), "ok"));
+
+        newService().triageIncident(tenantId, incident.getId());
+
+        assertThat(incident.getRootCauseJson()).contains("insufficient data");
+        verify(incidentTimelineRepository).save(argThat((IncidentTimeline t) ->
+                "investigation_stopped".equals(t.getEventType())
+                        && t.getNote() != null && t.getNote().contains("iteration limit")));
     }
 }

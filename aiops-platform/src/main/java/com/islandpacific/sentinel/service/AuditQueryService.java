@@ -55,6 +55,23 @@ public class AuditQueryService {
         return toolCallRepository.findByTenantId(agentRunId); // fallback or find by run id
     }
 
+    /**
+     * 1.9: the ordered agent_runs + tool_calls trace for one incident's investigation - what the
+     * model called, in what order, and its final structured output. Tenant-scoped (unlike
+     * {@link #getAgentRuns}, this backs a customer-visible endpoint, not a staff-only one).
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> getIncidentAgentTrace(UUID tenantId, UUID incidentId) {
+        List<AgentRun> agentRuns = agentRunRepository.findByTenantIdAndIncidentIdOrderByCreatedAtAsc(tenantId, incidentId);
+        List<ToolCall> toolCalls = toolCallRepository.findByTenantIdAndIncidentIdOrderByCreatedAtAsc(tenantId, incidentId);
+
+        Map<String, Object> trace = new LinkedHashMap<>();
+        trace.put("incidentId", incidentId);
+        trace.put("agentRuns", agentRuns);
+        trace.put("toolCalls", toolCalls);
+        return trace;
+    }
+
     @Transactional(readOnly = true)
     public Map<String, Object> getTenantCostSummary(UUID tenantId, Instant since) {
         List<CostLedger> entries;

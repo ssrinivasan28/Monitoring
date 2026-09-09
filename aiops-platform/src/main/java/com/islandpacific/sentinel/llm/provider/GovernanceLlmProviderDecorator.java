@@ -100,7 +100,8 @@ public class GovernanceLlmProviderDecorator implements LlmProvider {
                         modelName,
                         promptTokens,
                         completionTokens,
-                        cost
+                        cost,
+                        request.getIncidentId()
                 );
             } catch (Exception auditEx) {
                 log.error("Failed to write immutable audit record for tenant {}: {}", tenantId, auditEx.getMessage(), auditEx);

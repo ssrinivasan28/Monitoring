@@ -40,6 +40,10 @@ public class AgentRun {
     @Column(nullable = false, precision = 10, scale = 6)
     private BigDecimal cost = BigDecimal.ZERO;
 
+    /** 1.9: correlates this LLM call to the incident investigation it belongs to (nullable). */
+    @Column(name = "incident_id")
+    private UUID incidentId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -81,6 +85,9 @@ public class AgentRun {
 
     public BigDecimal getCost() { return cost; }
     public void setCost(BigDecimal cost) { this.cost = cost; }
+
+    public UUID getIncidentId() { return incidentId; }
+    public void setIncidentId(UUID incidentId) { this.incidentId = incidentId; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
