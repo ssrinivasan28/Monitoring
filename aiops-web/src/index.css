@@ -478,6 +478,7 @@ input:checked + .toggle-slider:before {
   .app-main { margin-left: 0; }
   .mobile-menu-btn { display: inline-flex !important; }
   .user-details-text { display: none !important; }
+  .incident-detail-grid { grid-template-columns: 1fr !important; }
 }
 
 /* Login screen */
