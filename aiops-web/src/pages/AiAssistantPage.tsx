@@ -1,44 +1,133 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Bot, Sparkles, Lock, Send, ShieldAlert, AlertCircle } from 'lucide-react';
-import { apiRequest } from '../services/apiClient';
+import { Bot, Sparkles, Lock, Send, ShieldAlert, AlertCircle, Loader2, Copy, Check } from 'lucide-react';
+import { streamAssistantChat } from '../services/apiClient';
+import { AssistantAnswerPayload, AssistantCitation } from '../types';
+
+interface ToolTraceEntry {
+  tool: string;
+  query: string;
+  summary?: string;
+}
+
+type ChatMessage =
+  | { id: string; sender: 'user'; text: string }
+  | {
+      id: string;
+      sender: 'assistant';
+      status: 'streaming' | 'done' | 'error';
+      trace: ToolTraceEntry[];
+      answer?: string;
+      citations?: AssistantCitation[];
+      aiAvailable?: boolean;
+      insufficient?: boolean;
+      errorText?: string;
+    };
+
+type AssistantMessage = Extract<ChatMessage, { sender: 'assistant' }>;
 
 export const AiAssistantPage: React.FC = () => {
   const { entitlementTier } = useAuth();
   const isProTier = entitlementTier === 'PRO';
 
   const [prompt, setPrompt] = useState('');
-  const [messages, setMessages] = useState<Array<{ sender: 'user' | 'assistant'; text: string }>>([
+  const [messages, setMessages] = useState<ChatMessage[]>([
     {
+      id: 'greeting',
       sender: 'assistant',
-      text: 'Hello! I am your Sentinel AI Assistant. I can help analyze cross-system anomalies, correlate IBM i and Windows logs, and assist with root-cause investigations.',
+      status: 'done',
+      trace: [],
+      answer:
+        'Hello! I am your Sentinel AI Assistant. I can help analyze cross-system anomalies, correlate IBM i and Windows logs, and assist with root-cause investigations.',
+      citations: [],
+      aiAvailable: true,
+      insufficient: false,
     },
   ]);
   const [loading, setLoading] = useState(false);
+  const [entitlementDenied, setEntitlementDenied] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const showUpsell = !isProTier || entitlementDenied;
+
+  const copyToClipboard = async (key: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 1500);
+    } catch (_) {
+      // Clipboard API unavailable/denied - nothing to fall back to, just skip the feedback.
+    }
+  };
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!prompt.trim() || !isProTier) return;
+    if (!prompt.trim() || !isProTier || loading) return;
 
     const userText = prompt;
-    setMessages((prev) => [...prev, { sender: 'user', text: userText }]);
+    const userMsgId = crypto.randomUUID();
+    const assistantMsgId = crypto.randomUUID();
+
+    setMessages((prev) => [
+      ...prev,
+      { id: userMsgId, sender: 'user', text: userText },
+      { id: assistantMsgId, sender: 'assistant', status: 'streaming', trace: [] },
+    ]);
     setPrompt('');
     setLoading(true);
 
+    const updateAssistant = (updater: (msg: AssistantMessage) => AssistantMessage) => {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === assistantMsgId && m.sender === 'assistant' ? updater(m) : m))
+      );
+    };
+
     try {
-      const data = await apiRequest<{ answer: string }>('/api/v1/assistant/chat', {
-        method: 'POST',
-        body: JSON.stringify({ prompt: userText }),
+      await streamAssistantChat(userText, (evt) => {
+        if (evt.event === 'tool_call') {
+          updateAssistant((m) => ({
+            ...m,
+            trace: [...m.trace, { tool: evt.data.tool, query: evt.data.query }],
+          }));
+        } else if (evt.event === 'tool_result') {
+          updateAssistant((m) => {
+            const trace = [...m.trace];
+            for (let i = trace.length - 1; i >= 0; i--) {
+              if (trace[i].tool === evt.data.tool && trace[i].summary === undefined) {
+                trace[i] = { ...trace[i], summary: evt.data.summary };
+                break;
+              }
+            }
+            return { ...m, trace };
+          });
+        } else if (evt.event === 'answer') {
+          const payload: AssistantAnswerPayload = evt.data;
+          updateAssistant((m) => ({
+            ...m,
+            status: 'done',
+            answer: payload.answer,
+            citations: payload.citations || [],
+            aiAvailable: payload.aiAvailable,
+            insufficient: payload.insufficient,
+          }));
+        }
       });
-      setMessages((prev) => [...prev, { sender: 'assistant', text: data.answer || 'Analysis complete.' }]);
     } catch (err: any) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: 'assistant',
-          text: `[Analysis Error]: ${err.message || 'The LLM provider is currently unavailable. Statistical forecasting and threshold rules remain active.'}`,
-        },
-      ]);
+      if (err?.status === 403) {
+        // Stale client-side entitlement state (e.g. a downgrade that hasn't refreshed yet) - the
+        // controller's @RequiresEntitlement check rejected the stream before it ever opened. Drop the
+        // in-flight placeholder and fall back to the same upsell state a Basic tenant sees.
+        setMessages((prev) => prev.filter((m) => m.id !== assistantMsgId));
+        setEntitlementDenied(true);
+      } else {
+        updateAssistant((m) => ({
+          ...m,
+          status: 'error',
+          errorText:
+            err?.message ||
+            'The LLM provider is currently unavailable. Statistical forecasting and threshold rules remain active.',
+        }));
+      }
     } finally {
       setLoading(false);
     }
@@ -55,8 +144,8 @@ export const AiAssistantPage: React.FC = () => {
         </p>
       </div>
 
-      {/* Gating Banner for Basic Tier */}
-      {!isProTier ? (
+      {/* Gating Banner for Basic Tier (or a stale-entitlement 403 on the stream itself) */}
+      {showUpsell ? (
         <div
           className="card"
           style={{
@@ -107,45 +196,132 @@ export const AiAssistantPage: React.FC = () => {
         </div>
       ) : (
         /* Unlocked PRO Tier Interface */
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '600px', padding: 0, overflow: 'hidden' }}>
+        <div className="card assistant-chat-card" style={{ display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
           {/* Chat Messages */}
           <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {messages.map((m, idx) => (
-              <div
-                key={idx}
-                style={{
-                  display: 'flex',
-                  justifyContent: m.sender === 'user' ? 'flex-end' : 'flex-start',
-                }}
-              >
-                <div
-                  style={{
-                    maxWidth: '80%',
-                    padding: '0.85rem 1.1rem',
-                    borderRadius: 'var(--radius-md)',
-                    backgroundColor: m.sender === 'user' ? '#0057B8' : '#F1F5F9',
-                    color: m.sender === 'user' ? 'white' : 'var(--text-main)',
-                    fontSize: '0.9rem',
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {m.sender === 'assistant' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', fontWeight: 700, color: '#0057B8', marginBottom: '0.3rem' }}>
-                      <Sparkles size={12} color="#F5A300" /> SENTINEL AI
+            {messages.map((m) => (
+              <div key={m.id} style={{ display: 'flex', justifyContent: m.sender === 'user' ? 'flex-end' : 'flex-start' }}>
+                {m.sender === 'user' ? (
+                  <div
+                    style={{
+                      maxWidth: '80%',
+                      padding: '0.85rem 1.1rem',
+                      borderRadius: 'var(--radius-md)',
+                      backgroundColor: '#0057B8',
+                      color: 'white',
+                      fontSize: '0.9rem',
+                      lineHeight: 1.5,
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {m.text}
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      maxWidth: '80%',
+                      padding: '0.85rem 1.1rem',
+                      borderRadius: 'var(--radius-md)',
+                      backgroundColor: '#F1F5F9',
+                      color: 'var(--text-main)',
+                      fontSize: '0.9rem',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', fontWeight: 700, color: '#0057B8' }}>
+                        <Sparkles size={12} color="#F5A300" /> SENTINEL AI
+                      </div>
+                      {m.status === 'done' && m.answer && (
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(`${m.id}:answer`, m.answer || '')}
+                          className="btn btn-secondary"
+                          style={{ padding: '0.15rem 0.4rem', fontSize: '11px', gap: '0.25rem' }}
+                          aria-label="Copy answer"
+                        >
+                          {copiedKey === `${m.id}:answer` ? <Check size={11} /> : <Copy size={11} />}
+                        </button>
+                      )}
                     </div>
-                  )}
-                  {m.text}
-                </div>
+
+                    {m.status === 'streaming' && (
+                      <div>
+                        {m.trace.length === 0 && (
+                          <div style={{ color: 'var(--text-muted)' }}>Analysing telemetry & querying live data...</div>
+                        )}
+                        {m.trace.length > 0 && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            {m.trace.map((t, idx) => (
+                              <div key={idx} className="assistant-trace-row">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600, marginBottom: '0.2rem' }}>
+                                  {t.summary === undefined ? (
+                                    <Loader2 size={12} className="spin" color="#0057B8" />
+                                  ) : (
+                                    <Check size={12} color="#16a34a" />
+                                  )}
+                                  {t.tool}
+                                </div>
+                                <div className="assistant-trace-query">{t.query}</div>
+                                {t.summary && (
+                                  <div style={{ color: 'var(--text-muted)', marginTop: '0.2rem' }}>{t.summary}</div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {m.status === 'error' && <div>[Analysis Error]: {m.errorText}</div>}
+
+                    {m.status === 'done' && (
+                      <div>
+                        {m.aiAvailable === false && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', fontWeight: 700, color: '#dc2626', marginBottom: '0.5rem' }}>
+                            <ShieldAlert size={13} /> AI UNAVAILABLE
+                          </div>
+                        )}
+                        {m.insufficient && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', fontWeight: 700, color: '#d97706', marginBottom: '0.5rem' }}>
+                            <AlertCircle size={13} /> INSUFFICIENT EVIDENCE
+                          </div>
+                        )}
+                        <div style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{m.answer}</div>
+
+                        {m.citations && m.citations.length > 0 && (
+                          <>
+                            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0.75rem 0 0.5rem' }}>
+                              Queries Run
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                              {m.citations.map((c, idx) => (
+                                <div key={idx} className="assistant-citation-row">
+                                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                                    <div style={{ fontWeight: 600 }}>{c.tool}</div>
+                                    <button
+                                      type="button"
+                                      onClick={() => copyToClipboard(`${m.id}:citation:${idx}`, c.query)}
+                                      className="btn btn-secondary"
+                                      style={{ padding: '0.1rem 0.35rem', fontSize: '11px' }}
+                                      aria-label="Copy query"
+                                    >
+                                      {copiedKey === `${m.id}:citation:${idx}` ? <Check size={10} /> : <Copy size={10} />}
+                                    </button>
+                                  </div>
+                                  <div className="assistant-citation-query">{c.query}</div>
+                                  {c.summary && <div style={{ color: 'var(--text-muted)', marginTop: '0.2rem' }}>{c.summary}</div>}
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
-
-            {loading && (
-              <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                <div style={{ backgroundColor: '#F1F5F9', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                  Analysing telemetry & generating root-cause narrative...
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Chat Input */}

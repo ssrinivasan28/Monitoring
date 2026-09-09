@@ -479,6 +479,21 @@ input:checked + .toggle-slider:before {
   .mobile-menu-btn { display: inline-flex !important; }
   .user-details-text { display: none !important; }
   .incident-detail-grid { grid-template-columns: 1fr !important; }
+  .assistant-chat-card { height: 70vh !important; }
+}
+
+/* AI Assistant chat (2.2) */
+.assistant-chat-card { height: 600px; }
+.assistant-trace-row, .assistant-citation-row {
+  padding: 0.6rem 0.85rem;
+  background-color: var(--bg-main);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+}
+.assistant-trace-query, .assistant-citation-query {
+  font-family: var(--font-mono);
+  color: var(--brand-primary);
+  word-break: break-word;
 }
 
 /* Login screen */

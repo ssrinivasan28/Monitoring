@@ -68,3 +68,18 @@ export interface TestConnectionResponse {
   message: string;
   latencyMs?: number;
 }
+
+export interface AssistantCitation {
+  tool: string;
+  query: string;
+  summary: string;
+}
+
+export interface AssistantAnswerPayload {
+  tenantId?: string;
+  answer: string;
+  citations: AssistantCitation[];
+  aiAvailable: boolean;
+  insufficient: boolean;
+  tier?: string;
+}
