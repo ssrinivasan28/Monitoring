@@ -85,6 +85,9 @@ sentinel:
     poll-interval-ms: ${SENTINEL_TRIAGE_POLL_INTERVAL_MS:60000}
     max-tool-iterations: ${SENTINEL_TRIAGE_MAX_TOOL_ITERATIONS:6}
     max-schema-retries: ${SENTINEL_TRIAGE_MAX_SCHEMA_RETRIES:1}
+  assistant:
+    max-tool-iterations: ${SENTINEL_ASSISTANT_MAX_TOOL_ITERATIONS:8}
+    max-wall-clock-ms: ${SENTINEL_ASSISTANT_MAX_WALL_CLOCK_MS:60000}
   integrations:
     teams:
       poll-interval-ms: ${SENTINEL_TEAMS_POLL_INTERVAL_MS:30000}

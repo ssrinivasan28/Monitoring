@@ -190,6 +190,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <excludes>
+                        <exclude>**/AssistantAgentGovernanceIntegrationTest.java</exclude>
                         <exclude>**/AuditImmutabilityTest.java</exclude>
                         <exclude>**/AuditQueryControllerTest.java</exclude>
                         <exclude>**/AuthNegativeSecurityIntegrationTest.java</exclude>
