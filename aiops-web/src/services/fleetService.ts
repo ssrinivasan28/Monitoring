@@ -16,6 +16,7 @@ export interface TenantFleet {
   score: number;
   worstInput: string | null;
   inputs: FleetInputScore[];
+  noiseReductionRatio: number | null;
 }
 
 export async function getFleetOverview(): Promise<TenantFleet[]> {

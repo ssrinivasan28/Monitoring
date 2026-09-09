@@ -2,6 +2,7 @@ package com.islandpacific.sentinel.integration.itsm.servicenow;
 
 import com.islandpacific.sentinel.integration.itsm.ItsmIntegrationException;
 import com.islandpacific.sentinel.integration.itsm.ItsmSyncProperties;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -20,6 +21,7 @@ public class ServiceNowClient {
 
     private final RestTemplate restTemplate;
 
+    @Autowired
     public ServiceNowClient(ItsmSyncProperties properties) {
         this(createRestTemplate(properties.getTimeoutMs()));
     }

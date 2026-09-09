@@ -17,7 +17,8 @@ import {
   RefreshCw,
   ExternalLink,
   Layers,
-  Database
+  Database,
+  TrendingDown
 } from 'lucide-react';
 
 export const FleetPage: React.FC = () => {
@@ -91,6 +92,14 @@ export const FleetPage: React.FC = () => {
       else unknown++;
     });
     return { total: fleetData.length, red, amber, green, unknown };
+  }, [fleetData]);
+
+  // 1.8 alert-noise reduction KPI: average across tenants that have a known ratio for the period.
+  const avgNoiseReduction = useMemo(() => {
+    const known = fleetData.filter((t) => t.noiseReductionRatio !== null && t.noiseReductionRatio !== undefined);
+    if (known.length === 0) return null;
+    const sum = known.reduce((acc, t) => acc + (t.noiseReductionRatio as number), 0);
+    return Math.round((sum / known.length) * 10) / 10;
   }, [fleetData]);
 
   const getBandBadge = (band: string) => {
@@ -204,6 +213,19 @@ export const FleetPage: React.FC = () => {
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
             &lt; 75% Capacity Pressure
+          </div>
+        </div>
+
+        <div className="card" style={{ borderLeft: '4px solid #0057B8' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+            <span>Alert-Noise Reduction</span>
+            <TrendingDown size={18} color="#0057B8" />
+          </div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, marginTop: '0.3rem', color: 'var(--text-main)' }}>
+            {avgNoiseReduction !== null ? `${avgNoiseReduction}%` : 'N/A'}
+          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+            Raw Alerts &rarr; Correlated Incidents (30d)
           </div>
         </div>
       </div>
@@ -343,6 +365,16 @@ export const FleetPage: React.FC = () => {
                       {tenant.worstInput || 'None'}
                     </div>
                   </div>
+                </div>
+
+                {/* 1.8 Alert-Noise Reduction KPI */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', marginBottom: '0.75rem', color: 'var(--text-muted)' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <TrendingDown size={14} /> Alert-Noise Reduction (30d)
+                  </span>
+                  <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>
+                    {tenant.noiseReductionRatio !== null && tenant.noiseReductionRatio !== undefined ? `${tenant.noiseReductionRatio}%` : 'N/A'}
+                  </span>
                 </div>
 
                 {/* Input Capacity Breakdown */}

@@ -3,6 +3,7 @@ package com.islandpacific.sentinel.integration.teams;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -35,6 +36,7 @@ public class TeamsGraphClient {
     private final TeamsNotificationProperties properties;
     private final RestTemplate restTemplate;
 
+    @Autowired
     public TeamsGraphClient(TeamsNotificationProperties properties) {
         this(properties, createRestTemplate(properties.getTimeoutMs()));
     }

@@ -12,6 +12,7 @@ public class TenantFleetDto {
     private double score; // 0.0 - 100.0
     private String worstInput; // key of worst input e.g. "asp"
     private List<InputScoreDto> inputs;
+    private Double noiseReductionRatio; // 1.8 alert-noise KPI, 0-100%; null if unavailable
 
     public TenantFleetDto() {}
 
@@ -45,6 +46,9 @@ public class TenantFleetDto {
 
     public List<InputScoreDto> getInputs() { return inputs; }
     public void setInputs(List<InputScoreDto> inputs) { this.inputs = inputs; }
+
+    public Double getNoiseReductionRatio() { return noiseReductionRatio; }
+    public void setNoiseReductionRatio(Double noiseReductionRatio) { this.noiseReductionRatio = noiseReductionRatio; }
 
     public static class InputScoreDto {
         private String key;

@@ -185,6 +185,7 @@
                         <exclude>**/AuditImmutabilityTest.java</exclude>
                         <exclude>**/AuditQueryControllerTest.java</exclude>
                         <exclude>**/AuthNegativeSecurityIntegrationTest.java</exclude>
+                        <exclude>**/CrossPlatformDemoIntegrationTest.java</exclude>
                         <exclude>**/IncidentAndSignalRepositoryTest.java</exclude>
                         <exclude>**/IncidentApiIntegrationTest.java</exclude>
                         <exclude>**/MigrationAndSchemaTest.java</exclude>

@@ -5,6 +5,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.islandpacific.sentinel.entity.Tenant;
+import com.islandpacific.sentinel.kpi.AlertNoiseKpiDto;
+import com.islandpacific.sentinel.kpi.AlertNoiseKpiService;
 import com.islandpacific.sentinel.query.QueryGatewayService;
 import com.islandpacific.sentinel.query.ResponseMerger;
 import com.islandpacific.sentinel.repository.TenantRepository;
@@ -16,6 +18,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -24,18 +28,24 @@ public class FleetHeadroomService {
 
     private static final Logger log = LoggerFactory.getLogger(FleetHeadroomService.class);
 
+    /** Rolling window used for the noise-reduction KPI card surfaced on the Fleet Overview. */
+    private static final int NOISE_KPI_WINDOW_DAYS = 30;
+
     private final TenantRepository tenantRepository;
     private final QueryGatewayService queryGatewayService;
     private final FleetHeadroomProperties properties;
+    private final AlertNoiseKpiService alertNoiseKpiService;
 
     @Autowired
     public FleetHeadroomService(
             TenantRepository tenantRepository,
             QueryGatewayService queryGatewayService,
-            FleetHeadroomProperties properties) {
+            FleetHeadroomProperties properties,
+            AlertNoiseKpiService alertNoiseKpiService) {
         this.tenantRepository = tenantRepository;
         this.queryGatewayService = queryGatewayService;
         this.properties = properties;
+        this.alertNoiseKpiService = alertNoiseKpiService;
     }
 
     public List<TenantFleetDto> getFleetOverview(UUID targetTenantId, UUID callingUserId, boolean isStaff) {
@@ -152,7 +162,7 @@ public class FleetHeadroomService {
                 }
             }
 
-            return new TenantFleetDto(
+            TenantFleetDto dto = new TenantFleetDto(
                     tenant.getId(),
                     tenant.getName(),
                     tenant.getClientInstanceId(),
@@ -161,6 +171,8 @@ public class FleetHeadroomService {
                     worstInputKey,
                     inputs
             );
+            dto.setNoiseReductionRatio(computeNoiseReductionPercent(tenant.getId()));
+            return dto;
         } finally {
             if (prevContext.isPresent()) {
                 TenantContextHolder.setContext(prevContext.get());
@@ -258,6 +270,24 @@ public class FleetHeadroomService {
         return Math.max(a, b);
     }
 
+    /**
+     * 1.8 alert-noise KPI, expressed as a 0-100% figure for display alongside the other Fleet
+     * Overview scores. Independent of the live Prometheus headroom query path above (reads only
+     * the alerts/incidents tables), so a KPI failure never breaks headroom display - it's simply
+     * omitted (null) for that tenant.
+     */
+    private Double computeNoiseReductionPercent(UUID tenantId) {
+        try {
+            Instant periodEnd = Instant.now();
+            Instant periodStart = periodEnd.minus(Duration.ofDays(NOISE_KPI_WINDOW_DAYS));
+            AlertNoiseKpiDto kpi = alertNoiseKpiService.computeForPeriod(tenantId, periodStart, periodEnd);
+            return Math.round(kpi.getNoiseReductionRatio() * 1000.0) / 10.0;
+        } catch (Exception e) {
+            log.debug("Error computing alert-noise KPI for tenant {}: {}", tenantId, e.getMessage());
+            return null;
+        }
+    }
+
     private TenantFleetDto createStaleTenantDto(Tenant tenant) {
         List<TenantFleetDto.InputScoreDto> inputs = List.of(
                 new TenantFleetDto.InputScoreDto("asp", "IBM i ASP", null, "UNKNOWN", true),
@@ -265,6 +295,8 @@ public class FleetHeadroomService {
                 new TenantFleetDto.InputScoreDto("cpu", "CPU Utilization", null, "UNKNOWN", true),
                 new TenantFleetDto.InputScoreDto("mem_jobq", "Memory / Job-Q", null, "UNKNOWN", true)
         );
-        return new TenantFleetDto(tenant.getId(), tenant.getName(), tenant.getClientInstanceId(), "UNKNOWN", 0.0, null, inputs);
+        TenantFleetDto dto = new TenantFleetDto(tenant.getId(), tenant.getName(), tenant.getClientInstanceId(), "UNKNOWN", 0.0, null, inputs);
+        dto.setNoiseReductionRatio(computeNoiseReductionPercent(tenant.getId()));
+        return dto;
     }
 }

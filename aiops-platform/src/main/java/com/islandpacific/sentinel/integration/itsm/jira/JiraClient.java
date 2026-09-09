@@ -2,6 +2,7 @@ package com.islandpacific.sentinel.integration.itsm.jira;
 
 import com.islandpacific.sentinel.integration.itsm.ItsmIntegrationException;
 import com.islandpacific.sentinel.integration.itsm.ItsmSyncProperties;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -22,6 +23,7 @@ public class JiraClient {
 
     private final RestTemplate restTemplate;
 
+    @Autowired
     public JiraClient(ItsmSyncProperties properties) {
         this(createRestTemplate(properties.getTimeoutMs()));
     }

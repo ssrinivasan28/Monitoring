@@ -1,6 +1,7 @@
 package com.islandpacific.sentinel.fleet;
 
 import com.islandpacific.sentinel.entity.Tenant;
+import com.islandpacific.sentinel.kpi.AlertNoiseKpiService;
 import com.islandpacific.sentinel.query.QueryGatewayService;
 import com.islandpacific.sentinel.query.ResponseMerger;
 import com.islandpacific.sentinel.repository.TenantRepository;
@@ -30,9 +31,10 @@ class FleetHeadroomServiceTest {
         tenantRepository = Mockito.mock(TenantRepository.class);
         queryGatewayService = Mockito.mock(QueryGatewayService.class);
         properties = new FleetHeadroomProperties();
+        AlertNoiseKpiService alertNoiseKpiService = Mockito.mock(AlertNoiseKpiService.class);
 
         // Defaults: asp=0.40, disk=0.25, cpu=0.20, memJobq=0.15, critical=95.0, amber=75.0, red cutoff=90.0
-        fleetService = new FleetHeadroomService(tenantRepository, queryGatewayService, properties);
+        fleetService = new FleetHeadroomService(tenantRepository, queryGatewayService, properties, alertNoiseKpiService);
 
         sampleTenant = new Tenant("Test Customer", "TEST-INST-01");
         sampleTenant.setId(UUID.randomUUID());
